@@ -8,13 +8,30 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      aivis:
+      irodori-tts:
         condition: service_healthy
     stdin_open: true
     tty: true
 
-  aivis:
-    image: tkgling/aivisspeech-engine:cuda12.8.1-cudnn-1.1.0
+  irodori-tts:
+    image: tkgling/irodori-tts:latest
+    volumes:
+      - ./configs/config.yaml:/app/config.yaml:ro
+      - ./models:/app/models:ro
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8765/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 300s
 
   redis:
     image: redis:8.4.0
@@ -29,3 +46,5 @@ services:
 volumes:
   redis_data:
     name: redis_data
+  hf_cache:
+    driver: local
