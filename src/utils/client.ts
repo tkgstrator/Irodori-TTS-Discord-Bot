@@ -10,7 +10,6 @@ const IRODORI_TTS_BASE_URL = process.env.IRODORI_TTS_BASE_URL ?? 'http://irodori
 /**
  * Irodori-TTS APIクライアント
  *
- * Irodori-TTS は AivisSpeech と異なり `audio_query` の中間表現を持たず、
  * `POST /synth` に `speaker_id` と `text` を渡すと直接 `audio/wav` を返す。
  */
 export const irodoriClient = new Zodios(IRODORI_TTS_BASE_URL, [
