@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-IMAGE="tkgling/aivisspeech-discord-bot:latest"
+IMAGE="tkgling/irodori-tts-discord-bot:latest"
 PLATFORMS="linux/amd64,linux/arm64"
 
 # マルチアーキテクチャ対応のビルダーを作成・使用
