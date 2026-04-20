@@ -1,0 +1,37 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/app/main.tsx"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx,js,jsx,css,scss}",
+    "!src/**/*.d.ts"
+  ],
+  "ignore": [
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "__tests__/**"
+  ],
+  "ignoreDependencies": [
+    "@biomejs/biome"
+  ],
+  "ignoreBinaries": [],
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "unlisted": "error",
+    "exports": "error",
+    "nsExports": "error",
+    "classMembers": "error",
+    "types": "error",
+    "nsTypes": "error",
+    "enumMembers": "error",
+    "duplicates": "error"
+  },
+  "vite": {
+    "config": [
+      "vite.config.ts"
+    ]
+  }
+}

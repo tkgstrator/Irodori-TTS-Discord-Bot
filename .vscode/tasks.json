@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker Buildx Build",
+      "type": "shell",
+      "command": "bash ${workspaceFolder}/.vscode/scripts/deploy.sh",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
