@@ -404,6 +404,3 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/node,python,venv,windows,macos,linux
-
-# Aivis Speech Engine
-**/AivisSpeech-Engine-Dev/*
