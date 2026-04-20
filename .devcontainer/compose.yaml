@@ -1,0 +1,59 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../:/home/vscode/app:cached
+      - node_modules:/home/vscode/app/node_modules:cached
+    depends_on:
+      redis:
+        condition: service_healthy
+      irodori-tts:
+        condition: service_healthy
+    environment:
+      NODE_OPTIONS: --no-deprecation
+      NODE_ENV: development
+    stdin_open: true
+    tty: true
+
+  irodori-tts:
+    image: tkgling/irodori-tts:latest
+    volumes:
+      - ./configs/config.yaml:/app/config.yaml:ro
+      - ./models:/app/models:ro
+      - hf_cache:/root/.cache/huggingface
+      - venv:/app/.venv
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8765/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 300s
+
+  redis:
+    image: redis:8.4.0
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  node_modules:
+    driver: local
+  redis_data:
+    driver: local
+  hf_cache:
+    driver: local
+  venv:
+    driver: local
