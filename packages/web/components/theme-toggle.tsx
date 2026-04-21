@@ -3,9 +3,11 @@
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const CYCLE: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system']
 const ICONS = { light: Sun, dark: Moon, system: Monitor } as const
+const LABELS = { light: 'ライトモード', dark: 'ダークモード', system: 'システム設定' } as const
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
@@ -13,8 +15,13 @@ export function ThemeToggle() {
   const next = CYCLE[(CYCLE.indexOf(theme) + 1) % CYCLE.length] ?? 'system'
 
   return (
-    <Button variant="ghost" size="icon-sm" onClick={() => setTheme(next)} aria-label={`Switch to ${next} theme`}>
-      <Icon className="size-4" />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button variant="ghost" size="icon-sm" onClick={() => setTheme(next)} aria-label={LABELS[theme]} />}
+      >
+        <Icon className="size-4" />
+      </TooltipTrigger>
+      <TooltipContent>{LABELS[theme]}</TooltipContent>
+    </Tooltip>
   )
 }

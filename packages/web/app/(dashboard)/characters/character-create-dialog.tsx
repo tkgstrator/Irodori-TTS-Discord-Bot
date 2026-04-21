@@ -27,6 +27,7 @@ import { useStore } from '@/lib/store'
 import { useSpeakers } from '@/lib/use-speakers'
 
 const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e']
+const COLOR_NAMES = ['レッド', 'ブルー', 'グリーン', 'イエロー', 'パープル', 'ティール', 'オレンジ', 'グレー']
 
 export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { addCharacter } = useStore()
@@ -78,7 +79,7 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
             <div className="grid gap-2">
               <Label>年齢</Label>
               <Select name="ageGroup" required>
-                <SelectTrigger>
+                <SelectTrigger className="w-full" aria-label="年齢">
                   <SelectValue placeholder="選択" />
                 </SelectTrigger>
                 <SelectContent>
@@ -93,7 +94,7 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
             <div className="grid gap-2">
               <Label>性別</Label>
               <Select name="gender" required>
-                <SelectTrigger>
+                <SelectTrigger className="w-full" aria-label="性別">
                   <SelectValue placeholder="選択" />
                 </SelectTrigger>
                 <SelectContent>
@@ -111,7 +112,12 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
             <Label>性格 ({selectedPersonality.length}/4)</Label>
             <div className="flex flex-wrap gap-1.5">
               {(Object.entries(PERSONALITY_LABELS) as [Personality, string][]).map(([k, v]) => (
-                <button key={k} type="button" onClick={() => togglePersonality(k)}>
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => togglePersonality(k)}
+                  className="rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
                   <Badge
                     variant={selectedPersonality.includes(k) ? 'default' : 'outline'}
                     className="cursor-pointer transition-colors"
@@ -127,7 +133,7 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
             <div className="grid gap-2">
               <Label>一人称</Label>
               <Select name="firstPerson" required>
-                <SelectTrigger>
+                <SelectTrigger className="w-full" aria-label="一人称">
                   <SelectValue placeholder="選択" />
                 </SelectTrigger>
                 <SelectContent>
@@ -142,7 +148,7 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
             <div className="grid gap-2">
               <Label>職業</Label>
               <Select name="occupation">
-                <SelectTrigger>
+                <SelectTrigger className="w-full" aria-label="職業">
                   <SelectValue placeholder="選択" />
                 </SelectTrigger>
                 <SelectContent>
@@ -159,7 +165,7 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
           <div className="grid gap-2">
             <Label>話者</Label>
             <Select name="speakerId">
-              <SelectTrigger>
+              <SelectTrigger className="w-full" aria-label="話者">
                 <SelectValue placeholder={speakersLoading ? '読み込み中...' : '話者を選択'} />
               </SelectTrigger>
               <SelectContent>
@@ -179,12 +185,19 @@ export function CharacterCreateDialog({ open, onOpenChange }: { open: boolean; o
 
           <div className="grid gap-2">
             <Label>カラー</Label>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {COLORS.map((c, i) => (
                 <label key={c} className="cursor-pointer">
-                  <input type="radio" name="color" value={c} defaultChecked={i === 0} className="peer sr-only" />
+                  <input
+                    type="radio"
+                    name="color"
+                    value={c}
+                    defaultChecked={i === 0}
+                    className="peer sr-only"
+                    aria-label={COLOR_NAMES[i]}
+                  />
                   <div
-                    className="size-7 rounded-full border-2 border-transparent peer-checked:border-foreground peer-checked:ring-2 peer-checked:ring-ring"
+                    className="size-9 rounded-full border-2 border-transparent peer-checked:border-foreground peer-checked:ring-2 peer-checked:ring-ring"
                     style={{ backgroundColor: c }}
                   />
                 </label>
