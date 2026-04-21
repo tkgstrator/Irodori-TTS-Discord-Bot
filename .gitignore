@@ -404,3 +404,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/node,python,venv,windows,macos,linux
+
+### Project overrides ###
+# venv テンプレの `[Ss]cripts` が小文字の scripts/ まで弾くので明示的に許可する。
+!/scripts/
+!/scripts/**
