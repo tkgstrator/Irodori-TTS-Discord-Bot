@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Mic2, Users } from 'lucide-react'
+import { BookOpen, Mic2, Palette, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ComponentType } from 'react'
@@ -16,9 +16,13 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 
-const navItems: { title: string; href: string; icon: ComponentType<{ className?: string }> }[] = [
+const managementItems: { title: string; href: string; icon: ComponentType<{ className?: string }> }[] = [
   { title: 'キャラクター一覧', href: '/characters', icon: Users },
   { title: 'シナリオ一覧', href: '/scenarios', icon: BookOpen }
+]
+
+const toolItems: { title: string; href: string; icon: ComponentType<{ className?: string }> }[] = [
+  { title: 'モック', href: '/mockups', icon: Palette }
 ]
 
 export function AppSidebar() {
@@ -37,7 +41,24 @@ export function AppSidebar() {
           <SidebarGroupLabel>管理</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {managementItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)}>
+                    <Link href={item.href}>
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>ツール</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {toolItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)}>
                     <Link href={item.href}>
