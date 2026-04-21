@@ -83,20 +83,28 @@ flowchart TD
 type DramaBrief = {
   schemaVersion: 1
   title?: string
-  genres: Genre[]                     // 主ジャンル（1〜3 個推奨、最低 1 個必須）
-  subgenre?: string                   // 自由文の補足（"スチームパンク", "ゾンビもの" 等、任意）
-  tone: string                        // 情緒・雰囲気の自由文（例: "軽妙", "静謐", "抒情的"）
-  protagonistAlias: string            // 主人公の speakerAlias（characters 配列内にちょうど 1 人）
-  characters: Array<CharacterSpec>    // 型は下の CharacterSpec を参照
-  includeNarrator: boolean            // ナレーター alias を Bible に含めるか（規約：true を既定）
-  narratorUuid?: string               // includeNarrator=true のとき必須
-  // 物語開始時点のハード状態
-  initialWorldTime: { day: number; hhmm: string }
-  initialSeason: Season
-  initialWeather: Weather
-  initialLocation: string
-  ending: 'loop' | 'closed'           // v1 は 'loop' の挙動に最適化。'closed' は v2 の plotted モードで真価を発揮
-  extraNotes?: string
+
+  genre: {
+    categories: Genre[]               // 主ジャンル（1〜3 個推奨、最低 1 個必須）
+    subgenre?: string                 // 自由文の補足（"スチームパンク", "ゾンビもの" 等、任意）
+    tone: string                      // 情緒・雰囲気の自由文（例: "軽妙", "静謐", "抒情的"）
+  }
+
+  cast: {
+    protagonist: string               // 主人公の alias（characters 配列内にちょうど 1 人）
+    characters: CharacterSpec[]       // 型は下の CharacterSpec を参照
+    narrator?: { uuid: string }       // 存在すればナレーター alias を Bible に含める
+  }
+
+  setting: {                           // 物語開始時点のハード状態
+    worldTime: { day: number; hhmm: string }
+    season: Season
+    weather: Weather
+    location: string
+  }
+
+  ending: 'loop' | 'closed'            // v1 は 'loop' の挙動に最適化。'closed' は v2 の plotted モードで真価を発揮
+  notes?: string                       // 世界観補足・制作メモなど
 }
 
 type Genre =
@@ -115,8 +123,8 @@ type Genre =
 
 type CharacterSpec = {
   name: string                        // 表示名（自由文）
-  speakerAlias: string                // VDS の alias（§3.4 規則に従う）
-  speakerUuid: string                 // Irodori-TTS の話者UUID
+  alias: string                       // VDS の alias（§3.4 規則に従う）
+  uuid: string                        // Irodori-TTS の話者 UUID
 
   // ── 必須 enum（WebUI のドロップダウン想定） ───────────────
   role: Role
@@ -126,24 +134,24 @@ type CharacterSpec = {
   speechStyle: SpeechStyle
 
   // ── 必須 enum 配列（WebUI のマルチセレクト） ──────────────
-  personalityTraits: PersonalityTrait[]  // 1〜4 個
+  traits: Trait[]                     // 性格タグ 1〜4 個
 
   // ── 主人公との関係性（必須） ─────────────────────────
   // 主人公自身のエントリは 'self' 固定。それ以外は 'self' 以外を必ず 1 つ選ぶ。
-  relationshipToProtagonist: RelationshipToProtagonist
-  relationshipNotes?: string          // 例: "育ての親（血縁なし）", "5年前に別れた元恋人"
+  relationship: Relationship
+  relationshipNote?: string           // 例: "育ての親（血縁なし）", "5年前に別れた元恋人"
 
   // ── 任意 enum ───────────────────────────────────────
-  occupation?: Occupation             // enum に無ければ 'other' + occupationDescription
-  attributes?: Attribute[]            // 0〜4 個
-  backgroundTags?: BackgroundTag[]    // 0〜3 個
+  occupation?: Occupation             // enum に無ければ 'other' + occupationNote
+  attributes?: Attribute[]            // 属性タグ 0〜4 個
+  background?: Background[]           // 経歴タグ 0〜3 個
 
   // ── 自由文補足（enum 粒度を越える情報） ──────────────────
-  ageDescription?: string             // 例: "200歳（人間換算20代）"
-  raceDescription?: string            // enum に無い種族の詳細
-  occupationDescription?: string      // 職業の詳細・文脈
-  speechStyleNotes?: string           // 方言の土地、口癖、特殊な語尾等
-  personaNotes?: string               // 目標・価値観・トラウマ等の総合補足
+  ageNote?: string                    // 例: "200歳（人間換算20代）"
+  raceNote?: string                   // enum に無い種族の詳細
+  occupationNote?: string             // 職業の詳細・文脈
+  speechStyleNote?: string            // 方言の土地、口癖、特殊な語尾等
+  personaNote?: string                // 目標・価値観・トラウマ等の総合補足
 }
 
 type Role =
@@ -205,9 +213,9 @@ type SpeechStyle =
   | 'refined_feminine' // 上品・お嬢様風
   | 'archaic_samurai'  // 古風・武士口調
   | 'archaic_court'    // 古語・宮廷語
-  | 'dialect_regional' // 方言（詳細は speechStyleNotes）
+  | 'dialect_regional' // 方言（詳細は speechStyleNote）
   | 'childlike'        // 舌足らず・幼児語
-  | 'eccentric'        // 奇妙（"〜のじゃ", "であります" 等、詳細は speechStyleNotes）
+  | 'eccentric'        // 奇妙（"〜のじゃ", "であります" 等、詳細は speechStyleNote）
 
 type Occupation =
   // 学生系
@@ -234,7 +242,7 @@ type Occupation =
   // その他
   | 'other'
 
-type PersonalityTrait =
+type Trait =
   | 'cheerful' | 'shy' | 'stoic' | 'hot_blooded'
   | 'gentle' | 'kind' | 'serious' | 'lazy'
   | 'cunning' | 'naive' | 'arrogant' | 'humble'
@@ -251,7 +259,7 @@ type Attribute =
   | 'bookworm' | 'sporty' | 'foodie'
   | 'otaku' | 'gyaru' | 'ojou' | 'hermit' | 'prankster'
 
-type BackgroundTag =
+type Background =
   | 'orphan' | 'noble_birth' | 'poor_background'
   | 'isekai_transfer' | 'reincarnated' | 'amnesia' | 'time_traveler'
   | 'outsider' | 'returnee'
@@ -259,7 +267,7 @@ type BackgroundTag =
   | 'self_taught' | 'elite_educated'
   | 'military_background' | 'traumatic_past'
 
-type RelationshipToProtagonist =
+type Relationship =
   // 主人公自身
   | 'self'
   // 家族・親族
@@ -288,24 +296,24 @@ type RelationshipToProtagonist =
 
 **`CharacterSpec` 運用規約:**
 
-- `personalityTraits` は必須（1〜4 個）。2 個以上で個性の層を作る（例: `['cheerful', 'naive']` で明るいが世間知らず）。
+- `traits` は必須（1〜4 個）。2 個以上で個性の層を作る（例: `['cheerful', 'naive']` で明るいが世間知らず）。
 - `attributes` は「キャラ属性タグ」で、日本のアニメ/ゲーム文化に寄せた慣用カテゴリ。不要なら省略。
 - `race: 'human'` が現代モノの既定値。ファンタジー/SF 以外では変更しない。
-- `ageDescription` は `ageGroup` で表しきれない特殊ケース（長寿種、人間換算、AI の年齢非対称等）にのみ使う。
-- `speechStyle: 'dialect_regional'` / `'eccentric'` を選んだ場合、`speechStyleNotes` に詳細（方言の地方、口癖の具体例）を必ず書く。
-- `occupation` が `'other'` のときは `occupationDescription` を必須扱いする（運用規約）。
+- `ageNote` は `ageGroup` で表しきれない特殊ケース（長寿種、人間換算、AI の年齢非対称等）にのみ使う。
+- `speechStyle: 'dialect_regional'` / `'eccentric'` を選んだ場合、`speechStyleNote` に詳細（方言の地方、口癖の具体例）を必ず書く。
+- `occupation` が `'other'` のときは `occupationNote` を必須扱いする（運用規約）。
 
 **主人公と関係性のルール:**
 
 - `characters` 配列内で `role: 'protagonist'` を持つキャラは **ちょうど 1 人**。
-- その 1 人の `speakerAlias` が `DramaBrief.protagonistAlias` と一致必須。
-- 主人公の `relationshipToProtagonist` は **`'self'`**（自身のエントリ）。
-- それ以外のキャラの `relationshipToProtagonist` は `'self'` 以外から必ず選ぶ。
-- ナレーターは `role: 'narrator'` かつ `relationshipToProtagonist: 'other'`（語り手は主人公との個人的関係を持たない扱い）。
+- その 1 人の `alias` が `DramaBrief.cast.protagonist` と一致必須。
+- 主人公の `relationship` は **`'self'`**（自身のエントリ）。
+- それ以外のキャラの `relationship` は `'self'` 以外から必ず選ぶ。
+- ナレーターは `role: 'narrator'` かつ `relationship: 'other'`（語り手は主人公との個人的関係を持たない扱い）。
 - 他キャラ間の関係性（例：Aさんと Bさんは兄弟）は v1 では `DramaBible.relationships` の自由文でのみ表現する。キャラ組み合わせの enum 化は v2 optional（§9.8）。
 
 **ナレーター運用規約:**
-Bible の `speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`race: 'other'`（raceDescription に「語り手」）、`personalityTraits: ['stoic']` 等を既定値とする。
+Bible の `speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`race: 'other'`（`raceNote` に「語り手」）、`traits: ['stoic']` 等を既定値とする。
 
 ### 4.2 `DramaBible`（Writer が Redis に保持）
 
@@ -316,18 +324,25 @@ type DramaBible = {
   schemaVersion: 1
   dramaId: string
   title: string
-  genres: Genre[]                     // DramaBrief から引き継ぐ
-  subgenre?: string                   // DramaBrief から引き継ぐ
-  tone: string
-  premise: string                     // 数百字の設定要約
+
+  genre: {                             // DramaBrief.genre から引き継ぐ
+    categories: Genre[]
+    subgenre?: string
+    tone: string
+  }
+
+  cast: {                              // DramaBrief.cast を詳細化した形
+    protagonist: string                // 主人公の alias
+    speakers: Record<string, SpeakerEntry>  // alias → 話者情報（下の SpeakerEntry 参照）
+  }
+
+  premise: string                      // 数百字の設定要約
   world: string
-  protagonistAlias: string            // DramaBrief から引き継ぐ
-  speakers: Record<string, SpeakerEntry>  // alias → 話者情報（下の SpeakerEntry 参照）
-  relationships: string
+  relationships: string                // 他キャラ間の関係（v1 は自由文のみ、§9.8 参照）
   // 物語内で言及された事実の台帳。初期は空。Writer が VdsJson の吸収で随時追記する。
   // v1 では Novelist へも全件開示してよい（戦略的な情報隠蔽は v2 の plotted モードで扱う）。
   facts: Record<string, Fact>
-  createdAt: string                   // ISO8601
+  createdAt: string                    // ISO8601
   updatedAt: string
 }
 
@@ -339,7 +354,7 @@ type Fact = {
 
 // CharacterSpec をそのまま展開し、Bible 固有のシステム領域を追加。
 // Writer は DramaBrief.characters から SpeakerEntry を初期化する際、
-// speechStyle や personaNotes を必要に応じて詳細化してよい。
+// speechStyle や personaNote を必要に応じて詳細化してよい。
 type SpeakerEntry = CharacterSpec & {
   deprecated?: boolean                // /synth 404 検出時に立つ
 }
@@ -360,7 +375,7 @@ type DramaState = {
   worldTime: { day: number; hhmm: string }   // リアルタイムの物語内時間。単調増加のみ
   season: Season                             // リアルタイムの季節。後戻り禁止
   weather: Weather                           // リアルタイムの天気。Beat 間で変化可（急変は時間経過を挟む）
-  currentLocation: string                    // リアルタイムの現在地
+  location: string                           // リアルタイムの現在地（DramaBrief.setting.location から引き継ぐ）
   characterStates: Record<string, {          // alias → ハード状態
     status: CharacterStatus
     location: string | null                  // null = 舞台外
@@ -434,7 +449,7 @@ type BeatDigest = {
 - `worldTime` は単調増加のみ（リアルタイム時刻）。
 - `season` はリアルタイムでは後戻り禁止（`late_spring` → `rainy_season` → `midsummer` の順でのみ進む）。
 - `weather` は Beat 間で自由に変化可。ただし `blizzard` → 次の Beat で `sunny` のような急変は時間経過（数時間以上）を挟む。
-- `currentLocation` は Beat 間で変化可。瞬間移動を避けるため、遠距離の移動は中間 Beat（移動シーン or ナレーション）で埋めるのが望ましい（ハードルールではなく運用指針）。
+- `location` は Beat 間で変化可。瞬間移動を避けるため、遠距離の移動は中間 Beat（移動シーン or ナレーション）で埋めるのが望ましい（ハードルールではなく運用指針）。
 
 **`CharacterStatus` の遷移図:**
 
@@ -525,7 +540,7 @@ type Beat = {
 **realtime の BeatSheet 組み立て:**
 
 Writer は `DramaState` から以下をスナップショットして Novelist に渡す：
-- `speakers`：`presentCharacters` に含まれ、かつ `characterStates[alias].status === 'awake'` かつ `characterStates[alias].location === DramaState.currentLocation` な alias のみ（`narrator` は例外で常時許可）
+- `speakers`：`presentCharacters` に含まれ、かつ `characterStates[alias].status === 'awake'` かつ `characterStates[alias].location === DramaState.location` な alias のみ（`narrator` は例外で常時許可）
 - `knownFactsSnapshot`：各 alias の `characterStates[alias].knownFacts` を `Bible.facts` と突合して content に展開
 
 **flashback の BeatSheet 組み立て:**
@@ -622,7 +637,7 @@ sequenceDiagram
 #### realtime の Beat
 
 1. **物語内時間の進行推定**：VdsJson の本文と Beat の想定尺から、この Beat で進んだ物語内時間（分単位）を推定し、`DramaState.worldTime` を加算。
-2. **場所の更新**：移動が描写されていれば `DramaState.currentLocation` を更新。
+2. **場所の更新**：移動が描写されていれば `DramaState.location` を更新。
 3. **キャラ状態の更新**：
    - `status` の変化（「寝た」「気絶した」等）を吸収 → `characterStates[alias].status` 更新。`dead` への遷移は不可逆、`dead` → 他は拒否。
    - `location` の変化 → `characterStates[alias].location` 更新。
@@ -636,7 +651,7 @@ sequenceDiagram
 
 #### flashback の Beat
 
-1. **DramaState のリアルタイム軸は更新しない**：`worldTime` / `season` / `weather` / `currentLocation` / `characterStates` のハード層は変更しない。
+1. **DramaState のリアルタイム軸は更新しない**：`worldTime` / `season` / `weather` / `location` / `characterStates` のハード層は変更しない。
 2. **視点主の knownFacts のみ更新可**：`flashbackViewpointAlias` が指定されていれば、その alias の `characterStates[viewpoint].knownFacts` に「回想で確認された事実」を追加してよい。純ナレーション回想（視点主なし）の場合は `knownFacts` も更新しない（視聴者向けの情報開示として扱う）。
 3. **Bible.facts への新 fact 追加は可**：物語世界の事実として台帳に載せる（以後の realtime Beat でも参照可能）。
 4. **BeatDigest の追加**：`recentBeats` に `{ beatId, sceneKind: 'flashback', summary, playedAt }` を push。
@@ -646,7 +661,7 @@ sequenceDiagram
 1. **sceneKind の決定**：通常は `realtime`。明示的に「ここで誰かが過去を思い出す」と判断した場合のみ `flashback`。
 2. **goal の着想**：`DramaState` + `recentBeats` + `Bible` の設定から、次の流れ（会話の話題、移動、イベント）を決める。
 3. **presentCharacters の絞り込み**：
-   - **realtime**：`DramaState.characterStates[alias].status === 'awake'` かつ `location === DramaState.currentLocation` の alias のみ選択可。`narrator` は常時可。登場させたいが別場所・眠っているキャラがいる場合は、先に移動・起床の Beat を挟む。
+   - **realtime**：`DramaState.characterStates[alias].status === 'awake'` かつ `location === DramaState.location` の alias のみ選択可。`narrator` は常時可。登場させたいが別場所・眠っているキャラがいる場合は、先に移動・起床の Beat を挟む。
    - **flashback**：`sceneContext.characterOverrides` で当時の状態を宣言し、それに従って選ぶ。
 4. **sceneContext の構築**（flashback のみ必須）：過去の時刻・季節・天気・場所と、必要なら `characterOverrides` を宣言。`worldTime` は `DramaState.worldTime` より過去であること。
 5. **`knownFactsSnapshot` の構築**：Beat 実行前時点の `knownFacts` から `Bible.facts[factId].content` を引いて展開。flashback ではその過去時点で知っていた範囲に絞る。
@@ -779,7 +794,7 @@ v1 では扱わない。必要になったら `schemaVersion: 2` で追加する
 - `/drama edit-bible` で Bible の直接編集
 
 ### 9.8 キャラ間関係マトリクス
-- v1 は `relationshipToProtagonist` のみ enum 化。他キャラ間の関係（A と B は兄弟、B と C は恋人、等）は `DramaBible.relationships` の自由文のみ
+- v1 は `CharacterSpec.relationship` のみ enum 化。他キャラ間の関係（A と B は兄弟、B と C は恋人、等）は `DramaBible.relationships` の自由文のみ
 - v2 以降で `DramaBible.relationshipMatrix?: Record<alias, Record<alias, RelationshipType>>` のような N×N enum 構造を optional 追加
 
 ### 9.9 その他
@@ -810,3 +825,4 @@ v1 では扱わない。必要になったら `schemaVersion: 2` で追加する
 | 1 (改訂) | 2026-04-21 | `DramaBrief` / `DramaBible` の `genre: string` を `genres: Genre[]`（enum の配列、1〜3 個）＋ `subgenre?: string`（自由文補足）に置き換え。`Genre` enum を 12 種（school_life, slice_of_life, romance, sci_fi, fantasy, mystery, horror, suspense, comedy, historical, workplace, heartwarming）で導入。組み合わせ（学園×ミステリ等）とニッチ要素（スチームパンク等）の両立を図る。 |
 | 1 (改訂) | 2026-04-21 | キャラクタープロフィールを全面 enum 化。`DramaBrief.characters[]` と `DramaBible.speakers[alias]` を共通の `CharacterSpec` 型に統一し、8 つの enum を新規導入：`Role`（12 種）・`AgeGroup`（9 種）・`Gender`（5 種）・`Race`（16 種）・`SpeechStyle`（11 種）・`Occupation`（約 35 種）・`PersonalityTrait`（30 種）・`Attribute`（20 種）・`BackgroundTag`（15 種）。WebUI のセレクト入力を前提に必須/任意を整理。enum 粒度を越える情報は各 `*Description` / `*Notes` の自由文で補完できる。 |
 | 1 (改訂) | 2026-04-21 | 主人公中心の関係性を導入。`DramaBrief` / `DramaBible` に `protagonistAlias: string` を追加し、`CharacterSpec` に `relationshipToProtagonist: RelationshipToProtagonist`（29 種 enum）と `relationshipNotes?: string` を追加。主人公は 1 人限定（`relationshipToProtagonist: 'self'`）、ナレーターは `'other'` 扱い。他キャラ間の関係マトリクスは §9.8 の v2 optional に切り出し。 |
+| 1 (改訂) | 2026-04-21 | `DramaBrief` / `DramaBible` を 3 カテゴリ（`genre` / `cast` / `setting`）にネスト整理し、`initial*` 系 4 フィールドを廃止。`includeNarrator` + `narratorUuid` を `cast.narrator?: { uuid }` に統合。冗長なプロパティ名を短縮：`speakerAlias` → `alias`、`speakerUuid` → `uuid`、`protagonistAlias` → `protagonist`、`personalityTraits` → `traits`、`backgroundTags` → `background`、`relationshipToProtagonist` → `relationship`、`extraNotes` → `notes`。`*Description` / `*Notes` を `*Note` 単数形に統一。enum 名も短縮：`PersonalityTrait` → `Trait`、`BackgroundTag` → `Background`、`RelationshipToProtagonist` → `Relationship`。`DramaState.currentLocation` → `location`。 |
