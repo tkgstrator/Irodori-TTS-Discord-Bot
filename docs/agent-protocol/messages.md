@@ -107,6 +107,105 @@ type CharacterSpec = {
 **ナレーター運用規約:**
 Bible の `cast.speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`race: 'other'`（`raceNote` に「語り手」）、`traits: ['stoic']` 等を既定値とする。
 
+### 4.1.1 入力例：中学生 2 人の学園ライトノベル
+
+主人公・桜羽エマと幼馴染・二階堂ヒロを中心に、学園生活をライトノベル風に流しっぱなしで楽しむ `'loop'` 用途の例。
+
+```ts
+const exampleBrief: DramaBrief = {
+  schemaVersion: 1,
+  title: '桜の咲く教室で',
+
+  genre: {
+    categories: ['school_life'],
+    subgenre: 'ライトノベル風',
+    tone: '軽妙で瑞々しい青春の手触り、ときどき照れくささが滲む'
+  },
+
+  cast: {
+    protagonist: 'emma',
+    characters: [
+      {
+        // ── 主人公：桜羽エマ ───────────────────────
+        name: '桜羽エマ',
+        alias: 'emma',
+        uuid: '7c9e6a55-5b6a-4a4d-9c49-1d5a3b2f6cbb',  // 実話者 UUID に差し替える
+        role: 'protagonist',
+        ageGroup: 'teen',                   // 中学 2 年生 = 13〜14 歳 → teen (13-17)
+        gender: 'female',
+        race: 'human',
+        speechStyle: 'casual_youthful',
+        traits: ['cheerful', 'curious', 'emotional'],
+        relationship: 'self',               // 主人公自身は 'self' 固定
+        occupation: 'student_middle',
+        attributes: ['genki'],
+        background: ['late_bloomer'],
+        personaNote:
+          'クラスで文化祭実行委員を務める中学 2 年生。好奇心旺盛で、気になることがあると頭より先に足が出るタイプ。' +
+          '幼馴染のヒロには頼りつつも、からかわれると素直にムキになってしまう。'
+      },
+      {
+        // ── 幼馴染：二階堂ヒロ ─────────────────────
+        name: '二階堂ヒロ',
+        alias: 'hiro',
+        uuid: '5680ac39-43c9-487a-bc3e-018c0d29cc38',
+        role: 'companion',                  // 主人公と常に行動を共にする相棒
+        ageGroup: 'teen',
+        gender: 'male',
+        race: 'human',
+        speechStyle: 'casual_youthful',
+        traits: ['stoic', 'logical', 'loyal'],
+        relationship: 'childhood_friend',   // 幼馴染
+        relationshipNote: '幼稚園からの付き合いで家が隣同士。朝はいつも一緒に登校する。',
+        occupation: 'student_middle',
+        attributes: ['glasses', 'bookworm'],
+        personaNote:
+          '口数は少ないが、エマの突飛な行動を冷静に拾ってフォローする役回り。' +
+          '休み時間は文庫本か自作のノートパソコンに向かっていることが多い。'
+      }
+    ],
+    narrator: { uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' }  // 静かな三人称の語り手
+  },
+
+  setting: {
+    worldTime: { day: 1, hhmm: '08:10' },  // 1 日目の朝、登校直後
+    season: 'late_spring',                 // 4〜5 月、桜と新緑の時期
+    weather: 'sunny',
+    location: '桜ヶ丘中学校 2-A 教室'
+  },
+
+  ending: 'loop',                          // 起承転結を設けず日常を流し続ける
+  notes:
+    '恋愛要素は淡めで、ラブコメというより空気系寄り。' +
+    'エマの突拍子もない思いつきと、ヒロの冷静なツッコミのやり取りを軸に、' +
+    '昼休み・放課後・部活帰りなど細かなシーンを繋いで BGM として流す。'
+}
+```
+
+**この例の設計ポイント**
+
+| 選択 | 理由 |
+|---|---|
+| `ageGroup: 'teen'` | 中学 2 年生は 13〜14 歳なので `'preteen'`（10-12）ではなく `'teen'`（13-17） |
+| `role` の使い分け | エマは `'protagonist'`、ヒロは常時同行する相棒なので `'companion'`（`'love_interest'` ではない） |
+| `relationship: 'childhood_friend'` | 幼稚園からの幼馴染を表現。`'best_friend'` でも通るが、**長い時間を共有してきた関係**を明示したい場合はこちら |
+| `traits` を 3 個 | 1 個（`cheerful` だけ等）だと単調になるので層を作る。エマは明るい＋好奇心＋感情的、ヒロは寡黙＋論理的＋忠実、で対比 |
+| `attributes` | エマに `'genki'`（元気）、ヒロに `'glasses'` + `'bookworm'` を入れることでライトノベル的な立ち位置を明示 |
+| `occupation: 'student_middle'` | 中学生を enum で明示。高校なら `'student_high'` |
+| `subgenre: 'ライトノベル風'` | `Genre` enum には「ラノベ」カテゴリがないので `subgenre` で指定 |
+| `ending: 'loop'` | BGM 用途なので起承転結を設けず無限に流す |
+| `narrator` あり | 三人称の地の文でシーンの切り替えや心情描写を挟める（「桜の花びらが窓の外を舞った」等） |
+
+**この Brief を投入すると**
+
+Writer はこれを基に `DramaBible` を初期化し、毎サイクル以下のような Beat を即興で量産する：
+- 朝のホームルーム前のやり取り
+- 昼休みの購買めぐり
+- 放課後の委員会・部活
+- 帰り道でのお喋り
+
+状態（天気・時刻・場所）は Writer の吸収で進行し、`'late_spring'` → `'rainy_season'` → `'midsummer'` と季節が移っても整合が保たれる。
+
 ---
 
 ## 4.2 `DramaBible`（Writer が Redis に保持）
