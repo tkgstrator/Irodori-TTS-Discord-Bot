@@ -5,7 +5,7 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js'
-import type { GuildSettings } from '../schemas/guildSettings.dto'
+import type { GuildSettings } from '../schemas/guild-settings.dto'
 import { deleteGuildSettings, getGuildSettings, updateGuildSettings } from '../utils'
 
 /**

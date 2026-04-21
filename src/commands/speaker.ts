@@ -6,7 +6,7 @@ import {
   SlashCommandBuilder
 } from 'discord.js'
 import type { SpeakerInfo } from '../schemas/irodori.dto'
-import type { SpeakerConfigUpdate } from '../schemas/userSettings.dto'
+import type { SpeakerConfigUpdate } from '../schemas/user-settings.dto'
 import {
   deleteUserSettings,
   getCurrentSpeakerConfig,

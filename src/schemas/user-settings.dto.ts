@@ -35,7 +35,7 @@ export const SpeakerConfigUpdateSchema = SpeakerConfigSchema.partial()
  */
 export const UserSettingsSchema = z.object({
   speaker: z.object({
-    currentId: z.string().min(1),
+    currentId: z.string().nonempty(),
     settings: z.record(z.string(), SpeakerConfigSchema).default({})
   })
 })

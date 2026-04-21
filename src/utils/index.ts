@@ -1,5 +1,5 @@
 export { irodoriClient } from './client'
-export { deleteGuildSettings, getGuildSettings, setGuildSettings, updateGuildSettings } from './guildSettings'
+export { deleteGuildSettings, getGuildSettings, setGuildSettings, updateGuildSettings } from './guild-settings'
 export { notifyError } from './notifier'
 export {
   deleteUserSettings,
@@ -14,5 +14,5 @@ export {
   updateCurrentSpeakerConfig,
   updateSpeakerConfig
 } from './redis'
-export { preprocessForTts } from './textPreprocess'
+export { preprocessForTts } from './text-preprocess'
 export { getSpeakers, synthesize, textToSpeech, textToSpeechWithSettings } from './tts'

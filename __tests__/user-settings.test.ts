@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SpeakerConfigSchema, SpeakerConfigUpdateSchema, UserSettingsSchema } from '../src/schemas/userSettings.dto'
+import { SpeakerConfigSchema, SpeakerConfigUpdateSchema, UserSettingsSchema } from '../src/schemas/user-settings.dto'
 
 describe('SpeakerConfigSchema', () => {
   test('正常な値でバリデーションが成功する', () => {
