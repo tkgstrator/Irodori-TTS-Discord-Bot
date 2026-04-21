@@ -1,4 +1,4 @@
-# 実行モデル：状態管理・Writer サイクル・パイプライン・エラー
+# 実行モデル：状態管理・Editor サイクル・パイプライン・エラー
 
 > 本書は [`README.md`](./README.md) の §5〜§8 に相当する。メッセージ型の構造は [`messages.md`](./messages.md)、enum 値は [`enums.md`](./enums.md) を参照。
 
@@ -12,32 +12,46 @@
 |------|-----|------|------|
 | `drama:<dramaId>:bible` | Hash / JSON string | `DramaBible` | 長命（ユーザーが削除するまで） |
 | `drama:<dramaId>:state` | Hash / JSON string | `DramaState` | 長命（ドラマ終了で削除） |
-| `drama:<dramaId>:queue:beats` | Stream | Novelist に発注予定の `BeatSheet` を積む | エフェメラル |
-| `drama:<dramaId>:queue:vdsjson` | Stream | Novelist が書いた `VdsJson` を Runner と Writer が共有 | エフェメラル |
+| `drama:<dramaId>:queue:beats` | Stream | Writer に発注予定の `BeatSheet` を積む | エフェメラル |
+| `drama:<dramaId>:queue:vdsjson` | Stream | Writer が書いた `VdsJson` を Runner と Editor が共有 | エフェメラル |
 | `drama:<dramaId>:queue:reports` | Stream | Runner からの `SceneReport` を積む | エフェメラル |
-| `drama:<dramaId>:lock:writer` | String (NX/EX) | Writer の二重起動防止 | 数十秒の TTL |
+| `drama:<dramaId>:lock:editor` | String (NX/EX) | Editor の二重起動防止 | 数十秒の TTL |
 
 - 1 ドラマ = 1 `dramaId`。Discord のギルド × ユーザーで発番する想定（具体形は実装時に決める）。
-- Writer は `dramaId` ごとにシングルトン。並行処理は別プロセスで分離する。
-- `VdsJson` は Runner が合成に使うほか、Writer が吸収で読むため 2 者から参照される。
+- Editor は `dramaId` ごとにシングルトン。並行処理は別プロセスで分離する。
+- `VdsJson` は Runner が合成に使うほか、Editor が吸収で読むため 2 者から参照される。
 
 ---
 
-## 6. Writer の 1 サイクル手順
+## 6. Editor の 1 サイクル手順
 
-Writer は以下を繰り返す。初回は「吸収」ステップをスキップする。
+Editor は以下を繰り返す。初回は「吸収」ステップをスキップし、代わりに **初期化フェーズ**（次項）を実行する。
+
+### 6.0 初期化フェーズ（`DramaBrief` → Bible + 初期 DramaState）
+
+`DramaBrief` に `setting` は含まれない。Editor は `genre.categories` と `genre.tone` から以下の初期値を自動で決めて `DramaBible` と `DramaState` に書き込む：
+
+- `worldTime`: 物語開始時刻（例: `school_life` + `lighthearted` → 1 日目の朝 08:10）
+- `season`: 雰囲気に合わせた季節（例: 新入生編なら `late_spring`、受験編なら `midwinter`）
+- `weather`: 冒頭シーンに合わせる（例: `lighthearted` → `sunny`、`melancholic` → `cloudy`）
+- `location`: 冒頭シーンの場所を自由文で決める（例: "桜ヶ丘中学校 2-A 教室"）。`DramaState.location` は単なる `string` で、固有名詞は Editor がこの段階で命名する
+
+`characterStates[alias]` も各キャラごとに `status: 'awake'`、`location: <初期場所と同じか関連する場所>`、`knownFacts: []` 等で初期化する。主人公は必ず `location: DramaState.location` と一致させる。
+
+初期化に使った場所名・時刻・季節は `Bible.facts` にも基礎 fact として登録しておくと、以後の吸収で Editor が「最初の設定」を参照できる。
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User
-    participant W as Writer
+    participant W as Editor
     participant R as Redis
-    participant N as Novelist
+    participant N as Writer
     participant Run as Runner
     participant TTS as Irodori-TTS
 
-    User->>W: DramaBrief (初回のみ)
+    User->>W: DramaBrief (初回のみ、setting を含まない)
+    Note over W: 6.0 初期化フェーズ<br/>(genre/tone から<br/> worldTime/season/weather/location を<br/> 自動生成)
     W->>R: Bible 初期化 + State 初期化
 
     loop 1 サイクル（~4〜5 分の再生を生み出す）
@@ -90,11 +104,11 @@ sequenceDiagram
    - **flashback**：`sceneContext.characterOverrides` で当時の状態を宣言し、それに従って選ぶ。
 4. **sceneContext の構築**（flashback のみ必須）：過去の時刻・季節・天気・場所と、必要なら `characterOverrides` を宣言。`worldTime` は `DramaState.worldTime` より過去であること。
 5. **`knownFactsSnapshot` の構築**：Beat 実行前時点の `knownFacts` から `Bible.facts[factId].content` を引いて展開。flashback ではその過去時点で知っていた範囲に絞る。
-6. **`BeatSheet` 組み立て**：上記を通過した Beat に `speakers`、`precedingSummary`、`precedingTailCues`、`constraints` を同梱して発注。
+6. **`BeatSheet` 組み立て**：上記を通過した Beat に `speakers`、`recentBeats`（`DramaState.recentBeats` の末尾 5〜10 個をコピー）、`precedingTailCues`、`constraints` を同梱して発注。
 
 ### 6.3 1 LLM 呼び出しで兼ねる許可
 
-Writer は **1 回の LLM 呼び出し**で「6.1 吸収」と「6.2 起案」を同時に処理してよい。入力に前 VdsJson と現 DramaState を渡し、出力として `{ stateDelta, newFacts, nextBeatSheet }` を Structured Output で受け取る。これによりコストとレイテンシを抑える。
+Editor は **1 回の LLM 呼び出し**で「6.1 吸収」と「6.2 起案」を同時に処理してよい。入力に前 VdsJson と現 DramaState を渡し、出力として `{ stateDelta, newFacts, nextBeatSheet }` を Structured Output で受け取る。これによりコストとレイテンシを抑える。
 
 ---
 
@@ -131,18 +145,18 @@ t≈70s   :                                   Beat3 執筆 → 合成 → 再生
 ...
 ```
 
-- Writer は SceneReport を**待たずに**次 Beat を投機的に執筆してよい（前 Beat の吸収が終わっていれば、その時点の DramaState で次を組める）。
-- Runner は `queue:beats` から BeatSheet を pull し、Novelist を呼び、VdsJson を合成し、Beat 間に 1.5〜2.0 秒の `pause` cue を挿入して連続再生する。
+- Editor は SceneReport を**待たずに**次 Beat を投機的に執筆してよい（前 Beat の吸収が終わっていれば、その時点の DramaState で次を組める）。
+- Runner は `queue:beats` から BeatSheet を pull し、Writer を呼び、VdsJson を合成し、Beat 間に 1.5〜2.0 秒の `pause` cue を挿入して連続再生する。
 - 再生の切れ目は pause cue のみ。BGM として違和感なく流れる。
 
 ### 7.2 先読み深度
 
 - Runner は**再生中の Beat + 合成済みの Beat 2 つ**を常に保持する（合計 3 Beat バッファ）。
-- Writer は**発注済み未合成の Beat 1 つ**を常に持つ（Runner の消費に先行して投入）。
+- Editor は**発注済み未合成の Beat 1 つ**を常に持つ（Runner の消費に先行して投入）。
 
 ### 7.3 ユーザー介入（v1 の最小構成）
 
-- `/drama stop <dramaId>`: Writer のループ停止、Runner のキューを流し切って終了
+- `/drama stop <dramaId>`: Editor のループ停止、Runner のキューを流し切って終了
 - `/drama pause <dramaId>`: Runner のみ停止、キュー保持
 - 途中での軌道修正（「この展開にして」）は v1 では未対応（[`roadmap.md` §9.7](./roadmap.md#97-ユーザーの途中介入)）
 
@@ -152,11 +166,11 @@ t≈70s   :                                   Beat3 執筆 → 合成 → 再生
 
 全てのメッセージ境界でバリデーションを走らせる。失敗時の扱いは以下に従う。
 
-### 8.1 Novelist → Runner（`VdsJson` の不正）
+### 8.1 Writer → Runner（`VdsJson` の不正）
 
 | 原因 | 検出箇所 | 対応 |
 |------|----------|------|
-| Zod スキーマ違反 | Runner 手前のバリデータ | 同じ BeatSheet で Novelist に **最大 2 回** 再試行。失敗したら Beat を skip し `schema_violation` で Report |
+| Zod スキーマ違反 | Runner 手前のバリデータ | 同じ BeatSheet で Writer に **最大 2 回** 再試行。失敗したら Beat を skip し `schema_violation` で Report |
 | 未定義の alias 参照 | `VdsJsonSchema.superRefine` | 同上 |
 | `speech.text` 合計が `maxBeatTextLength` 超 | バリデータ | 同上 |
 | 1 cue の `text` が 200 字超 | `VdsJsonSchema` | 同上 |
@@ -165,18 +179,18 @@ t≈70s   :                                   Beat3 執筆 → 合成 → 再生
 
 | 原因 | 検出箇所 | 対応 |
 |------|----------|------|
-| UUID が `GET /speakers` に無い（404） | Runner | cue を skip、`reason: 'synth_404'`。Writer は吸収時に `Bible.cast.speakers[alias].deprecated = true` を立てる |
+| UUID が `GET /speakers` に無い（404） | Runner | cue を skip、`reason: 'synth_404'`。Editor は吸収時に `Bible.cast.speakers[alias].deprecated = true` を立てる |
 | caption 経路が未対応（VDS §6.3） | Runner | skip、`reason: 'caption_unsupported'` |
 | タイムアウト・5xx | Runner | 1 回だけリトライ。失敗したら skip、`reason: 'synth_error'` |
 
-### 8.3 Writer の吸収で矛盾を検出した場合
+### 8.3 Editor の吸収で矛盾を検出した場合
 
-例：Novelist が `dead` キャラを復活させて書いた、realtime の Beat で `season` が逆行した、等。Writer は以下の順で対応する：
+例：Writer が `dead` キャラを復活させて書いた、realtime の Beat で `season` が逆行した、等。Editor は以下の順で対応する：
 
-1. **軽微な矛盾**（天気の急変、場所の飛躍）：吸収時に **Writer が辻褄を合わせる**（「どうやら時間が経ったらしい」等、Bible.facts に補足 fact を追加）。
+1. **軽微な矛盾**（天気の急変、場所の飛躍）：吸収時に **Editor が辻褄を合わせる**（「どうやら時間が経ったらしい」等、Bible.facts に補足 fact を追加）。
 2. **ハード違反**（dead 復活、season 逆行）：その Beat の内容を **部分的に無視**（該当する状態変化を適用しない）。Bible.facts には追加しない。recentBeats には `summary` を「（その Beat は本編に含まれない）」として記録。
-3. **深刻な破綻**（登場キャラが全員不整合）：その Beat の `skippedCues` に `schema_violation` として全 cue を記録し、次サイクルで Writer が「続き」として穴埋め Beat を起案。
+3. **深刻な破綻**（登場キャラが全員不整合）：その Beat の `skippedCues` に `schema_violation` として全 cue を記録し、次サイクルで Editor が「続き」として穴埋め Beat を起案。
 
-### 8.4 Writer の LLM 出力が JSON でない
+### 8.4 Editor の LLM 出力が JSON でない
 
 Structured Output を前提とする。崩れた場合は同じ入力で再試行（最大 2 回）。連続で失敗したら、そのサイクルをスキップして次を待つ。Runner には波及させない。

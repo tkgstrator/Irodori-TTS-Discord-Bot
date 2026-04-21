@@ -5,12 +5,13 @@
 | enum | 単一/複数 | 必須/任意 | 用途 |
 |---|---|---|---|
 | [`Genre`](#genre) | 複数（1〜3） | 必須 | ドラマのジャンル |
+| [`Tone`](#tone) | 単一 | 必須 | 情緒・雰囲気 |
 | [`Role`](#role) | 単一 | 必須 | 物語上の役割 |
 | [`AgeGroup`](#agegroup) | 単一 | 必須 | 年齢層 |
 | [`Gender`](#gender) | 単一 | 必須 | 性別 |
-| [`Race`](#race) | 単一 | 必須 | 種族（現代モノは `human` 固定） |
+| [`Race`](#race) | 単一 | **v1 未使用** | 種族（v1 は全員 `human` 固定としてフィールド自体を持たない。v2 で復活予定） |
 | [`SpeechStyle`](#speechstyle) | 単一 | 必須 | 口調 |
-| [`Trait`](#trait) | 複数（1〜4） | 必須 | 性格タグ |
+| [`Personality`](#personality) | 複数（1〜4） | 必須 | 性格タグ |
 | [`Occupation`](#occupation) | 単一 | 任意 | 職業 |
 | [`Attribute`](#attribute) | 複数（0〜4） | 任意 | キャラ属性タグ |
 | [`Background`](#background) | 複数（0〜3） | 任意 | 経歴タグ |
@@ -43,7 +44,33 @@ type Genre =
   | 'heartwarming'     // ヒューマンドラマ・ハートフル
 ```
 
-enum でカバーしきれないニッチ要素（「スチームパンク」「異世界転生」等）は `DramaBrief.genre.subgenre` の自由文で補う。
+v1 では enum に無いニッチジャンル（「スチームパンク」「異世界転生」等)は扱わない（自由文の subgenre は削除済み）。流行り廃りで enum を汚さないための割り切りで、必要になったら [`roadmap.md`](./roadmap.md) で `Genre` の拡張を検討する。
+
+---
+
+## Tone
+
+情緒・雰囲気。`DramaBrief.genre.tone` / `DramaBible.genre.tone`。`Genre` とセットで Editor と Writer に物語の方向性を伝える。
+
+```ts
+type Tone =
+  | 'lighthearted'    // 軽妙・明るい。日常系・コメディ系の基本
+  | 'humorous'        // コミカル。笑いを強めに効かせる
+  | 'uplifting'       // 爽快・感動系。前向きなテンションが持続する
+  | 'dreamy'          // 幻想的・夢想的。柔らかい浮遊感
+  | 'bittersweet'     // ほろ苦い。甘さと切なさが同居する
+  | 'melancholic'     // メランコリック・哀愁。静かな憂い
+  | 'serious'         // シリアス・重厚。落ち着いた語り口
+  | 'intense'         // 緊迫感・スリル。張り詰めた空気
+  | 'dark'            // ダーク・陰鬱。ホラーや重いドラマ向け
+```
+
+`Genre` と組み合わせることで方向性が決まる。例：
+- `school_life` + `lighthearted` → 軽妙な学園日常
+- `school_life` + `bittersweet` → 卒業間際の青春模様
+- `mystery` + `intense` → 本格派の緊迫ミステリ
+- `horror` + `dark` → 陰鬱なホラー
+- `heartwarming` + `uplifting` → 前向きなヒューマンドラマ
 
 ---
 
@@ -117,7 +144,7 @@ type AgeGroup =
   | 'ageless'          // 不老・不詳（AI、神霊等）
 ```
 
-長寿種・人間換算など特殊な場合は `CharacterSpec.ageNote` で補足。
+長寿種・人間換算・AI の年齢非対称など enum で表しきれない特殊ケースは `personaNote` に書く（v1 は `ageNote` 等の個別自由文を持たない）。
 
 ---
 
@@ -138,7 +165,9 @@ type Gender =
 
 ## Race
 
-種族。`CharacterSpec.race`。
+種族。
+
+> **v1 では未使用**。`CharacterSpec` から `race` フィールドを外し、全キャラを `human` として扱う。下記の enum 定義は v2（ファンタジー/SF 対応）での復活を見越して残しているリファレンスで、v1 の仕様書本体からは参照されない。
 
 ```ts
 type Race =
@@ -166,10 +195,10 @@ type Race =
   | 'ai'               // AI・デジタル存在（肉体を持たない）
 
   // ── その他 ────────────────────────────────────────
-  | 'other'            // 上記に該当しない種族（raceNote 必須）
+  | 'other'            // 上記に該当しない種族（詳細は personaNote に書く）
 ```
 
-現代モノでは `'human'` 固定。enum に無い種族は `'other'` + `raceNote` で表現。
+現代モノでは `'human'` 固定。enum に無い種族は `'other'` を選び、詳細は `personaNote` に書く。
 
 ---
 
@@ -187,21 +216,21 @@ type SpeechStyle =
   | 'refined_feminine' // 上品・お嬢様風
   | 'archaic_samurai'  // 古風・武士口調
   | 'archaic_court'    // 古語・宮廷語
-  | 'dialect_regional' // 方言（詳細は speechStyleNote）
+  | 'dialect_regional' // 方言（詳細な地方・語尾は personaNote に書く）
   | 'childlike'        // 舌足らず・幼児語
-  | 'eccentric'        // 奇妙（"〜のじゃ", "であります" 等、詳細は speechStyleNote）
+  | 'eccentric'        // 奇妙（"〜のじゃ", "であります" 等、詳細は personaNote に書く）
 ```
 
-`'dialect_regional'` / `'eccentric'` を選んだ場合、`CharacterSpec.speechStyleNote` で詳細を必ず指定する。
+`'dialect_regional'` / `'eccentric'` を選んだ場合、方言の地方や口癖の具体例は `personaNote` に記述する。
 
 ---
 
-## Trait
+## Personality
 
-性格タグ。`CharacterSpec.traits` で 1〜4 個必須。
+性格タグ。`CharacterSpec.personality` で 1〜4 個必須。
 
 ```ts
-type Trait =
+type Personality =
   // ── 表現・気質 ────────────────────────────────────
   | 'cheerful'      // 明るい・陽気
   | 'shy'           // 内気・人見知り
@@ -319,10 +348,10 @@ type Occupation =
   | 'astronaut'           // 宇宙飛行士
 
   // ── その他 ────────────────────────────────────────
-  | 'other'               // 上記に該当しない職業（occupationNote 必須）
+  | 'other'               // 上記に該当しない職業（詳細は personaNote に書く）
 ```
 
-`'other'` 選択時は `CharacterSpec.occupationNote` を必須扱い。
+`'other'` 選択時は、職業の詳細を `personaNote` に書く。
 
 ---
 
@@ -458,13 +487,13 @@ type Relationship =
 
   // ── その他 ────────────────────────────────────────
   | 'stranger'         // 他人・初対面
-  | 'other'            // 上記に該当しない関係。relationshipNote で詳述
+  | 'other'            // 上記に該当しない関係。詳細は personaNote に書く
                        //   ナレーターはここに分類する（個人的関係を持たない語り手）
 ```
 
 **運用ポイント:**
 - ナレーターは `'other'`（語り手は主人公との個人的関係を持たない扱い）
-- 表記しきれない関係（例：「育ての親（血縁なし）」「5 年前に別れた元恋人」）は `relationshipNote` で補足
+- 表記しきれない関係（例：「育ての親（血縁なし）」「5 年前に別れた元恋人」）は `personaNote` に書く（v1 は `relationshipNote` を持たない）
 - 他キャラ間の関係（A と B は兄弟、B と C は恋人等）は v1 では `DramaBible.relationships` の自由文のみで表現する。N×N の enum マトリクスは [`roadmap.md` §9.8](./roadmap.md#98-キャラ間関係マトリクス) で v2 optional 扱い
 
 ---
