@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { config } from '../config'
 import type { SpeakerInfo, SynthRequest } from '../schemas/irodori.dto'
-import type { SpeakerConfig } from '../schemas/userSettings.dto'
+import type { SpeakerConfig } from '../schemas/user-settings.dto'
 import { irodoriClient } from './client'
 
 /**

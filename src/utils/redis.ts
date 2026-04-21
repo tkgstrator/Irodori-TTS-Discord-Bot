@@ -6,7 +6,7 @@ import {
   type SpeakerConfigUpdate,
   type UserSettings,
   UserSettingsSchema
-} from '../schemas/userSettings.dto'
+} from '../schemas/user-settings.dto'
 
 /**
  * Redisクライアント

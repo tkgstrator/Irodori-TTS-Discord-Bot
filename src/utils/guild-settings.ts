@@ -1,4 +1,4 @@
-import { type GuildSettings, GuildSettingsSchema, type GuildSettingsUpdate } from '../schemas/guildSettings.dto'
+import { type GuildSettings, GuildSettingsSchema, type GuildSettingsUpdate } from '../schemas/guild-settings.dto'
 import { redis } from './redis'
 
 /**

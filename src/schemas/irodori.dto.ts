@@ -36,7 +36,7 @@ export const SpeakersResponseSchema = z.object({
  */
 export const SynthRequestSchema = z.object({
   speaker_id: z.string(),
-  text: z.string().min(1),
+  text: z.string().nonempty(),
   /** 再現用乱数シード。負値で自動。 */
   seed: z.number().int().nullable().optional(),
   /** Rectified-flow のサンプリングステップ数（既定 40）。 */
