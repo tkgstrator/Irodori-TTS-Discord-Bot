@@ -127,11 +127,11 @@ type AgeGroup =
 
 ```ts
 type Gender =
-  | 'male'
-  | 'female'
-  | 'nonbinary'
-  | 'unknown'
-  | 'other'
+  | 'male'        // 男性
+  | 'female'      // 女性
+  | 'nonbinary'   // ノンバイナリ・どちらにも属さない
+  | 'unknown'     // 不詳・作中で明示されない
+  | 'other'       // 上記に該当しない（両性、無性、特殊な性等）
 ```
 
 ---
@@ -142,22 +142,31 @@ type Gender =
 
 ```ts
 type Race =
-  | 'human'
-  | 'elf'
-  | 'dwarf'
-  | 'halfling'
-  | 'orc'
-  | 'beastfolk'        // 獣人
-  | 'dragonkin'        // 竜人
-  | 'angel'
-  | 'demon'
-  | 'undead'           // アンデッド（吸血鬼、幽霊等）
-  | 'spirit'           // 精霊
+  // ── 現代・通常 ────────────────────────────────────
+  | 'human'            // 人間。現代モノはこれ固定
+
+  // ── 西洋ファンタジー ──────────────────────────────
+  | 'elf'              // エルフ（長命・森・魔法寄り）
+  | 'dwarf'            // ドワーフ（短躯・職人・鍛冶寄り）
+  | 'halfling'         // ハーフリング（小人族・素朴）
+  | 'orc'              // オーク（粗野・戦闘種族）
+  | 'beastfolk'        // 獣人（人型 + 動物の特徴）
+  | 'dragonkin'        // 竜人（ドラゴンの血を引く）
+
+  // ── 神話・霊的存在 ────────────────────────────────
+  | 'angel'            // 天使
+  | 'demon'            // 悪魔・魔族
+  | 'undead'           // アンデッド（吸血鬼・幽霊・リッチ等）
+  | 'spirit'           // 精霊（自然霊・無形の存在）
   | 'fairy'            // 妖精
-  | 'android'          // 人造人間・ロボット
+
+  // ── SF・人工存在 ──────────────────────────────────
+  | 'android'          // 人造人間・ロボット（物理的な肉体を持つ）
   | 'alien'            // 異星人
-  | 'ai'               // AI・デジタル存在
-  | 'other'
+  | 'ai'               // AI・デジタル存在（肉体を持たない）
+
+  // ── その他 ────────────────────────────────────────
+  | 'other'            // 上記に該当しない種族（raceNote 必須）
 ```
 
 現代モノでは `'human'` 固定。enum に無い種族は `'other'` + `raceNote` で表現。
@@ -193,17 +202,52 @@ type SpeechStyle =
 
 ```ts
 type Trait =
-  | 'cheerful' | 'shy' | 'stoic' | 'hot_blooded'
-  | 'gentle' | 'kind' | 'serious' | 'lazy'
-  | 'cunning' | 'naive' | 'arrogant' | 'humble'
-  | 'brave' | 'cowardly' | 'confident' | 'insecure'
-  | 'optimistic' | 'pessimistic' | 'logical' | 'emotional'
-  | 'stubborn' | 'flexible' | 'curious' | 'indifferent'
-  | 'loyal' | 'cynical' | 'perfectionist' | 'hedonistic'
-  | 'righteous' | 'vengeful'
+  // ── 表現・気質 ────────────────────────────────────
+  | 'cheerful'      // 明るい・陽気
+  | 'shy'           // 内気・人見知り
+  | 'stoic'         // 寡黙・冷静沈着
+  | 'hot_blooded'   // 熱血・情熱的
+
+  // ── 対人姿勢 ──────────────────────────────────────
+  | 'gentle'        // 優しい・穏やか
+  | 'kind'          // 親切・思いやりがある
+  | 'serious'       // 真面目・几帳面
+  | 'lazy'          // 怠惰・面倒くさがり
+
+  // ── 知性・狡知 ────────────────────────────────────
+  | 'cunning'       // ずる賢い・抜け目ない
+  | 'naive'         // 純粋・世間知らず
+  | 'arrogant'      // 傲慢・尊大
+  | 'humble'        // 謙虚・控えめ
+
+  // ── 度胸・自信 ────────────────────────────────────
+  | 'brave'         // 勇敢
+  | 'cowardly'      // 臆病・気が小さい
+  | 'confident'     // 自信家・堂々としている
+  | 'insecure'      // 自信なし・不安定
+
+  // ── 世界観・思考 ──────────────────────────────────
+  | 'optimistic'    // 楽観的・前向き
+  | 'pessimistic'   // 悲観的・後ろ向き
+  | 'logical'       // 論理的・理屈っぽい
+  | 'emotional'     // 感情的・情に厚い
+
+  // ── 柔軟性 ────────────────────────────────────────
+  | 'stubborn'      // 頑固・意固地
+  | 'flexible'      // 柔軟・順応性が高い
+  | 'curious'       // 好奇心旺盛・探究心
+  | 'indifferent'   // 無関心・冷淡
+
+  // ── 信念・倫理 ────────────────────────────────────
+  | 'loyal'         // 忠誠心が強い・義理堅い
+  | 'cynical'       // 皮肉屋・斜に構える
+  | 'perfectionist' // 完璧主義・几帳面
+  | 'hedonistic'    // 快楽主義・享楽的
+  | 'righteous'     // 正義感が強い・潔癖
+  | 'vengeful'      // 復讐心が強い・執念深い
 ```
 
-2 個以上で個性の層を作る。例: `['cheerful', 'naive']` で「明るいが世間知らず」。
+2 個以上で個性の層を作る。例: `['cheerful', 'naive']` で「明るいが世間知らず」、`['stoic', 'loyal']` で「寡黙だが忠実」、`['cunning', 'cowardly']` で「ずる賢く臆病な小悪党」。
 
 ---
 
@@ -213,29 +257,69 @@ type Trait =
 
 ```ts
 type Occupation =
-  // 学生系
-  | 'student_elementary' | 'student_middle' | 'student_high' | 'student_college'
-  // 教育・研究
-  | 'teacher' | 'professor' | 'researcher'
-  // 医療・介護
-  | 'doctor' | 'nurse' | 'caregiver'
-  // 技術・ビジネス
-  | 'engineer' | 'programmer' | 'scientist'
-  | 'office_worker' | 'manager' | 'entrepreneur' | 'freelancer' | 'unemployed' | 'housewife'
-  // クリエイティブ
-  | 'artist' | 'musician' | 'writer' | 'journalist' | 'chef'
-  // 公権力
-  | 'detective' | 'police' | 'lawyer' | 'military'
-  // 接客
-  | 'clerk' | 'server'
-  // ファンタジー
-  | 'royalty' | 'knight' | 'mage' | 'warrior' | 'priest' | 'merchant' | 'adventurer'
-  // 歴史
-  | 'samurai' | 'ninja'
-  // SF
-  | 'pilot' | 'astronaut'
-  // その他
-  | 'other'
+  // ── 学生系 ────────────────────────────────────────
+  | 'student_elementary'  // 小学生
+  | 'student_middle'      // 中学生
+  | 'student_high'        // 高校生
+  | 'student_college'     // 大学生・専門学校生
+
+  // ── 教育・研究 ────────────────────────────────────
+  | 'teacher'             // 教師（小〜高）
+  | 'professor'           // 大学教員
+  | 'researcher'          // 研究者・学者
+
+  // ── 医療・介護 ────────────────────────────────────
+  | 'doctor'              // 医師
+  | 'nurse'               // 看護師
+  | 'caregiver'           // 介護士・ヘルパー
+
+  // ── 技術・ビジネス ────────────────────────────────
+  | 'engineer'            // エンジニア（機械・電気・建築等）
+  | 'programmer'          // プログラマー・ソフトウェア開発者
+  | 'scientist'           // 科学者（民間・企業所属）
+  | 'office_worker'       // 一般会社員・事務職
+  | 'manager'             // 管理職・課長以上
+  | 'entrepreneur'        // 起業家・経営者
+  | 'freelancer'          // フリーランス・個人事業主
+  | 'unemployed'          // 無職・求職中
+  | 'housewife'           // 専業主婦・主夫
+
+  // ── クリエイティブ ────────────────────────────────
+  | 'artist'              // 画家・イラストレーター・芸術家
+  | 'musician'            // 音楽家・演奏家
+  | 'writer'              // 作家・小説家・脚本家
+  | 'journalist'          // 記者・ジャーナリスト
+  | 'chef'                // 料理人・シェフ
+
+  // ── 公権力 ────────────────────────────────────────
+  | 'detective'           // 探偵・刑事
+  | 'police'              // 警察官（一般）
+  | 'lawyer'              // 弁護士・法曹
+  | 'military'            // 軍人・自衛官
+
+  // ── 接客 ──────────────────────────────────────────
+  | 'clerk'               // 店員・レジ係
+  | 'server'              // 接客業（カフェ・居酒屋等）
+
+  // ── ファンタジー ──────────────────────────────────
+  | 'royalty'             // 王族・貴族
+  | 'knight'              // 騎士
+  | 'mage'                // 魔法使い・魔導士
+  | 'warrior'             // 戦士・剣士
+  | 'priest'              // 神官・聖職者
+  | 'merchant'            // 商人
+  | 'adventurer'          // 冒険者・ギルド所属
+
+  // ── 歴史 ──────────────────────────────────────────
+  | 'samurai'             // 侍・武士
+  | 'ninja'               // 忍者
+
+  // ── SF ────────────────────────────────────────────
+  | 'pilot'               // パイロット・操縦士
+  | 'astronaut'           // 宇宙飛行士
+
+  // ── その他 ────────────────────────────────────────
+  | 'other'               // 上記に該当しない職業（occupationNote 必須）
 ```
 
 `'other'` 選択時は `CharacterSpec.occupationNote` を必須扱い。
@@ -248,11 +332,37 @@ type Occupation =
 
 ```ts
 type Attribute =
-  | 'glasses' | 'senior_type' | 'little_sister_type' | 'big_brother_type'
-  | 'tsundere' | 'yandere' | 'kuudere' | 'dandere'
-  | 'genki' | 'airhead' | 'maid' | 'butler'
-  | 'bookworm' | 'sporty' | 'foodie'
-  | 'otaku' | 'gyaru' | 'ojou' | 'hermit' | 'prankster'
+  // ── 外見・身につけるもの ──────────────────────────
+  | 'glasses'             // 眼鏡をかけている
+
+  // ── 人物像・キャラ立ち位置 ────────────────────────
+  | 'senior_type'         // 先輩キャラ。姉御肌・面倒見が良い
+  | 'little_sister_type'  // 妹系。年下・甘え上手
+  | 'big_brother_type'    // 兄貴分。頼られる年上の存在
+
+  // ── 〜デレ系（感情表現の癖） ──────────────────────
+  | 'tsundere'            // ツンデレ。普段はツンツン、本心はデレ
+  | 'yandere'             // ヤンデレ。愛が病的・執着が強い
+  | 'kuudere'             // クーデレ。普段はクール、心を許した相手にだけデレ
+  | 'dandere'             // ダンデレ。普段は無口・無表情、特定相手にだけ感情を見せる
+
+  // ── 性格傾向 ──────────────────────────────────────
+  | 'genki'               // 元気キャラ。常にハイテンション
+  | 'airhead'             // 天然ボケ。世間ズレしている
+
+  // ── 職能・装い ────────────────────────────────────
+  | 'maid'                // メイド属性
+  | 'butler'              // 執事属性
+
+  // ── 嗜好・特性 ────────────────────────────────────
+  | 'bookworm'            // 読書好き・文学少女
+  | 'sporty'              // 運動神経が良い・体育会系
+  | 'foodie'              // 食いしん坊・グルメ
+  | 'otaku'               // オタク・サブカル好き
+  | 'gyaru'               // ギャル
+  | 'ojou'                // お嬢様（上品な振る舞い）
+  | 'hermit'              // 引きこもり・隠遁者気質
+  | 'prankster'           // いたずら好き・ムードメーカー
 ```
 
 ---
@@ -263,12 +373,32 @@ type Attribute =
 
 ```ts
 type Background =
-  | 'orphan' | 'noble_birth' | 'poor_background'
-  | 'isekai_transfer' | 'reincarnated' | 'amnesia' | 'time_traveler'
-  | 'outsider' | 'returnee'
-  | 'prodigy' | 'late_bloomer'
-  | 'self_taught' | 'elite_educated'
-  | 'military_background' | 'traumatic_past'
+  // ── 出自・家庭環境 ────────────────────────────────
+  | 'orphan'                // 孤児・親を亡くしている
+  | 'noble_birth'           // 貴族・名家の生まれ
+  | 'poor_background'       // 貧困家庭の出身
+
+  // ── 異世界・転生・特殊な来歴 ──────────────────────
+  | 'isekai_transfer'       // 異世界転移（元の世界から飛ばされてきた）
+  | 'reincarnated'          // 転生者（前世の記憶あり）
+  | 'amnesia'               // 記憶喪失
+  | 'time_traveler'         // 時間旅行者・タイムトラベラー
+
+  // ── 立ち位置・移動 ────────────────────────────────
+  | 'outsider'              // 余所者・新参者
+  | 'returnee'              // 帰還者・出戻り（一度離れて戻ってきた）
+
+  // ── 才能・成長曲線 ────────────────────────────────
+  | 'prodigy'               // 神童・天才（早熟）
+  | 'late_bloomer'          // 大器晩成・遅咲き
+
+  // ── 教育歴 ────────────────────────────────────────
+  | 'self_taught'           // 独学者
+  | 'elite_educated'        // エリート教育を受けた
+
+  // ── 経験・トラウマ ────────────────────────────────
+  | 'military_background'   // 軍歴あり・元軍人
+  | 'traumatic_past'        // 過去にトラウマ的経験がある
 ```
 
 ---
