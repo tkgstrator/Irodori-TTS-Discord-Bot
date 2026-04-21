@@ -17,29 +17,29 @@ import {
 } from '../utils'
 
 /**
- * 話者キャッシュ
+ * 話者キャッシュ（TTL 1 分）
  */
-let speakerListCache: SpeakerInfo[] = []
-let cacheTimestamp = 0
-const CACHE_TTL = 60 * 1000 // 1分
+const CACHE_TTL = 60 * 1000
+const speakerCache = new Map<'entry', { speakers: SpeakerInfo[]; timestamp: number }>()
 
 /**
  * 話者キャッシュを更新する
  */
 const updateSpeakerCache = async (): Promise<SpeakerInfo[]> => {
   const now = Date.now()
-  if (now - cacheTimestamp < CACHE_TTL && speakerListCache.length > 0) {
-    return speakerListCache
+  const cached = speakerCache.get('entry')
+  if (cached !== undefined && now - cached.timestamp < CACHE_TTL && cached.speakers.length > 0) {
+    return cached.speakers
   }
 
   try {
-    speakerListCache = await getSpeakers()
-    cacheTimestamp = now
+    const fresh = await getSpeakers()
+    speakerCache.set('entry', { speakers: fresh, timestamp: now })
+    return fresh
   } catch (error) {
     console.error('Failed to update speaker cache:', error)
+    return cached?.speakers ?? []
   }
-
-  return speakerListCache
 }
 
 /**
