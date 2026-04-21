@@ -11,7 +11,11 @@ const EnvSchema = z.object({
   DEFAULT_SPEAKER_ID: z.string().nonempty(),
   REDIS_URL: z.string().default('redis://redis:6379'),
   /** エラー通知用のDiscord Webhook URL（任意） */
-  ERROR_WEBHOOK_URL: z.url().optional()
+  ERROR_WEBHOOK_URL: z.url().optional(),
+  /** Gemini API キー。ボイスドラマ機能（Editor / Writer）で使用。 */
+  GEMINI_API_KEY: z.string().nonempty().optional(),
+  /** Writer / Editor で使う Gemini モデル名。既定は `gemini-2.5-flash`。 */
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash')
 })
 
 /**
