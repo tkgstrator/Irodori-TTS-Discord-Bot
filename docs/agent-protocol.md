@@ -86,13 +86,7 @@ type DramaBrief = {
   genres: Genre[]                     // 主ジャンル（1〜3 個推奨、最低 1 個必須）
   subgenre?: string                   // 自由文の補足（"スチームパンク", "ゾンビもの" 等、任意）
   tone: string                        // 情緒・雰囲気の自由文（例: "軽妙", "静謐", "抒情的"）
-  characters: Array<{
-    name: string
-    role: string                      // "主人公", "相棒", "敵役" 等
-    speechStyleHint: string
-    speakerAlias: string              // VDS の alias（§3.4 規則に従う）
-    speakerUuid: string               // Irodori-TTS の話者UUID
-  }>
+  characters: Array<CharacterSpec>    // 型は下の CharacterSpec を参照
   includeNarrator: boolean            // ナレーター alias を Bible に含めるか（規約：true を既定）
   narratorUuid?: string               // includeNarrator=true のとき必須
   // 物語開始時点のハード状態
@@ -117,13 +111,163 @@ type Genre =
   | 'historical'       // 時代劇・歴史
   | 'workplace'        // 職業モノ・社会派
   | 'heartwarming'     // ヒューマンドラマ・ハートフル
+
+type CharacterSpec = {
+  name: string                        // 表示名（自由文）
+  speakerAlias: string                // VDS の alias（§3.4 規則に従う）
+  speakerUuid: string                 // Irodori-TTS の話者UUID
+
+  // ── 必須 enum（WebUI のドロップダウン想定） ───────────────
+  role: Role
+  ageGroup: AgeGroup
+  gender: Gender
+  race: Race                          // 現代モノは 'human' 固定
+  speechStyle: SpeechStyle
+
+  // ── 必須 enum 配列（WebUI のマルチセレクト） ──────────────
+  personalityTraits: PersonalityTrait[]  // 1〜4 個
+
+  // ── 任意 enum ───────────────────────────────────────
+  occupation?: Occupation             // enum に無ければ 'other' + occupationDescription
+  attributes?: Attribute[]            // 0〜4 個
+  backgroundTags?: BackgroundTag[]    // 0〜3 個
+
+  // ── 自由文補足（enum 粒度を越える情報） ──────────────────
+  ageDescription?: string             // 例: "200歳（人間換算20代）"
+  raceDescription?: string            // enum に無い種族の詳細
+  occupationDescription?: string      // 職業の詳細・文脈
+  speechStyleNotes?: string           // 方言の土地、口癖、特殊な語尾等
+  personaNotes?: string               // 目標・価値観・トラウマ等の総合補足
+}
+
+type Role =
+  | 'protagonist'      // 主人公
+  | 'deuteragonist'    // 準主役
+  | 'companion'        // 相棒・仲間
+  | 'supporting'       // 脇役
+  | 'antagonist'       // 敵役
+  | 'rival'            // ライバル
+  | 'mentor'           // 師匠・助言者
+  | 'authority'        // 権威（王、上司、親等）
+  | 'love_interest'    // 恋愛対象
+  | 'comic_relief'     // ムードメーカー
+  | 'narrator'         // 語り手
+  | 'minor'            // 端役
+
+type AgeGroup =
+  | 'infant'           // 乳幼児 (0-2)
+  | 'child'            // 子供 (3-9)
+  | 'preteen'          // 小学生 (10-12)
+  | 'teen'             // ティーン (13-17)
+  | 'young_adult'      // 青年 (18-25)
+  | 'adult'            // 大人 (26-40)
+  | 'middle_aged'      // 中年 (41-60)
+  | 'elderly'          // 高齢 (61+)
+  | 'ageless'          // 不老・不詳（AI、神霊等）
+
+type Gender =
+  | 'male'
+  | 'female'
+  | 'nonbinary'
+  | 'unknown'
+  | 'other'
+
+type Race =
+  | 'human'
+  | 'elf'
+  | 'dwarf'
+  | 'halfling'
+  | 'orc'
+  | 'beastfolk'        // 獣人
+  | 'dragonkin'        // 竜人
+  | 'angel'
+  | 'demon'
+  | 'undead'           // アンデッド（吸血鬼、幽霊等）
+  | 'spirit'           // 精霊
+  | 'fairy'            // 妖精
+  | 'android'          // 人造人間・ロボット
+  | 'alien'            // 異星人
+  | 'ai'               // AI・デジタル存在
+  | 'other'
+
+type SpeechStyle =
+  | 'polite_formal'    // 敬語・丁寧語
+  | 'polite_casual'    // ですます調、やや砕けた
+  | 'neutral'          // 標準的な中立口調
+  | 'casual_youthful'  // くだけた若者口調
+  | 'rough_masculine'  // 粗野・男勝り
+  | 'refined_feminine' // 上品・お嬢様風
+  | 'archaic_samurai'  // 古風・武士口調
+  | 'archaic_court'    // 古語・宮廷語
+  | 'dialect_regional' // 方言（詳細は speechStyleNotes）
+  | 'childlike'        // 舌足らず・幼児語
+  | 'eccentric'        // 奇妙（"〜のじゃ", "であります" 等、詳細は speechStyleNotes）
+
+type Occupation =
+  // 学生系
+  | 'student_elementary' | 'student_middle' | 'student_high' | 'student_college'
+  // 教育・研究
+  | 'teacher' | 'professor' | 'researcher'
+  // 医療・介護
+  | 'doctor' | 'nurse' | 'caregiver'
+  // 技術・ビジネス
+  | 'engineer' | 'programmer' | 'scientist'
+  | 'office_worker' | 'manager' | 'entrepreneur' | 'freelancer' | 'unemployed' | 'housewife'
+  // クリエイティブ
+  | 'artist' | 'musician' | 'writer' | 'journalist' | 'chef'
+  // 公権力
+  | 'detective' | 'police' | 'lawyer' | 'military'
+  // 接客
+  | 'clerk' | 'server'
+  // ファンタジー
+  | 'royalty' | 'knight' | 'mage' | 'warrior' | 'priest' | 'merchant' | 'adventurer'
+  // 歴史
+  | 'samurai' | 'ninja'
+  // SF
+  | 'pilot' | 'astronaut'
+  // その他
+  | 'other'
+
+type PersonalityTrait =
+  | 'cheerful' | 'shy' | 'stoic' | 'hot_blooded'
+  | 'gentle' | 'kind' | 'serious' | 'lazy'
+  | 'cunning' | 'naive' | 'arrogant' | 'humble'
+  | 'brave' | 'cowardly' | 'confident' | 'insecure'
+  | 'optimistic' | 'pessimistic' | 'logical' | 'emotional'
+  | 'stubborn' | 'flexible' | 'curious' | 'indifferent'
+  | 'loyal' | 'cynical' | 'perfectionist' | 'hedonistic'
+  | 'righteous' | 'vengeful'
+
+type Attribute =
+  | 'glasses' | 'senior_type' | 'little_sister_type' | 'big_brother_type'
+  | 'tsundere' | 'yandere' | 'kuudere' | 'dandere'
+  | 'genki' | 'airhead' | 'maid' | 'butler'
+  | 'bookworm' | 'sporty' | 'foodie'
+  | 'otaku' | 'gyaru' | 'ojou' | 'hermit' | 'prankster'
+
+type BackgroundTag =
+  | 'orphan' | 'noble_birth' | 'poor_background'
+  | 'isekai_transfer' | 'reincarnated' | 'amnesia' | 'time_traveler'
+  | 'outsider' | 'returnee'
+  | 'prodigy' | 'late_bloomer'
+  | 'self_taught' | 'elite_educated'
+  | 'military_background' | 'traumatic_past'
 ```
 
 **`genres` 運用規約:**
 複数組み合わせ（「学園×ミステリ」「SF×サスペンス」「ファンタジー×ロマンス」等）を 1〜3 個まで許容する。enum でカバーしきれないニッチ要素（「スチームパンク」「バディもの」等）は `subgenre` の自由文で補う。流行り廃りのあるサブジャンル（「異世界転生」「デスゲーム」等）は enum に追加せず、`subgenre` で吸収する。
 
+**`CharacterSpec` 運用規約:**
+
+- `personalityTraits` は必須（1〜4 個）。2 個以上で個性の層を作る（例: `['cheerful', 'naive']` で明るいが世間知らず）。
+- `attributes` は「キャラ属性タグ」で、日本のアニメ/ゲーム文化に寄せた慣用カテゴリ。不要なら省略。
+- `race: 'human'` が現代モノの既定値。ファンタジー/SF 以外では変更しない。
+- `ageDescription` は `ageGroup` で表しきれない特殊ケース（長寿種、人間換算、AI の年齢非対称等）にのみ使う。
+- `speechStyle: 'dialect_regional'` / `'eccentric'` を選んだ場合、`speechStyleNotes` に詳細（方言の地方、口癖の具体例）を必ず書く。
+- `occupation` が `'other'` のときは `occupationDescription` を必須扱いする（運用規約）。
+
 **ナレーター運用規約:**
-Bible の `speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。
+Bible の `speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`race: 'other'`（raceDescription に「語り手」）、`personalityTraits: ['stoic']` 等を既定値とする。
 
 ### 4.2 `DramaBible`（Writer が Redis に保持）
 
@@ -139,12 +283,7 @@ type DramaBible = {
   tone: string
   premise: string                     // 数百字の設定要約
   world: string
-  speakers: Record<string, {          // alias → 話者情報
-    uuid: string
-    persona: string                   // キャラ人物像（1〜3行）
-    speechStyle: string               // 口調の具体例
-    deprecated?: boolean              // /synth 404 検出時に立つ
-  }>
+  speakers: Record<string, SpeakerEntry>  // alias → 話者情報（下の SpeakerEntry 参照）
   relationships: string
   // 物語内で言及された事実の台帳。初期は空。Writer が VdsJson の吸収で随時追記する。
   // v1 では Novelist へも全件開示してよい（戦略的な情報隠蔽は v2 の plotted モードで扱う）。
@@ -157,6 +296,13 @@ type Fact = {
   factId: string
   content: string                     // 例: "主人公は3年前に実家を出ている"
   acquiredInBeatId: string             // どの Beat の吸収で追加されたか
+}
+
+// CharacterSpec をそのまま展開し、Bible 固有のシステム領域を追加。
+// Writer は DramaBrief.characters から SpeakerEntry を初期化する際、
+// speechStyle や personaNotes を必要に応じて詳細化してよい。
+type SpeakerEntry = CharacterSpec & {
+  deprecated?: boolean                // /synth 404 検出時に立つ
 }
 ```
 
@@ -619,3 +765,4 @@ v1 では扱わない。必要になったら `schemaVersion: 2` で追加する
 | 1 (改訂) | 2026-04-21 | `knownFacts` を構造化。`Bible.facts` 台帳を追加、`characterStates[].knownFacts` を `FactRef[]` に変更。`Beat.effects.revealFacts` を追加し、`BeatSheet.speakers` に `knownFactsSnapshot` を導入。 |
 | 1 (改訂) | 2026-04-21 | **即興ループモデルに再設計**。事前宣言（`Beat.preconditions` / `effects`）を廃止し、Writer が VdsJson を読んで状態を更新する **事後吸収モデル** に変更。`Bible.facts` を初期空にし、Writer が吸収で追記していく形に。`SceneReport` を再生メタのみに縮小。`sceneKind: 'realtime' \| 'flashback'` と `sceneContext` で回想を独立時空としてサポート。`Season` を 8 分割 enum、`Weather` を 11 分割 enum として導入（realtime では後戻り禁止ルールあり）。戦略機能（covertGoals / strategies）・プロット駆動モード・ミステリー拡張・2 階認知などは §9 の v2 optional として切り出し。Writer の 1 サイクル手順を「吸収 → 起案」の 2 フェーズで §6 に再定義。 |
 | 1 (改訂) | 2026-04-21 | `DramaBrief` / `DramaBible` の `genre: string` を `genres: Genre[]`（enum の配列、1〜3 個）＋ `subgenre?: string`（自由文補足）に置き換え。`Genre` enum を 12 種（school_life, slice_of_life, romance, sci_fi, fantasy, mystery, horror, suspense, comedy, historical, workplace, heartwarming）で導入。組み合わせ（学園×ミステリ等）とニッチ要素（スチームパンク等）の両立を図る。 |
+| 1 (改訂) | 2026-04-21 | キャラクタープロフィールを全面 enum 化。`DramaBrief.characters[]` と `DramaBible.speakers[alias]` を共通の `CharacterSpec` 型に統一し、8 つの enum を新規導入：`Role`（12 種）・`AgeGroup`（9 種）・`Gender`（5 種）・`Race`（16 種）・`SpeechStyle`（11 種）・`Occupation`（約 35 種）・`PersonalityTrait`（30 種）・`Attribute`（20 種）・`BackgroundTag`（15 種）。WebUI のセレクト入力を前提に必須/任意を整理。enum 粒度を越える情報は各 `*Description` / `*Notes` の自由文で補完できる。 |
