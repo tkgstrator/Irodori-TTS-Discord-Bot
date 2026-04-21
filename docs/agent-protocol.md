@@ -86,6 +86,7 @@ type DramaBrief = {
   genres: Genre[]                     // 主ジャンル（1〜3 個推奨、最低 1 個必須）
   subgenre?: string                   // 自由文の補足（"スチームパンク", "ゾンビもの" 等、任意）
   tone: string                        // 情緒・雰囲気の自由文（例: "軽妙", "静謐", "抒情的"）
+  protagonistAlias: string            // 主人公の speakerAlias（characters 配列内にちょうど 1 人）
   characters: Array<CharacterSpec>    // 型は下の CharacterSpec を参照
   includeNarrator: boolean            // ナレーター alias を Bible に含めるか（規約：true を既定）
   narratorUuid?: string               // includeNarrator=true のとき必須
@@ -126,6 +127,11 @@ type CharacterSpec = {
 
   // ── 必須 enum 配列（WebUI のマルチセレクト） ──────────────
   personalityTraits: PersonalityTrait[]  // 1〜4 個
+
+  // ── 主人公との関係性（必須） ─────────────────────────
+  // 主人公自身のエントリは 'self' 固定。それ以外は 'self' 以外を必ず 1 つ選ぶ。
+  relationshipToProtagonist: RelationshipToProtagonist
+  relationshipNotes?: string          // 例: "育ての親（血縁なし）", "5年前に別れた元恋人"
 
   // ── 任意 enum ───────────────────────────────────────
   occupation?: Occupation             // enum に無ければ 'other' + occupationDescription
@@ -252,6 +258,29 @@ type BackgroundTag =
   | 'prodigy' | 'late_bloomer'
   | 'self_taught' | 'elite_educated'
   | 'military_background' | 'traumatic_past'
+
+type RelationshipToProtagonist =
+  // 主人公自身
+  | 'self'
+  // 家族・親族
+  | 'parent' | 'child' | 'sibling_older' | 'sibling_younger'
+  | 'spouse' | 'relative'
+  // 友人・知人
+  | 'best_friend' | 'close_friend' | 'childhood_friend' | 'acquaintance'
+  // 恋愛
+  | 'lover' | 'crush' | 'ex_lover'
+  // 学校・職場
+  | 'classmate' | 'senior' | 'junior'
+  | 'teacher' | 'student'
+  | 'boss' | 'subordinate' | 'colleague'
+  // 師弟
+  | 'mentor' | 'disciple'
+  // 対立
+  | 'rival' | 'enemy'
+  // 階級・主従
+  | 'party_member' | 'servant' | 'master'
+  // その他
+  | 'stranger' | 'other'
 ```
 
 **`genres` 運用規約:**
@@ -265,6 +294,15 @@ type BackgroundTag =
 - `ageDescription` は `ageGroup` で表しきれない特殊ケース（長寿種、人間換算、AI の年齢非対称等）にのみ使う。
 - `speechStyle: 'dialect_regional'` / `'eccentric'` を選んだ場合、`speechStyleNotes` に詳細（方言の地方、口癖の具体例）を必ず書く。
 - `occupation` が `'other'` のときは `occupationDescription` を必須扱いする（運用規約）。
+
+**主人公と関係性のルール:**
+
+- `characters` 配列内で `role: 'protagonist'` を持つキャラは **ちょうど 1 人**。
+- その 1 人の `speakerAlias` が `DramaBrief.protagonistAlias` と一致必須。
+- 主人公の `relationshipToProtagonist` は **`'self'`**（自身のエントリ）。
+- それ以外のキャラの `relationshipToProtagonist` は `'self'` 以外から必ず選ぶ。
+- ナレーターは `role: 'narrator'` かつ `relationshipToProtagonist: 'other'`（語り手は主人公との個人的関係を持たない扱い）。
+- 他キャラ間の関係性（例：Aさんと Bさんは兄弟）は v1 では `DramaBible.relationships` の自由文でのみ表現する。キャラ組み合わせの enum 化は v2 optional（§9.8）。
 
 **ナレーター運用規約:**
 Bible の `speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`race: 'other'`（raceDescription に「語り手」）、`personalityTraits: ['stoic']` 等を既定値とする。
@@ -283,6 +321,7 @@ type DramaBible = {
   tone: string
   premise: string                     // 数百字の設定要約
   world: string
+  protagonistAlias: string            // DramaBrief から引き継ぐ
   speakers: Record<string, SpeakerEntry>  // alias → 話者情報（下の SpeakerEntry 参照）
   relationships: string
   // 物語内で言及された事実の台帳。初期は空。Writer が VdsJson の吸収で随時追記する。
@@ -739,7 +778,11 @@ v1 では扱わない。必要になったら `schemaVersion: 2` で追加する
 - `/drama nudge "<指示>"` で展開の軌道修正
 - `/drama edit-bible` で Bible の直接編集
 
-### 9.8 その他
+### 9.8 キャラ間関係マトリクス
+- v1 は `relationshipToProtagonist` のみ enum 化。他キャラ間の関係（A と B は兄弟、B と C は恋人、等）は `DramaBible.relationships` の自由文のみ
+- v2 以降で `DramaBible.relationshipMatrix?: Record<alias, Record<alias, RelationshipType>>` のような N×N enum 構造を optional 追加
+
+### 9.9 その他
 - 並列進行（別視点・別場所を同時に描く）
 - 夢・空想のシーン（`sceneKind: 'dream' | 'imagination'`）
 - 複数 Writer の協調（ドラマ跨ぎの共通キャラ）
@@ -766,3 +809,4 @@ v1 では扱わない。必要になったら `schemaVersion: 2` で追加する
 | 1 (改訂) | 2026-04-21 | **即興ループモデルに再設計**。事前宣言（`Beat.preconditions` / `effects`）を廃止し、Writer が VdsJson を読んで状態を更新する **事後吸収モデル** に変更。`Bible.facts` を初期空にし、Writer が吸収で追記していく形に。`SceneReport` を再生メタのみに縮小。`sceneKind: 'realtime' \| 'flashback'` と `sceneContext` で回想を独立時空としてサポート。`Season` を 8 分割 enum、`Weather` を 11 分割 enum として導入（realtime では後戻り禁止ルールあり）。戦略機能（covertGoals / strategies）・プロット駆動モード・ミステリー拡張・2 階認知などは §9 の v2 optional として切り出し。Writer の 1 サイクル手順を「吸収 → 起案」の 2 フェーズで §6 に再定義。 |
 | 1 (改訂) | 2026-04-21 | `DramaBrief` / `DramaBible` の `genre: string` を `genres: Genre[]`（enum の配列、1〜3 個）＋ `subgenre?: string`（自由文補足）に置き換え。`Genre` enum を 12 種（school_life, slice_of_life, romance, sci_fi, fantasy, mystery, horror, suspense, comedy, historical, workplace, heartwarming）で導入。組み合わせ（学園×ミステリ等）とニッチ要素（スチームパンク等）の両立を図る。 |
 | 1 (改訂) | 2026-04-21 | キャラクタープロフィールを全面 enum 化。`DramaBrief.characters[]` と `DramaBible.speakers[alias]` を共通の `CharacterSpec` 型に統一し、8 つの enum を新規導入：`Role`（12 種）・`AgeGroup`（9 種）・`Gender`（5 種）・`Race`（16 種）・`SpeechStyle`（11 種）・`Occupation`（約 35 種）・`PersonalityTrait`（30 種）・`Attribute`（20 種）・`BackgroundTag`（15 種）。WebUI のセレクト入力を前提に必須/任意を整理。enum 粒度を越える情報は各 `*Description` / `*Notes` の自由文で補完できる。 |
+| 1 (改訂) | 2026-04-21 | 主人公中心の関係性を導入。`DramaBrief` / `DramaBible` に `protagonistAlias: string` を追加し、`CharacterSpec` に `relationshipToProtagonist: RelationshipToProtagonist`（29 種 enum）と `relationshipNotes?: string` を追加。主人公は 1 人限定（`relationshipToProtagonist: 'self'`）、ナレーターは `'other'` 扱い。他キャラ間の関係マトリクスは §9.8 の v2 optional に切り出し。 |
