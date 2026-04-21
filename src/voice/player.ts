@@ -28,56 +28,54 @@ const guildPlayers = new Map<
  * @param connection VoiceConnection
  */
 const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
-  let guildPlayer = guildPlayers.get(guildId)
+  const existing = guildPlayers.get(guildId)
+  if (existing) return existing
 
-  if (!guildPlayer) {
-    const player = createAudioPlayer()
+  const player = createAudioPlayer()
 
-    // 全ての状態変化をログ出力
-    player.on('stateChange', (oldState, newState) => {
-      console.debug(`Player state changed: ${oldState.status} -> ${newState.status}`)
-    })
+  // 全ての状態変化をログ出力
+  player.on('stateChange', (oldState, newState) => {
+    console.debug(`Player state changed: ${oldState.status} -> ${newState.status}`)
+  })
 
-    // 再生完了時に次のキューを処理
-    player.on(AudioPlayerStatus.Idle, () => {
-      console.debug('Player became idle')
-      const gp = guildPlayers.get(guildId)
-      if (gp && gp.queue.length > 0) {
+  // 再生完了時に次のキューを処理
+  player.on(AudioPlayerStatus.Idle, () => {
+    console.debug('Player became idle')
+    const gp = guildPlayers.get(guildId)
+    if (gp && gp.queue.length > 0) {
+      const nextBuffer = gp.queue.shift()
+      if (nextBuffer) {
+        void playBuffer(guildId, nextBuffer, connection)
+      }
+    } else if (gp) {
+      gp.isPlaying = false
+    }
+  })
+
+  player.on('error', (error) => {
+    console.error(`Audio player error in guild ${guildId}:`, error)
+    void notifyError('Audio player error', error, { guildId })
+    const gp = guildPlayers.get(guildId)
+    if (gp) {
+      gp.isPlaying = false
+      // エラー時は次のキューを試行
+      if (gp.queue.length > 0) {
         const nextBuffer = gp.queue.shift()
         if (nextBuffer) {
           void playBuffer(guildId, nextBuffer, connection)
         }
-      } else if (gp) {
-        gp.isPlaying = false
       }
-    })
-
-    player.on('error', (error) => {
-      console.error(`Audio player error in guild ${guildId}:`, error)
-      void notifyError('Audio player error', error, { guildId })
-      const gp = guildPlayers.get(guildId)
-      if (gp) {
-        gp.isPlaying = false
-        // エラー時は次のキューを試行
-        if (gp.queue.length > 0) {
-          const nextBuffer = gp.queue.shift()
-          if (nextBuffer) {
-            void playBuffer(guildId, nextBuffer, connection)
-          }
-        }
-      }
-    })
-
-    connection.subscribe(player)
-
-    guildPlayer = {
-      player,
-      queue: [],
-      isPlaying: false
     }
-    guildPlayers.set(guildId, guildPlayer)
-  }
+  })
 
+  connection.subscribe(player)
+
+  const guildPlayer = {
+    player,
+    queue: [] as Buffer[],
+    isPlaying: false
+  }
+  guildPlayers.set(guildId, guildPlayer)
   return guildPlayer
 }
 

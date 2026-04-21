@@ -14,17 +14,13 @@ const removeUrls = (text: string): string => {
 }
 
 /**
- * メンションを除去する
+ * メンションを除去する（ユーザー / ロール / チャンネル）
  */
-const removeMentions = (text: string): string => {
-  // ユーザーメンション
-  let result = text.replace(/<@!?\d+>/g, '')
-  // ロールメンション
-  result = result.replace(/<@&\d+>/g, '')
-  // チャンネルメンション
-  result = result.replace(/<#\d+>/g, '')
-  return result
-}
+const removeMentions = (text: string): string =>
+  text
+    .replace(/<@!?\d+>/g, '')
+    .replace(/<@&\d+>/g, '')
+    .replace(/<#\d+>/g, '')
 
 /**
  * カスタム絵文字を絵文字名に変換する
@@ -35,15 +31,9 @@ const convertCustomEmoji = (text: string): string => {
 }
 
 /**
- * コードブロックを除去する
+ * コードブロック（マルチライン / インライン）を除去する
  */
-const removeCodeBlocks = (text: string): string => {
-  // マルチラインコードブロック
-  let result = text.replace(/```[\s\S]*?```/g, 'コード省略')
-  // インラインコード
-  result = result.replace(/`[^`]+`/g, '')
-  return result
-}
+const removeCodeBlocks = (text: string): string => text.replace(/```[\s\S]*?```/g, 'コード省略').replace(/`[^`]+`/g, '')
 
 /**
  * スポイラーを除去する
@@ -75,15 +65,16 @@ const truncateText = (text: string, maxLength: number): string => {
  * @returns 前処理後のテキスト（空文字の場合はnull）
  */
 export const preprocessForTts = (text: string): string | null => {
-  let processed = text
-
-  // 各種除去・変換処理
-  processed = removeCodeBlocks(processed)
-  processed = removeSpoilers(processed)
-  processed = removeUrls(processed)
-  processed = removeMentions(processed)
-  processed = convertCustomEmoji(processed)
-  processed = normalizeWhitespace(processed)
+  // 各種除去・変換処理を順に適用
+  const steps: Array<(s: string) => string> = [
+    removeCodeBlocks,
+    removeSpoilers,
+    removeUrls,
+    removeMentions,
+    convertCustomEmoji,
+    normalizeWhitespace
+  ]
+  const processed = steps.reduce((acc, step) => step(acc), text)
 
   // 空になった場合はnullを返す
   if (!processed) {
@@ -91,7 +82,5 @@ export const preprocessForTts = (text: string): string | null => {
   }
 
   // 長すぎる場合は切り詰める
-  processed = truncateText(processed, MAX_TEXT_LENGTH)
-
-  return processed
+  return truncateText(processed, MAX_TEXT_LENGTH)
 }
