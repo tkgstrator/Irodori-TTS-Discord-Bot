@@ -9,7 +9,8 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 
 const PAGE_TITLES: Record<string, string> = {
   '/characters': 'キャラクター一覧',
-  '/scenarios': 'シナリオ一覧'
+  '/scenarios': 'シナリオ一覧',
+  '/mockups': 'モック'
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
