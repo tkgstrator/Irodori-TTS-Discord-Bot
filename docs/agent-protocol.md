@@ -83,8 +83,9 @@ flowchart TD
 type DramaBrief = {
   schemaVersion: 1
   title?: string
-  genre: string                       // 例: "日常SF", "ホラー", "ラブコメ"
-  tone: string                        // 例: "軽妙", "静謐", "抒情的"
+  genres: Genre[]                     // 主ジャンル（1〜3 個推奨、最低 1 個必須）
+  subgenre?: string                   // 自由文の補足（"スチームパンク", "ゾンビもの" 等、任意）
+  tone: string                        // 情緒・雰囲気の自由文（例: "軽妙", "静謐", "抒情的"）
   characters: Array<{
     name: string
     role: string                      // "主人公", "相棒", "敵役" 等
@@ -102,7 +103,24 @@ type DramaBrief = {
   ending: 'loop' | 'closed'           // v1 は 'loop' の挙動に最適化。'closed' は v2 の plotted モードで真価を発揮
   extraNotes?: string
 }
+
+type Genre =
+  | 'school_life'      // 学園モノ
+  | 'slice_of_life'    // 日常系
+  | 'romance'          // 恋愛・ラブコメ
+  | 'sci_fi'           // SF
+  | 'fantasy'          // ファンタジー
+  | 'mystery'          // ミステリ・推理
+  | 'horror'           // ホラー
+  | 'suspense'         // サスペンス・スリラー
+  | 'comedy'           // コメディ
+  | 'historical'       // 時代劇・歴史
+  | 'workplace'        // 職業モノ・社会派
+  | 'heartwarming'     // ヒューマンドラマ・ハートフル
 ```
+
+**`genres` 運用規約:**
+複数組み合わせ（「学園×ミステリ」「SF×サスペンス」「ファンタジー×ロマンス」等）を 1〜3 個まで許容する。enum でカバーしきれないニッチ要素（「スチームパンク」「バディもの」等）は `subgenre` の自由文で補う。流行り廃りのあるサブジャンル（「異世界転生」「デスゲーム」等）は enum に追加せず、`subgenre` で吸収する。
 
 **ナレーター運用規約:**
 Bible の `speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。
@@ -116,7 +134,8 @@ type DramaBible = {
   schemaVersion: 1
   dramaId: string
   title: string
-  genre: string
+  genres: Genre[]                     // DramaBrief から引き継ぐ
+  subgenre?: string                   // DramaBrief から引き継ぐ
   tone: string
   premise: string                     // 数百字の設定要約
   world: string
@@ -599,3 +618,4 @@ v1 では扱わない。必要になったら `schemaVersion: 2` で追加する
 | 1 (改訂) | 2026-04-21 | 短いサイクル連続運転モデルに再設計。1 BeatSheet = 1 Beat (1500 字)、先読みパイプライン、状態をハード制約とソフト記述の二層に分離。Beat に preconditions/effects を追加し、Writer の自己検証手順 §6 を新設。ナレーター運用規約を §4.1 に追記。 |
 | 1 (改訂) | 2026-04-21 | `knownFacts` を構造化。`Bible.facts` 台帳を追加、`characterStates[].knownFacts` を `FactRef[]` に変更。`Beat.effects.revealFacts` を追加し、`BeatSheet.speakers` に `knownFactsSnapshot` を導入。 |
 | 1 (改訂) | 2026-04-21 | **即興ループモデルに再設計**。事前宣言（`Beat.preconditions` / `effects`）を廃止し、Writer が VdsJson を読んで状態を更新する **事後吸収モデル** に変更。`Bible.facts` を初期空にし、Writer が吸収で追記していく形に。`SceneReport` を再生メタのみに縮小。`sceneKind: 'realtime' \| 'flashback'` と `sceneContext` で回想を独立時空としてサポート。`Season` を 8 分割 enum、`Weather` を 11 分割 enum として導入（realtime では後戻り禁止ルールあり）。戦略機能（covertGoals / strategies）・プロット駆動モード・ミステリー拡張・2 階認知などは §9 の v2 optional として切り出し。Writer の 1 サイクル手順を「吸収 → 起案」の 2 フェーズで §6 に再定義。 |
+| 1 (改訂) | 2026-04-21 | `DramaBrief` / `DramaBible` の `genre: string` を `genres: Genre[]`（enum の配列、1〜3 個）＋ `subgenre?: string`（自由文補足）に置き換え。`Genre` enum を 12 種（school_life, slice_of_life, romance, sci_fi, fantasy, mystery, horror, suspense, comedy, historical, workplace, heartwarming）で導入。組み合わせ（学園×ミステリ等）とニッチ要素（スチームパンク等）の両立を図る。 |
