@@ -1,6 +1,7 @@
 import {
   Background,
   BaseEdge,
+  type Connection,
   Controls,
   type Edge,
   EdgeLabelRenderer,
@@ -13,15 +14,15 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
-  useNodesState
+  useNodesState,
+  useReactFlow
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
 import { createFileRoute } from '@tanstack/react-router'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Pencil, Plus, Trash2, UserPlus } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -59,6 +60,8 @@ const AVATAR_COLORS: Record<string, string> = {
   kazuki: '#3b82f6'
 }
 
+const NEW_NODE_COLORS = ['#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e', '#6366f1']
+
 interface RelationTypeConfig {
   readonly lightColor: string
   readonly darkColor: string
@@ -86,9 +89,12 @@ function getEdgeColor(type: RelationType, dark: boolean): string {
   return dark ? cfg.darkColor : cfg.lightColor
 }
 
+function getAvatarColor(id: string): string {
+  return AVATAR_COLORS[id] ?? NEW_NODE_COLORS[id.charCodeAt(0) % NEW_NODE_COLORS.length]
+}
+
 type CharacterNodeData = {
   character: RelationCharacter
-  relationCount: number
   selected: boolean
   avatarColor: string
 }
@@ -96,19 +102,19 @@ type CharacterNodeData = {
 type CharacterNode = Node<CharacterNodeData, 'character'>
 
 function CharacterNodeComponent({ data }: NodeProps<CharacterNode>) {
-  const { character, relationCount, selected, avatarColor } = data
+  const { character, selected, avatarColor } = data
 
   return (
     <div
       className={[
-        'rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md select-none w-[170px]',
+        'rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md select-none w-[160px]',
         selected ? 'ring-2 ring-ring ring-offset-2' : ''
       ].join(' ')}
     >
       <Handle type="target" position={Position.Left} className="!size-2 !border-border !bg-background" />
       <Handle type="source" position={Position.Right} className="!size-2 !border-border !bg-background" />
 
-      <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+      <div className="flex items-center gap-2 px-3 py-2.5">
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
           style={{ backgroundColor: avatarColor }}
@@ -119,12 +125,6 @@ function CharacterNodeComponent({ data }: NodeProps<CharacterNode>) {
           <p className="truncate text-sm font-semibold leading-tight">{character.name}</p>
           <p className="truncate text-[0.625rem] text-muted-foreground leading-tight">{character.role}</p>
         </div>
-      </div>
-
-      <div className="border-t border-border mx-2 mb-2 mt-1 pt-1 flex justify-center">
-        <Badge variant="secondary" className="text-[0.625rem] px-1.5 py-0">
-          {relationCount} 関係
-        </Badge>
       </div>
     </div>
   )
@@ -229,13 +229,27 @@ interface RelationDialogState {
   readonly label: string
 }
 
-const EMPTY_DIALOG: RelationDialogState = {
+const EMPTY_RELATION_DIALOG: RelationDialogState = {
   open: false,
   editingId: null,
   sourceId: '',
   targetId: '',
   type: 'friend',
   label: ''
+}
+
+interface CharacterDialogState {
+  readonly open: boolean
+  readonly name: string
+  readonly initial: string
+  readonly role: string
+}
+
+const EMPTY_CHARACTER_DIALOG: CharacterDialogState = {
+  open: false,
+  name: '',
+  initial: '',
+  role: ''
 }
 
 function RelationsPageWrapper() {
@@ -246,59 +260,91 @@ function RelationsPageWrapper() {
   )
 }
 
+function buildNode(char: RelationCharacter, position: { x: number; y: number }, selectedId: string): CharacterNode {
+  return {
+    id: char.id,
+    type: 'character' as const,
+    position,
+    data: {
+      character: char,
+      selected: char.id === selectedId,
+      avatarColor: char.id === selectedId ? 'hsl(var(--primary))' : getAvatarColor(char.id)
+    }
+  }
+}
+
 function RelationsPage() {
-  const { characters, relations, getCharacter, getRelationsFor, addRelation, updateRelation, deleteRelation } =
-    useRelations()
+  const {
+    characters,
+    relations,
+    getCharacter,
+    getRelationsFor,
+    addCharacter,
+    deleteCharacter,
+    addRelation,
+    updateRelation,
+    deleteRelation
+  } = useRelations()
   const { theme } = useTheme()
+  const { getViewport } = useReactFlow()
   const [selectedCharId, setSelectedCharId] = useState('renka')
-  const [dialog, setDialog] = useState<RelationDialogState>(EMPTY_DIALOG)
+  const [relationDialog, setRelationDialog] = useState<RelationDialogState>(EMPTY_RELATION_DIALOG)
+  const [charDialog, setCharDialog] = useState<CharacterDialogState>(EMPTY_CHARACTER_DIALOG)
+  const prevCharIdsRef = useRef(new Set(characters.map((c) => c.id)))
 
   const dark = isDarkMode(theme)
 
   const selectedChar = useMemo(() => getCharacter(selectedCharId), [getCharacter, selectedCharId])
   const selectedRelations = useMemo(() => getRelationsFor(selectedCharId), [getRelationsFor, selectedCharId])
 
-  const relationCountMap = useMemo(
-    () =>
-      characters.reduce<Record<string, number>>((acc, c) => {
-        acc[c.id] = getRelationsFor(c.id).length
-        return acc
-      }, {}),
-    [characters, getRelationsFor]
-  )
-
   const initialNodes: CharacterNode[] = useMemo(
-    () =>
-      characters.map((char) => ({
-        id: char.id,
-        type: 'character' as const,
-        position: INITIAL_NODE_POSITIONS[char.id] ?? { x: 0, y: 0 },
-        data: {
-          character: char,
-          relationCount: 0,
-          selected: char.id === 'renka',
-          avatarColor: AVATAR_COLORS[char.id] ?? 'hsl(var(--primary))'
-        }
-      })),
+    () => characters.map((char) => buildNode(char, INITIAL_NODE_POSITIONS[char.id] ?? { x: 0, y: 0 }, 'renka')),
     [characters]
   )
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
 
   useEffect(() => {
+    const currentIds = new Set(characters.map((c) => c.id))
+    const prevIds = prevCharIdsRef.current
+    prevCharIdsRef.current = currentIds
+
+    const addedIds = new Set([...currentIds].filter((id) => !prevIds.has(id)))
+    const removedIds = new Set([...prevIds].filter((id) => !currentIds.has(id)))
+
+    if (removedIds.size > 0) {
+      setNodes((prev) => prev.filter((n) => !removedIds.has(n.id)))
+    }
+
+    if (addedIds.size > 0) {
+      const { x: vx, y: vy, zoom } = getViewport()
+      const centerX = (-vx + 400) / zoom
+      const centerY = (-vy + 300) / zoom
+
+      const newNodes = characters
+        .filter((c) => addedIds.has(c.id))
+        .map((char, i) => buildNode(char, { x: centerX + i * 200, y: centerY }, selectedCharId))
+      setNodes((prev) => [...prev, ...newNodes])
+    }
+  }, [characters, getViewport, selectedCharId, setNodes])
+
+  useEffect(() => {
     setNodes((prev) =>
-      prev.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          relationCount: relationCountMap[node.id] ?? 0,
-          selected: node.id === selectedCharId,
-          avatarColor:
-            node.id === selectedCharId ? 'hsl(var(--primary))' : (AVATAR_COLORS[node.id] ?? 'hsl(var(--primary))')
+      prev.map((node) => {
+        const char = getCharacter(node.id)
+        if (!char) return node
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            character: char,
+            selected: node.id === selectedCharId,
+            avatarColor: node.id === selectedCharId ? 'hsl(var(--primary))' : getAvatarColor(node.id)
+          }
         }
-      }))
+      })
     )
-  }, [relationCountMap, selectedCharId, setNodes])
+  }, [selectedCharId, setNodes, getCharacter])
 
   const edges: RelationEdge[] = useMemo(
     () =>
@@ -330,7 +376,7 @@ function RelationsPage() {
     (_: React.MouseEvent, edge: RelationEdge) => {
       const rel = relations.find((r) => r.id === edge.id)
       if (!rel) return
-      setDialog({
+      setRelationDialog({
         open: true,
         editingId: rel.id,
         sourceId: rel.sourceId,
@@ -342,17 +388,27 @@ function RelationsPage() {
     [relations]
   )
 
-  const openAddDialog = useCallback(() => {
-    setDialog({
-      ...EMPTY_DIALOG,
+  const onConnect = useCallback((connection: Connection) => {
+    if (!connection.source || !connection.target) return
+    setRelationDialog({
+      ...EMPTY_RELATION_DIALOG,
+      open: true,
+      sourceId: connection.source,
+      targetId: connection.target
+    })
+  }, [])
+
+  const openAddRelationDialog = useCallback(() => {
+    setRelationDialog({
+      ...EMPTY_RELATION_DIALOG,
       open: true,
       sourceId: selectedCharId,
       targetId: characters.find((c) => c.id !== selectedCharId)?.id ?? ''
     })
   }, [selectedCharId, characters])
 
-  const openEditDialog = useCallback((rel: Relation) => {
-    setDialog({
+  const openEditRelationDialog = useCallback((rel: Relation) => {
+    setRelationDialog({
       open: true,
       editingId: rel.id,
       sourceId: rel.sourceId,
@@ -362,32 +418,50 @@ function RelationsPage() {
     })
   }, [])
 
-  const handleDialogSave = useCallback(() => {
-    if (!dialog.sourceId || !dialog.targetId || !dialog.label.trim()) return
+  const handleRelationSave = useCallback(() => {
+    if (!relationDialog.sourceId || !relationDialog.targetId || !relationDialog.label.trim()) return
     const input = {
-      sourceId: dialog.sourceId,
-      targetId: dialog.targetId,
-      type: dialog.type,
-      label: dialog.label.trim()
+      sourceId: relationDialog.sourceId,
+      targetId: relationDialog.targetId,
+      type: relationDialog.type,
+      label: relationDialog.label.trim()
     }
-    if (dialog.editingId) {
-      updateRelation(dialog.editingId, input)
+    if (relationDialog.editingId) {
+      updateRelation(relationDialog.editingId, input)
     } else {
       addRelation(input)
     }
-    setDialog(EMPTY_DIALOG)
-  }, [dialog, addRelation, updateRelation])
+    setRelationDialog(EMPTY_RELATION_DIALOG)
+  }, [relationDialog, addRelation, updateRelation])
 
-  const handleDelete = useCallback(
+  const handleDeleteRelation = useCallback(
     (id: string) => {
       deleteRelation(id)
     },
     [deleteRelation]
   )
 
+  const handleDeleteCharacter = useCallback(() => {
+    if (!selectedCharId) return
+    deleteCharacter(selectedCharId)
+    const remaining = characters.filter((c) => c.id !== selectedCharId)
+    setSelectedCharId(remaining[0]?.id ?? '')
+  }, [selectedCharId, characters, deleteCharacter])
+
+  const handleCharacterSave = useCallback(() => {
+    if (!charDialog.name.trim() || !charDialog.initial.trim()) return
+    const created = addCharacter({
+      name: charDialog.name.trim(),
+      initial: charDialog.initial.trim(),
+      role: charDialog.role.trim()
+    })
+    setSelectedCharId(created.id)
+    setCharDialog(EMPTY_CHARACTER_DIALOG)
+  }, [charDialog, addCharacter])
+
   const availableTargets = useMemo(
-    () => characters.filter((c) => c.id !== dialog.sourceId),
-    [characters, dialog.sourceId]
+    () => characters.filter((c) => c.id !== relationDialog.sourceId),
+    [characters, relationDialog.sourceId]
   )
 
   return (
@@ -399,10 +473,20 @@ function RelationsPage() {
             <h1 className="text-2xl font-bold tracking-tight">キャラクター関係図</h1>
             <p className="mt-0.5 text-sm text-muted-foreground">キャラクター間の関係性を視覚的に管理</p>
           </div>
-          <Button size="lg" onClick={openAddDialog}>
-            <Plus data-icon="inline-start" />
-            関係を追加
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setCharDialog({ ...EMPTY_CHARACTER_DIALOG, open: true })}
+            >
+              <UserPlus data-icon="inline-start" />
+              キャラクター追加
+            </Button>
+            <Button size="lg" onClick={openAddRelationDialog}>
+              <Plus data-icon="inline-start" />
+              関係を追加
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -425,7 +509,8 @@ function RelationsPage() {
             proOptions={{ hideAttribution: true }}
             colorMode={dark ? 'dark' : 'light'}
             nodesDraggable
-            nodesConnectable={false}
+            nodesConnectable
+            onConnect={onConnect}
             elementsSelectable={false}
           >
             <Background gap={24} size={1} />
@@ -442,7 +527,7 @@ function RelationsPage() {
                 <div className="flex items-center gap-3 mb-3">
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                    style={{ backgroundColor: AVATAR_COLORS[selectedChar.id] ?? 'hsl(var(--primary))' }}
+                    style={{ backgroundColor: getAvatarColor(selectedChar.id) }}
                   >
                     {selectedChar.initial}
                   </div>
@@ -451,10 +536,26 @@ function RelationsPage() {
                     <p className="text-xs text-muted-foreground leading-tight mt-0.5">{selectedChar.role}</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1" onClick={openAddDialog}>
-                  <Plus className="size-3" />
-                  関係を追加
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-8 text-xs gap-1"
+                    onClick={openAddRelationDialog}
+                  >
+                    <Plus className="size-3" />
+                    関係を追加
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1 text-destructive hover:text-destructive"
+                    onClick={handleDeleteCharacter}
+                  >
+                    <Trash2 className="size-3" />
+                    削除
+                  </Button>
+                </div>
               </div>
 
               {/* Relations */}
@@ -481,7 +582,7 @@ function RelationsPage() {
                         >
                           <div
                             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                            style={{ backgroundColor: AVATAR_COLORS[otherId] ?? 'hsl(var(--primary))' }}
+                            style={{ backgroundColor: getAvatarColor(otherId) }}
                           >
                             {other.initial}
                           </div>
@@ -501,7 +602,7 @@ function RelationsPage() {
                             type="button"
                             className="size-6 flex items-center justify-center rounded hover:bg-accent"
                             aria-label="編集"
-                            onClick={() => openEditDialog(rel)}
+                            onClick={() => openEditRelationDialog(rel)}
                           >
                             <Pencil className="size-3 text-muted-foreground" />
                           </button>
@@ -509,7 +610,7 @@ function RelationsPage() {
                             type="button"
                             className="size-6 flex items-center justify-center rounded hover:bg-destructive/10"
                             aria-label="削除"
-                            onClick={() => handleDelete(rel.id)}
+                            onClick={() => handleDeleteRelation(rel.id)}
                           >
                             <Trash2 className="size-3 text-destructive" />
                           </button>
@@ -539,10 +640,13 @@ function RelationsPage() {
       </div>
 
       {/* Relation Dialog */}
-      <Dialog open={dialog.open} onOpenChange={(open) => setDialog((prev) => (open ? prev : EMPTY_DIALOG))}>
+      <Dialog
+        open={relationDialog.open}
+        onOpenChange={(open) => setRelationDialog((prev) => (open ? prev : EMPTY_RELATION_DIALOG))}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{dialog.editingId ? '関係を編集' : '関係を追加'}</DialogTitle>
+            <DialogTitle>{relationDialog.editingId ? '関係を編集' : '関係を追加'}</DialogTitle>
             <DialogDescription>キャラクター間の関係を設定します。</DialogDescription>
           </DialogHeader>
 
@@ -550,9 +654,9 @@ function RelationsPage() {
             <div className="flex flex-col gap-1.5">
               <Label>ソース</Label>
               <Select
-                value={dialog.sourceId}
+                value={relationDialog.sourceId}
                 onValueChange={(v) =>
-                  setDialog((prev) => ({
+                  setRelationDialog((prev) => ({
                     ...prev,
                     sourceId: v,
                     targetId: prev.targetId === v ? '' : prev.targetId
@@ -574,7 +678,10 @@ function RelationsPage() {
 
             <div className="flex flex-col gap-1.5">
               <Label>ターゲット</Label>
-              <Select value={dialog.targetId} onValueChange={(v) => setDialog((prev) => ({ ...prev, targetId: v }))}>
+              <Select
+                value={relationDialog.targetId}
+                onValueChange={(v) => setRelationDialog((prev) => ({ ...prev, targetId: v }))}
+              >
                 <SelectTrigger className="w-full" aria-label="ターゲットキャラクター">
                   <SelectValue placeholder="キャラクターを選択" />
                 </SelectTrigger>
@@ -591,8 +698,8 @@ function RelationsPage() {
             <div className="flex flex-col gap-1.5">
               <Label>関係タイプ</Label>
               <Select
-                value={dialog.type}
-                onValueChange={(v) => setDialog((prev) => ({ ...prev, type: v as RelationType }))}
+                value={relationDialog.type}
+                onValueChange={(v) => setRelationDialog((prev) => ({ ...prev, type: v as RelationType }))}
               >
                 <SelectTrigger className="w-full" aria-label="関係タイプ">
                   <SelectValue />
@@ -616,8 +723,8 @@ function RelationsPage() {
             <div className="flex flex-col gap-1.5">
               <Label>ラベル</Label>
               <Input
-                value={dialog.label}
-                onChange={(e) => setDialog((prev) => ({ ...prev, label: e.target.value }))}
+                value={relationDialog.label}
+                onChange={(e) => setRelationDialog((prev) => ({ ...prev, label: e.target.value }))}
                 placeholder="例: 姉妹、恋人、ライバル"
                 aria-label="関係ラベル"
               />
@@ -625,11 +732,76 @@ function RelationsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(EMPTY_DIALOG)}>
+            <Button variant="outline" onClick={() => setRelationDialog(EMPTY_RELATION_DIALOG)}>
               キャンセル
             </Button>
-            <Button onClick={handleDialogSave} disabled={!dialog.sourceId || !dialog.targetId || !dialog.label.trim()}>
-              {dialog.editingId ? '更新' : '追加'}
+            <Button
+              onClick={handleRelationSave}
+              disabled={!relationDialog.sourceId || !relationDialog.targetId || !relationDialog.label.trim()}
+            >
+              {relationDialog.editingId ? '更新' : '追加'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Character Dialog */}
+      <Dialog
+        open={charDialog.open}
+        onOpenChange={(open) => setCharDialog((prev) => (open ? prev : EMPTY_CHARACTER_DIALOG))}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>キャラクターを追加</DialogTitle>
+            <DialogDescription>関係図に新しいキャラクターを追加します。</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>名前</Label>
+              <Input
+                value={charDialog.name}
+                onChange={(e) => {
+                  const name = e.target.value
+                  setCharDialog((prev) => ({
+                    ...prev,
+                    name,
+                    initial: prev.initial || name.slice(0, 1)
+                  }))
+                }}
+                placeholder="例: 太郎"
+                aria-label="キャラクター名"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>イニシャル</Label>
+              <Input
+                value={charDialog.initial}
+                onChange={(e) => setCharDialog((prev) => ({ ...prev, initial: e.target.value.slice(0, 1) }))}
+                placeholder="例: 太"
+                maxLength={1}
+                aria-label="イニシャル"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>役割</Label>
+              <Input
+                value={charDialog.role}
+                onChange={(e) => setCharDialog((prev) => ({ ...prev, role: e.target.value }))}
+                placeholder="例: 主人公の友人"
+                aria-label="役割"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCharDialog(EMPTY_CHARACTER_DIALOG)}>
+              キャンセル
+            </Button>
+            <Button onClick={handleCharacterSave} disabled={!charDialog.name.trim() || !charDialog.initial.trim()}>
+              追加
             </Button>
           </DialogFooter>
         </DialogContent>
