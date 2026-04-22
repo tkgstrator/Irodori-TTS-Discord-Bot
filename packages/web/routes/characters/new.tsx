@@ -348,26 +348,28 @@ function Step1({
 }) {
   return (
     <div className="space-y-4">
-      <ImageUpload imageUrl={imageUrl} onImageChange={onImageChange} />
-      <div className="space-y-1.5">
-        <Label>
-          名前 <span className="text-destructive">*</span>
-        </Label>
-        <Controller
-          name="name"
-          control={control}
-          render={({ field }) => (
-            <Input
-              type="text"
-              placeholder="キャラクター名"
-              className={cn(errors.name && 'border-destructive')}
-              {...field}
-            />
-          )}
-        />
-        {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+      <div className="flex items-start gap-4">
+        <ImageUpload imageUrl={imageUrl} onImageChange={onImageChange} />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Label>
+            名前 <span className="text-destructive">*</span>
+          </Label>
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="text"
+                placeholder="キャラクター名"
+                className={cn(errors.name && 'border-destructive')}
+                {...field}
+              />
+            )}
+          />
+          {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-3 gap-3">
         <Controller
           name="ageGroup"
           control={control}
@@ -382,14 +384,14 @@ function Step1({
             <ControlledSelect label="性別" options={GENDERS} value={field.value} onChange={field.onChange} />
           )}
         />
+        <Controller
+          name="occupation"
+          control={control}
+          render={({ field }) => (
+            <ControlledSelect label="職業" options={OCCUPATIONS} value={field.value} onChange={field.onChange} />
+          )}
+        />
       </div>
-      <Controller
-        name="occupation"
-        control={control}
-        render={({ field }) => (
-          <ControlledSelect label="職業" options={OCCUPATIONS} value={field.value} onChange={field.onChange} />
-        )}
-      />
     </div>
   )
 }
