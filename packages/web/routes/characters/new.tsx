@@ -636,8 +636,8 @@ function CharacterNewPage() {
           <StepProgress current={step + 1} total={STEPS.length} />
         </div>
 
-        <div className="flex gap-8">
-          <form className="min-w-0 flex-1 max-w-2xl" onSubmit={(e) => e.preventDefault()}>
+        <div className="flex items-start gap-8">
+          <form className="w-full max-w-2xl shrink-0" onSubmit={(e) => e.preventDefault()}>
             <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
               <div className="mb-5">
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
