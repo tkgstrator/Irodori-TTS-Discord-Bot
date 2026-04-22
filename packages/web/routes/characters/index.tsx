@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { GENDERS } from '@/components/character-wizard'
 import {
   AlertDialog,
@@ -15,21 +15,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Character } from '@/lib/characters'
 import { useCharacters } from '@/lib/characters'
-
-export const Route = createFileRoute('/characters/')({
-  component: CharactersPage
-})
-
-type SortKey = 'name' | 'created'
-
-const SORT_OPTIONS: readonly { value: SortKey; label: string }[] = [
-  { value: 'name', label: '名前順' },
-  { value: 'created', label: '作成日順' }
-]
 
 const AGE_GROUPS = [
   { value: 'infant', label: '乳幼児' },
@@ -93,55 +80,28 @@ const HONORIFICS = [
   { value: 'sensei', label: '〜先生' }
 ] as const
 
-function compareFn(key: SortKey): (a: Character, b: Character) => number {
-  switch (key) {
-    case 'name':
-      return (a, b) => a.name.localeCompare(b.name, 'ja')
-    case 'created':
-      return (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
-  }
-}
+const genderLabel = (value: string): string => GENDERS.find((g) => g.value === value)?.label ?? value
 
-function sortCharacters(characters: readonly Character[], key: SortKey): Character[] {
-  return [...characters].sort(compareFn(key))
-}
+const optionLabel = (options: readonly { value: string; label: string }[], value: string): string =>
+  options.find((option) => option.value === value)?.label ?? value
 
-function genderLabel(value: string): string {
-  return GENDERS.find((g) => g.value === value)?.label ?? value
-}
+const ageGroupLabel = (value: string): string => optionLabel(AGE_GROUPS, value)
 
-function optionLabel(options: readonly { value: string; label: string }[], value: string): string {
-  return options.find((option) => option.value === value)?.label ?? value
-}
+const occupationLabel = (value: string): string => optionLabel(OCCUPATIONS, value)
 
-function ageGroupLabel(value: string): string {
-  return optionLabel(AGE_GROUPS, value)
-}
+const speechStyleLabel = (value: string): string => optionLabel(SPEECH_STYLES, value)
 
-function occupationLabel(value: string): string {
-  return optionLabel(OCCUPATIONS, value)
-}
+const firstPersonLabel = (value: string): string => optionLabel(FIRST_PERSONS, value)
 
-function speechStyleLabel(value: string): string {
-  return optionLabel(SPEECH_STYLES, value)
-}
+const honorificLabel = (value: string): string => optionLabel(HONORIFICS, value)
 
-function firstPersonLabel(value: string): string {
-  return optionLabel(FIRST_PERSONS, value)
-}
-
-function honorificLabel(value: string): string {
-  return optionLabel(HONORIFICS, value)
-}
-
-function metadataSummary(character: Character): readonly string[] {
-  return [
+const metadataSummary = (character: Character): readonly string[] =>
+  [
     speechStyleLabel(character.speechStyle),
     firstPersonLabel(character.firstPerson),
     character.honorific !== 'none' ? honorificLabel(character.honorific) : null,
     character.secondPerson || null
   ].filter((value): value is string => value !== null && value.length > 0)
-}
 
 const CharacterAvatar = ({ character, firstChar }: { character: Character; firstChar: string }) => {
   if (character.imageUrl) {
@@ -161,7 +121,7 @@ const CharacterAvatar = ({ character, firstChar }: { character: Character; first
   )
 }
 
-function CharacterCard({ character, onDelete }: { character: Character; onDelete: (character: Character) => void }) {
+const CharacterCard = ({ character, onDelete }: { character: Character; onDelete: (character: Character) => void }) => {
   const firstChar = character.name.charAt(0) || '?'
   const summaryItems = metadataSummary(character)
   const hasDetailTags = character.attributeTags.length > 0 || character.backgroundTags.length > 0
@@ -244,10 +204,8 @@ function CharacterCard({ character, onDelete }: { character: Character; onDelete
   )
 }
 
-function CharactersPage() {
+const CharactersPage = () => {
   const { characters, deleteCharacter, errorMessage, isLoading, refreshCharacters } = useCharacters()
-  const [search, setSearch] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('name')
   const [pendingDeleteCharacter, setPendingDeleteCharacter] = useState<Character | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -267,23 +225,6 @@ function CharactersPage() {
     }
   }
 
-  const filtered = useMemo(() => {
-    const searchLower = search.toLowerCase()
-    const afterFilter = characters.filter((c) => {
-      const speakerName = c.speaker?.name.toLowerCase() ?? ''
-
-      if (
-        searchLower &&
-        !c.name.toLowerCase().includes(searchLower) &&
-        !c.memo.toLowerCase().includes(searchLower) &&
-        !speakerName.includes(searchLower)
-      )
-        return false
-      return true
-    })
-    return sortCharacters(afterFilter, sortKey)
-  }, [characters, search, sortKey])
-
   return (
     <div className="p-4 pb-8 sm:p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -299,33 +240,8 @@ function CharactersPage() {
         </Button>
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="名前・説明で検索..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-        <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-          <SelectTrigger className="w-30">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="mb-6 text-sm text-muted-foreground">
-        全 <strong className="text-foreground">{filtered.length}</strong> キャラクター
+        全 <strong className="text-foreground">{characters.length}</strong> キャラクター
       </div>
 
       {errorMessage && (
@@ -337,27 +253,23 @@ function CharactersPage() {
         </div>
       )}
 
-      {isLoading && filtered.length === 0 ? (
+      {isLoading && characters.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
           <p className="text-sm text-muted-foreground">キャラクターを読み込み中です</p>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : characters.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
-          <p className="text-sm text-muted-foreground">
-            {search ? '条件に一致するキャラクターが見つかりません' : 'キャラクターがまだ登録されていません'}
-          </p>
-          {!search && (
-            <Button asChild size="lg">
-              <Link to="/characters/new">
-                <Plus data-icon="inline-start" />
-                最初のキャラクターを作成
-              </Link>
-            </Button>
-          )}
+          <p className="text-sm text-muted-foreground">キャラクターがまだ登録されていません</p>
+          <Button asChild size="lg">
+            <Link to="/characters/new">
+              <Plus data-icon="inline-start" />
+              最初のキャラクターを作成
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((character) => (
+          {characters.map((character) => (
             <CharacterCard key={character.id} character={character} onDelete={setPendingDeleteCharacter} />
           ))}
         </div>
@@ -397,3 +309,7 @@ function CharactersPage() {
     </div>
   )
 }
+
+export const Route = createFileRoute('/characters/')({
+  component: CharactersPage
+})

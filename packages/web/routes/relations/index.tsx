@@ -252,6 +252,140 @@ const EMPTY_CHARACTER_DIALOG: CharacterDialogState = {
   role: ''
 }
 
+interface RelationsPanelProps {
+  readonly className?: string
+  readonly dark: boolean
+  readonly selectedChar: RelationCharacter | undefined
+  readonly selectedCharId: string
+  readonly selectedRelations: readonly Relation[]
+  readonly getCharacter: (id: string) => RelationCharacter | undefined
+  readonly onSelectChar: (id: string) => void
+  readonly onAddRelation: () => void
+  readonly onEditRelation: (rel: Relation) => void
+  readonly onDeleteRelation: (id: string) => void
+  readonly onDeleteChar: () => void
+}
+
+// 相関図の詳細パネルをモバイル・デスクトップで共通利用する
+const RelationsPanel = ({
+  className,
+  dark,
+  selectedChar,
+  selectedCharId,
+  selectedRelations,
+  getCharacter,
+  onSelectChar,
+  onAddRelation,
+  onEditRelation,
+  onDeleteRelation,
+  onDeleteChar
+}: RelationsPanelProps) => (
+  <section
+    className={['flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm', className]
+      .filter(Boolean)
+      .join(' ')}
+  >
+    {selectedChar ? (
+      <>
+        <div className="border-b border-border p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+              style={{ backgroundColor: getAvatarColor(selectedChar.id) }}
+            >
+              {selectedChar.initial}
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold leading-tight">{selectedChar.name}</p>
+              <p className="mt-0.5 text-xs leading-tight text-muted-foreground">{selectedChar.role}</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="outline" size="sm" className="h-9 flex-1 gap-1 text-xs" onClick={onAddRelation}>
+              <Plus className="size-3" />
+              関係を追加
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1 text-xs text-destructive hover:text-destructive sm:w-auto"
+              onClick={onDeleteChar}
+            >
+              <Trash2 className="size-3" />
+              削除
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col p-4">
+          <p className="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            関係 ({selectedRelations.length})
+          </p>
+          <div className="flex flex-col gap-2">
+            {selectedRelations.map((rel) => {
+              const otherId = rel.sourceId === selectedCharId ? rel.targetId : rel.sourceId
+              const other = getCharacter(otherId)
+              if (!other) return null
+              const cfg = RELATION_TYPE_CONFIG[rel.type]
+              const color = dark ? cfg.darkColor : cfg.lightColor
+              return (
+                <div
+                  key={rel.id}
+                  className="group flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2"
+                >
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                    onClick={() => onSelectChar(otherId)}
+                  >
+                    <div
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                      style={{ backgroundColor: getAvatarColor(otherId) }}
+                    >
+                      {other.initial}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-tight">{other.name}</p>
+                    </div>
+                  </button>
+                  <span
+                    className="shrink-0 rounded-full px-1.5 py-0.5 text-[0.625rem] font-medium text-white"
+                    style={{ backgroundColor: color }}
+                  >
+                    {cfg.label}
+                  </span>
+                  <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      className="flex size-6 items-center justify-center rounded hover:bg-accent"
+                      aria-label="編集"
+                      onClick={() => onEditRelation(rel)}
+                    >
+                      <Pencil className="size-3 text-muted-foreground" />
+                    </button>
+                    <button
+                      type="button"
+                      className="flex size-6 items-center justify-center rounded hover:bg-destructive/10"
+                      aria-label="削除"
+                      onClick={() => onDeleteRelation(rel.id)}
+                    >
+                      <Trash2 className="size-3 text-destructive" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </>
+    ) : (
+      <div className="flex flex-1 items-center justify-center p-4 text-center">
+        <p className="text-sm text-muted-foreground">キャラクターを選択してください</p>
+      </div>
+    )}
+  </section>
+)
+
 function RelationsPageWrapper() {
   return (
     <ReactFlowProvider>
@@ -449,7 +583,7 @@ function RelationsPage() {
   }, [selectedCharId, characters, deleteCharacter])
 
   const handleCharacterSave = useCallback(() => {
-    if (!charDialog.name.trim() || !charDialog.initial.trim()) return
+    if (!charDialog.name.trim() || !charDialog.initial.trim() || characters.length >= 5) return
     const created = addCharacter({
       name: charDialog.name.trim(),
       initial: charDialog.initial.trim(),
@@ -457,7 +591,7 @@ function RelationsPage() {
     })
     setSelectedCharId(created.id)
     setCharDialog(EMPTY_CHARACTER_DIALOG)
-  }, [charDialog, addCharacter])
+  }, [charDialog, addCharacter, characters.length])
 
   const availableTargets = useMemo(
     () => characters.filter((c) => c.id !== relationDialog.sourceId),
@@ -466,23 +600,24 @@ function RelationsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
       <div className="shrink-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">キャラクター関係図</h1>
             <p className="mt-0.5 text-sm text-muted-foreground">キャラクター間の関係性を視覚的に管理</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
             <Button
               variant="outline"
               size="lg"
+              className="w-full sm:w-auto"
+              disabled={characters.length >= 5}
               onClick={() => setCharDialog({ ...EMPTY_CHARACTER_DIALOG, open: true })}
             >
               <UserPlus data-icon="inline-start" />
               キャラクター追加
             </Button>
-            <Button size="lg" onClick={openAddRelationDialog}>
+            <Button size="lg" className="w-full sm:w-auto" onClick={openAddRelationDialog}>
               <Plus data-icon="inline-start" />
               関係を追加
             </Button>
@@ -490,153 +625,64 @@ function RelationsPage() {
         </div>
       </div>
 
-      {/* Main */}
-      <div className="flex flex-1 min-h-0">
-        {/* Canvas */}
-        <div className="relative flex-1">
-          <ReactFlow<CharacterNode, RelationEdge>
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={NODE_TYPES}
-            edgeTypes={EDGE_TYPES}
-            onNodesChange={onNodesChange}
-            onNodeClick={onNodeClick}
-            onEdgeClick={onEdgeClick}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
-            minZoom={0.3}
-            maxZoom={2}
-            proOptions={{ hideAttribution: true }}
-            colorMode={dark ? 'dark' : 'light'}
-            nodesDraggable
-            nodesConnectable
-            onConnect={onConnect}
-            elementsSelectable={false}
-          >
-            <Background gap={24} size={1} />
-            <Controls showInteractive={false} />
-          </ReactFlow>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-4 sm:px-6 sm:pb-6 md:flex-row">
+        <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:min-h-[28rem] md:flex-1 md:min-h-0">
+          <div className="border-b border-border px-4 py-3">
+            <p className="text-sm font-medium">相関図キャンバス</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">モバイルでは詳細パネルを下部に表示します。</p>
+          </div>
+          <div className="relative flex-1">
+            <ReactFlow<CharacterNode, RelationEdge>
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={NODE_TYPES}
+              edgeTypes={EDGE_TYPES}
+              onNodesChange={onNodesChange}
+              onNodeClick={onNodeClick}
+              onEdgeClick={onEdgeClick}
+              fitView
+              fitViewOptions={{ padding: 0.2 }}
+              minZoom={0.3}
+              maxZoom={2}
+              proOptions={{ hideAttribution: true }}
+              colorMode={dark ? 'dark' : 'light'}
+              nodesDraggable
+              nodesConnectable
+              onConnect={onConnect}
+              elementsSelectable={false}
+            >
+              <Background gap={24} size={1} />
+              <Controls showInteractive={false} />
+            </ReactFlow>
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-72 shrink-0 flex flex-col border-l border-border bg-card overflow-y-auto">
-          {selectedChar ? (
-            <>
-              {/* Character info */}
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                    style={{ backgroundColor: getAvatarColor(selectedChar.id) }}
-                  >
-                    {selectedChar.initial}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold leading-tight">{selectedChar.name}</p>
-                    <p className="text-xs text-muted-foreground leading-tight mt-0.5">{selectedChar.role}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-8 text-xs gap-1"
-                    onClick={openAddRelationDialog}
-                  >
-                    <Plus className="size-3" />
-                    関係を追加
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs gap-1 text-destructive hover:text-destructive"
-                    onClick={handleDeleteCharacter}
-                  >
-                    <Trash2 className="size-3" />
-                    削除
-                  </Button>
-                </div>
-              </div>
-
-              {/* Relations */}
-              <div className="p-4 flex-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  関係 ({selectedRelations.length})
-                </p>
-                <div className="flex flex-col gap-2">
-                  {selectedRelations.map((rel) => {
-                    const otherId = rel.sourceId === selectedCharId ? rel.targetId : rel.sourceId
-                    const other = getCharacter(otherId)
-                    if (!other) return null
-                    const cfg = RELATION_TYPE_CONFIG[rel.type]
-                    const color = dark ? cfg.darkColor : cfg.lightColor
-                    return (
-                      <div
-                        key={rel.id}
-                        className="group flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2"
-                      >
-                        <button
-                          type="button"
-                          className="flex items-center gap-2.5 text-left flex-1 min-w-0"
-                          onClick={() => setSelectedCharId(otherId)}
-                        >
-                          <div
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                            style={{ backgroundColor: getAvatarColor(otherId) }}
-                          >
-                            {other.initial}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium leading-tight">{other.name}</p>
-                            <p className="text-[0.625rem] text-muted-foreground leading-tight mt-0.5">{rel.label}</p>
-                          </div>
-                        </button>
-                        <span
-                          className="shrink-0 rounded-full px-1.5 py-0.5 text-[0.625rem] font-medium text-white"
-                          style={{ backgroundColor: color }}
-                        >
-                          {cfg.label}
-                        </span>
-                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                          <button
-                            type="button"
-                            className="size-6 flex items-center justify-center rounded hover:bg-accent"
-                            aria-label="編集"
-                            onClick={() => openEditRelationDialog(rel)}
-                          >
-                            <Pencil className="size-3 text-muted-foreground" />
-                          </button>
-                          <button
-                            type="button"
-                            className="size-6 flex items-center justify-center rounded hover:bg-destructive/10"
-                            aria-label="削除"
-                            onClick={() => handleDeleteRelation(rel.id)}
-                          >
-                            <Trash2 className="size-3 text-destructive" />
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="p-4 border-t border-border">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">凡例</p>
-                <div className="flex flex-col gap-1.5">
-                  {(Object.keys(RELATION_TYPE_CONFIG) as RelationType[]).map((type) => (
-                    <RelationTypeDot key={type} type={type} />
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-1 items-center justify-center p-4 text-center">
-              <p className="text-sm text-muted-foreground">キャラクターを選択してください</p>
-            </div>
-          )}
-        </div>
+        <RelationsPanel
+          className="md:hidden"
+          dark={dark}
+          selectedChar={selectedChar}
+          selectedCharId={selectedCharId}
+          selectedRelations={selectedRelations}
+          getCharacter={getCharacter}
+          onSelectChar={setSelectedCharId}
+          onAddRelation={openAddRelationDialog}
+          onEditRelation={openEditRelationDialog}
+          onDeleteRelation={handleDeleteRelation}
+          onDeleteChar={handleDeleteCharacter}
+        />
+        <RelationsPanel
+          className="hidden md:flex md:w-80 md:shrink-0"
+          dark={dark}
+          selectedChar={selectedChar}
+          selectedCharId={selectedCharId}
+          selectedRelations={selectedRelations}
+          getCharacter={getCharacter}
+          onSelectChar={setSelectedCharId}
+          onAddRelation={openAddRelationDialog}
+          onEditRelation={openEditRelationDialog}
+          onDeleteRelation={handleDeleteRelation}
+          onDeleteChar={handleDeleteCharacter}
+        />
       </div>
 
       {/* Relation Dialog */}
