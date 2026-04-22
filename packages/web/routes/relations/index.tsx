@@ -374,18 +374,9 @@ function RelationsPage() {
 
   const onEdgeClick = useCallback(
     (_: React.MouseEvent, edge: RelationEdge) => {
-      const rel = relations.find((r) => r.id === edge.id)
-      if (!rel) return
-      setRelationDialog({
-        open: true,
-        editingId: rel.id,
-        sourceId: rel.sourceId,
-        targetId: rel.targetId,
-        type: rel.type,
-        label: rel.label
-      })
+      deleteRelation(edge.id)
     },
-    [relations]
+    [deleteRelation]
   )
 
   const onConnect = useCallback((connection: Connection) => {
