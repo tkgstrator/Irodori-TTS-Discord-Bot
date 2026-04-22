@@ -18,7 +18,7 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { createFileRoute } from '@tanstack/react-router'
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import { Badge } from '@/components/ui/badge'
@@ -251,7 +251,6 @@ function RelationsPage() {
     useRelations()
   const { theme } = useTheme()
   const [selectedCharId, setSelectedCharId] = useState('renka')
-  const [search, setSearch] = useState('')
   const [dialog, setDialog] = useState<RelationDialogState>(EMPTY_DIALOG)
 
   const dark = isDarkMode(theme)
@@ -267,12 +266,6 @@ function RelationsPage() {
       }, {}),
     [characters, getRelationsFor]
   )
-
-  const filteredCharacters = useMemo(() => {
-    if (!search.trim()) return characters
-    const q = search.toLowerCase()
-    return characters.filter((c) => c.name.includes(q) || c.role.toLowerCase().includes(q))
-  }, [characters, search])
 
   const initialNodes: CharacterNode[] = useMemo(
     () =>
@@ -293,11 +286,9 @@ function RelationsPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
 
   useEffect(() => {
-    const filteredIds = new Set(filteredCharacters.map((c) => c.id))
     setNodes((prev) =>
       prev.map((node) => ({
         ...node,
-        hidden: !filteredIds.has(node.id),
         data: {
           ...node.data,
           relationCount: relationCountMap[node.id] ?? 0,
@@ -307,7 +298,7 @@ function RelationsPage() {
         }
       }))
     )
-  }, [filteredCharacters, relationCountMap, selectedCharId, setNodes])
+  }, [relationCountMap, selectedCharId, setNodes])
 
   const edges: RelationEdge[] = useMemo(
     () =>
@@ -402,30 +393,16 @@ function RelationsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="h-12 shrink-0 border-b border-border px-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-sm font-semibold whitespace-nowrap">キャラクター関係図</h1>
-          <Badge variant="secondary" className="text-xs whitespace-nowrap">
-            {characters.length} キャラクター · {relations.length} 関係
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative hidden sm:block">
-            <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              type="text"
-              placeholder="検索..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 w-48 text-xs"
-              aria-label="キャラクターを検索"
-            />
+      <div className="shrink-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">キャラクター関係図</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {characters.length} キャラクター · {relations.length} 関係
+            </p>
           </div>
-          <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={openAddDialog}>
-            <Plus className="size-3.5" />
+          <Button size="lg" onClick={openAddDialog}>
+            <Plus data-icon="inline-start" />
             関係を追加
           </Button>
         </div>
