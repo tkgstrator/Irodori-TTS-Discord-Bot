@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Character {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name            String
+  imageUrl        String?  @map("image_url")
+  ageGroup        String   @default("young_adult") @map("age_group")
+  gender          String   @default("male")
+  occupation      String   @default("student_high")
+  personalityTags String[] @map("personality_tags")
+  speechStyle     String   @default("neutral") @map("speech_style")
+  firstPerson     String   @default("boku") @map("first_person")
+  secondPerson    String   @default("") @map("second_person")
+  honorific       String   @default("san")
+  attributeTags   String[] @map("attribute_tags")
+  backgroundTags  String[] @map("background_tags")
+  memo            String   @default("")
+
+  @@map("characters")
+}
