@@ -1,1 +1,162 @@
-[]
+[
+  {
+    "name": "dashboard",
+    "title": "ダッシュボード (デスクトップ)",
+    "description": "ウェルカム + クイック作成 + 最近のシナリオ/キャラ + AIサジェストサイドバー",
+    "file": "dashboard.html",
+    "category": "dashboard",
+    "createdAt": "2026-04-21T18:00:00Z"
+  },
+  {
+    "name": "dashboard-mobile-a",
+    "title": "ダッシュボード モバイルA — カードスタック",
+    "description": "ボトムタブ + ウェルカムバナー + 横スクロールアクション + 縦カード + キャラアバター",
+    "file": "dashboard-mobile-a.html",
+    "category": "dashboard",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "dashboard-mobile-b",
+    "title": "ダッシュボード モバイルB — フィード",
+    "description": "SNSフィード風タイムライン + FAB新規作成ボタン + アクティビティ一覧",
+    "file": "dashboard-mobile-b.html",
+    "category": "dashboard",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "dashboard-mobile-c",
+    "title": "ダッシュボード モバイルC — ウィジェット",
+    "description": "Bento-box風ウィジェットグリッド + 統計 + AIスワイプカード + クイックアクション",
+    "file": "dashboard-mobile-c.html",
+    "category": "dashboard",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "character-list",
+    "title": "キャラクター一覧 (デスクトップ)",
+    "description": "左ペインリスト + 右詳細プレビューのマスター・ディテール構成",
+    "file": "character-list.html",
+    "category": "character-list",
+    "createdAt": "2026-04-21T18:00:00Z"
+  },
+  {
+    "name": "charlist-mobile-a",
+    "title": "キャラ一覧 モバイルA — 大カード",
+    "description": "フルワイドカード + 大アバター + フィルタチップ + FAB",
+    "file": "charlist-mobile-a.html",
+    "category": "character-list",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "charlist-mobile-b",
+    "title": "キャラ一覧 モバイルB — コンパクトリスト",
+    "description": "iOS Contacts風リスト + 検索バー + スワイプアクション + ボトムナビ",
+    "file": "charlist-mobile-b.html",
+    "category": "character-list",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "charlist-mobile-c",
+    "title": "キャラ一覧 モバイルC — アバターグリッド",
+    "description": "2列グリッド + 役割カラーリング + タップで性格表示 + グリッド/リスト切替",
+    "file": "charlist-mobile-c.html",
+    "category": "character-list",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "character-edit",
+    "title": "キャラクター編集 (デスクトップ)",
+    "description": "タブ分けフォーム + ライブプレビュー + AIアシスタントパネル",
+    "file": "character-edit.html",
+    "category": "character-edit",
+    "createdAt": "2026-04-21T18:00:00Z"
+  },
+  {
+    "name": "charedit-mobile-a",
+    "title": "キャラ編集 モバイルA — 縦スクロールフォーム",
+    "description": "スティッキーヘッダー + アバター + 単一カラムフォーム + AIで埋めるボタン",
+    "file": "charedit-mobile-a.html",
+    "category": "character-edit",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "charedit-mobile-b",
+    "title": "キャラ編集 モバイルB — ステップウィザード",
+    "description": "4ステップ進行 (基本→性格→背景→口調) + プログレスバー + ステップドット",
+    "file": "charedit-mobile-b.html",
+    "category": "character-edit",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "charedit-mobile-c",
+    "title": "キャラ編集 モバイルC — 折りたたみ+AIチャット",
+    "description": "アコーディオンセクション + メッセージ風AIチャットバー + サジェストピル",
+    "file": "charedit-mobile-c.html",
+    "category": "character-edit",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "scenario-editor",
+    "title": "シナリオエディタ (デスクトップ)",
+    "description": "3カラム: 章立てナビ + 本文エディタ + アウトライン/メタ情報",
+    "file": "scenario-editor.html",
+    "category": "scenario",
+    "createdAt": "2026-04-21T18:00:00Z"
+  },
+  {
+    "name": "scenario-mobile-a",
+    "title": "シナリオ モバイルA — フルスクリーンエディタ",
+    "description": "全画面テキストエリア + フローティングツールバー + AI提案インライン + 章ボトムシート",
+    "file": "scenario-mobile-a.html",
+    "category": "scenario",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "scenario-mobile-b",
+    "title": "シナリオ モバイルB — カード式メモ",
+    "description": "スタック型カード (タイトル/舞台/あらすじ/参考作品/キャラ) + AI生成パネル",
+    "file": "scenario-mobile-b.html",
+    "category": "scenario",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "scenario-mobile-c",
+    "title": "シナリオ モバイルC — スワイプ章切替",
+    "description": "横スクロール章ピル + 起承転結タグ + 前後ナビ + AI生成ボタン",
+    "file": "scenario-mobile-c.html",
+    "category": "scenario",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "relation-map",
+    "title": "相関図 (デスクトップ)",
+    "description": "三角配置キャンバス + キャラ選択 + エッジインスペクタ + 関係性プリセット",
+    "file": "relation-map.html",
+    "category": "relation",
+    "createdAt": "2026-04-21T18:00:00Z"
+  },
+  {
+    "name": "relation-mobile-a",
+    "title": "相関図 モバイルA — キャンバス+ボトムシート",
+    "description": "全画面SVGキャンバス + ズーム操作 + ボトムシートでエッジ編集",
+    "file": "relation-mobile-a.html",
+    "category": "relation",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "relation-mobile-b",
+    "title": "相関図 モバイルB — カード式関係性",
+    "description": "キャンバスなし: アバター選択 + 関係カード + プリセットパレット + 統計",
+    "file": "relation-mobile-b.html",
+    "category": "relation",
+    "createdAt": "2026-04-21T18:30:00Z"
+  },
+  {
+    "name": "relation-mobile-c",
+    "title": "相関図 モバイルC — ダイアグラム+タブ",
+    "description": "SVGキャンバス上半分 + タブパネル下半分 (キャラ/関係/設定) + 保存FAB",
+    "file": "relation-mobile-c.html",
+    "category": "relation",
+    "createdAt": "2026-04-21T18:30:00Z"
+  }
+]
