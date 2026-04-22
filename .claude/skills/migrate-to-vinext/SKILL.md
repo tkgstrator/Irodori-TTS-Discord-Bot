@@ -5,6 +5,10 @@ description: Migrates Next.js projects to vinext (Vite-based Next.js reimplement
 
 # Migrate Next.js to vinext
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 vinext reimplements the Next.js API surface on Vite. Existing `app/`, `pages/`, and `next.config.js` work as-is — migration is a package swap, config generation, and ESM conversion. No changes to application code required.
 
 ## FIRST: Verify Next.js Project

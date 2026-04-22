@@ -9,6 +9,10 @@ metadata:
 
 # Prisma 7 Driver Adapter Implementation Guide
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 This skill provides everything needed to implement a Prisma ORM v7 driver adapter for any database.
 
 ## Architecture Overview

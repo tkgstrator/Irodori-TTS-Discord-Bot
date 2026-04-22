@@ -1,4 +1,26 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent",
+      "Skill",
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "TaskCreate",
+      "TaskUpdate",
+      "mcp__github__get_file_contents"
+    ],
+    "deny": [],
+    "defaultMode": "bypassPermissions",
+    "bypassPermissionsMode": "allow"
+  },
+  "model": "claude-opus-4-6",
   "enabledMcpjsonServers": [
     "docker",
     "github",
@@ -6,5 +28,7 @@
     "shadcn",
     "prisma",
     "zod"
-  ]
+  ],
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high"
 }

@@ -6,6 +6,10 @@ user-invocable: false
 
 # Bun Runtime Conventions
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 ## Commands
 - **Never use `npx` — always use `bunx`**
 - Install packages with `bun add` / `bun add -d`

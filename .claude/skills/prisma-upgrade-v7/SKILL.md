@@ -9,6 +9,10 @@ metadata:
 
 # Upgrade to Prisma ORM 7
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 Complete guide for migrating from Prisma ORM v6 to v7. This upgrade introduces significant breaking changes around the new `prisma-client` generator, driver adapters, `prisma.config.ts`, explicit environment loading, and generated client entrypoints.
 
 ## When to Apply

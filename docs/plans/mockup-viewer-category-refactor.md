@@ -7,21 +7,21 @@ Refactor the mockup viewer page so that mockups are organized by category with v
 ## Tasks
 
 ### Frontend
-- [ ] Add `category` field to all 20 entries in `manifest.json`
-- [ ] Update `MockupEntry` type to include `category` field
-- [ ] Define `CATEGORIES` constant mapping category IDs to Japanese display labels
-- [ ] Refactor left sidebar to show categories (accordion or vertical tabs) instead of flat list
-- [ ] Within each category section, show version cards (desktop + mobile A/B/C)
-- [ ] Auto-select first version when a category is clicked
-- [ ] Constrain compare mode to versions within the same category
-- [ ] Reset secondary selection when active category changes
-- [ ] Preserve existing features: viewport toggle, dark mode, compare mode
+- [x] Add `category` field to all 20 entries in `manifest.json`
+- [x] Update `MockupEntry` type to include `category` field
+- [x] Define `CATEGORIES` constant mapping category IDs to Japanese display labels
+- [x] Refactor left sidebar to show categories (accordion or vertical tabs) instead of flat list
+- [x] Within each category section, show version cards (desktop + mobile A/B/C)
+- [x] Auto-select first version when a category is clicked
+- [x] Constrain compare mode to versions within the same category
+- [x] Reset secondary selection when active category changes
+- [x] Preserve existing features: viewport toggle, dark mode, compare mode
 
 ### QA
-- [ ] Run `bunx tsc -b --noEmit` (type check)
-- [ ] Run `bunx biome check --write` (lint + format)
-- [ ] Run `bun run build` (build all workspaces)
-- [ ] Commit changes
+- [x] Run `bunx tsc -b --noEmit` (type check)
+- [x] Run `bunx biome check --write` (lint + format)
+- [x] Run `bun run build` (build all workspaces)
+- [x] Commit changes
 
 ## Execution Order
 1. Frontend: manifest.json update + page.tsx refactor

@@ -11,6 +11,9 @@
 | [`Gender`](#gender) | 単一 | 必須 | 性別 |
 | [`Race`](#race) | 単一 | **v1 未使用** | 種族（v1 は全員 `human` 固定としてフィールド自体を持たない。v2 で復活予定） |
 | [`SpeechStyle`](#speechstyle) | 単一 | 必須 | 口調 |
+| [`FirstPerson`](#firstperson) | 単一 | 必須 | 一人称 |
+| [`SecondPerson`](#secondperson) | 単一 | 任意 | 二人称代名詞（名前を呼ばず「君」「お前」等で固定） |
+| [`Honorific`](#honorific) | 単一 | 任意 | デフォルトの敬称パターン（〜ちゃん、〜君 等） |
 | [`Personality`](#personality) | 複数（1〜4） | 必須 | 性格タグ |
 | [`Occupation`](#occupation) | 単一 | 任意 | 職業 |
 | [`Attribute`](#attribute) | 複数（0〜4） | 任意 | キャラ属性タグ |
@@ -222,6 +225,85 @@ type SpeechStyle =
 ```
 
 `'dialect_regional'` / `'eccentric'` を選んだ場合、方言の地方や口癖の具体例は `personaNote` に記述する。
+
+---
+
+## FirstPerson
+
+一人称。`CharacterSpec.firstPerson`。キャラが自分のことをどう呼ぶかを指定する。
+
+```ts
+type FirstPerson =
+  | 'watashi'     // 私（中性・丁寧）
+  | 'watakushi'   // わたくし（上品・格式高い）
+  | 'atashi'      // あたし（砕けた女性）
+  | 'boku'        // 僕（男性少年・やや丁寧）
+  | 'ore'         // 俺（砕けた男性）
+  | 'uchi'        // うち（関西弁、または若い女性の砕けた一人称）
+  | 'washi'       // ワシ（老人、あるいは時代劇）
+  | 'ware'        // 我（古風・威厳）
+  | 'yo'          // 余（王族・権威）
+  | 'soregashi'   // それがし（武士）
+  | 'name'        // 自分の名前で呼ぶ（例:「エマはね…」）
+  | 'other'       // 上記に該当しない（詳細は personaNote に書く）
+```
+
+`'name'` を選んだ場合、Writer は `CharacterSpec.name` の値を一人称として使う。
+`'other'` を選んだ場合は `personaNote` で具体的な一人称を説明する。
+
+---
+
+## SecondPerson
+
+二人称代名詞。`CharacterSpec.secondPerson`。**指定すると、このキャラは相手の名前を呼ばずに代名詞で呼ぶ**ようになる。
+
+```ts
+type SecondPerson =
+  | 'kimi'       // 君（きみ）
+  | 'omae'       // お前
+  | 'anata'      // あなた
+  | 'kisama'     // 貴様
+  | 'temae'      // てめえ
+  | 'onushi'     // お主
+  | 'sonata'     // そなた
+  | 'nanji'      // 汝（なんじ）
+  | 'other'      // 上記に該当しない（詳細は personaNote）
+```
+
+未指定（フィールドなし）なら、Writer は相手の **名前 + 敬称**（`addressOf` or `defaultHonorific`）で呼ぶ。
+指定すると **代名詞で固定**され、原則として相手の名前は台詞に出ない。
+
+**解決順**（Writer の呼称決定）:
+1. `addressOf[<相手の alias>]` に明示があれば**最優先**（代名詞でも名前でも、指定通りに呼ぶ）
+2. 無ければ `secondPerson` が指定されていれば、その代名詞で呼ぶ（名前を使わない）
+3. 無ければ `defaultHonorific` を相手の `name` に付けて呼ぶ
+4. 無ければ文脈から自然な呼称を選ぶ
+
+---
+
+## Honorific
+
+デフォルトの敬称パターン。`CharacterSpec.defaultHonorific`。このキャラが他キャラを呼ぶときの基本スタイル。
+
+```ts
+type Honorific =
+  | 'none'       // 呼び捨て（例: "エマ"）
+  | 'san'        // 〜さん
+  | 'chan'       // 〜ちゃん
+  | 'kun'        // 〜君
+  | 'sama'       // 〜様
+  | 'senpai'     // 〜先輩
+  | 'sensei'     // 〜先生
+  | 'tan'        // 〜たん（幼児風・特殊）
+  | 'dono'       // 〜殿（古風）
+```
+
+**解決順序**（Writer が呼称を決めるとき）：
+1. `CharacterSpec.addressOf[<相手の alias>]` に明示的な呼称があれば、それを最優先で使う
+   （例: `addressOf: { hiro: '兄さん' }` なら "兄さん" で呼ぶ）
+2. 無ければ `defaultHonorific` を相手の name に付けて呼ぶ
+   （例: `defaultHonorific: 'chan'` → 相手が「桜羽エマ」なら "エマちゃん"）
+3. `defaultHonorific` も未指定なら、文脈や関係性から自然な呼称を選ぶ
 
 ---
 

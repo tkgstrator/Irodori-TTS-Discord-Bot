@@ -9,6 +9,10 @@ metadata:
 
 # Prisma Database Setup
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 Comprehensive guides for configuring Prisma ORM with various database providers.
 
 ## When to Apply

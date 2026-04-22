@@ -6,6 +6,10 @@ user-invocable: false
 
 # TypeScript Coding Conventions
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 ## Compiler Settings
 - `strict: true` with `strictNullChecks: true`
 - `verbatimModuleSyntax`: use `import type` for type-only imports

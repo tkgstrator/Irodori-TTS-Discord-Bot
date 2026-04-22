@@ -5,6 +5,10 @@ description: Bun workspace monorepo pattern that boots a Vite + React frontend W
 
 # Cloudflare Monorepo + Vite Plugin + Auxiliary Workers
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 A Bun workspace monorepo pattern where a single Vite dev server boots the **frontend Worker and multiple backend Workers** at once. The frontend is a React SPA, the backend is wired with Hono + Service Bindings, and the DB Worker isolates Prisma + D1.
 
 ## Retrieval Sources

@@ -9,6 +9,10 @@ metadata:
 
 # Prisma Client API Reference
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 Complete API reference for Prisma Client. This skill provides guidance on model queries, filtering, relations, and client methods for current Prisma projects.
 
 ## When to Apply

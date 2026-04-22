@@ -1,0 +1,14 @@
+{
+  "name": "@irodori-tts/shared",
+  "type": "module",
+  "private": true,
+  "version": "0.0.1",
+  "exports": {
+    "./irodori-api": "./src/irodori-api.ts",
+    "./enums": "./src/enums.ts"
+  },
+  "dependencies": {
+    "@zodios/core": "^10.9.6",
+    "zod": "^4.3.6"
+  }
+}

@@ -33,6 +33,7 @@ You are the leader agent for this project. Analyze user requests, delegate work 
 
 ## Constraints
 
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
 - DB schema changes must go through Prisma migrations — never raw SQL
 - Use `bun` / `bunx`, never `npm` / `npx` / `yarn`
 - All inter-agent prompts and responses must be in English
