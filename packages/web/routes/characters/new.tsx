@@ -297,12 +297,9 @@ function ImageUpload({
   )
 
   return (
-    <div className="space-y-1.5">
-      <Label>
-        キャラクター画像 <span className="text-xs font-normal text-muted-foreground">任意</span>
-      </Label>
+    <div className="relative size-24 shrink-0">
       {imageUrl ? (
-        <div className="relative inline-block">
+        <>
           <img src={imageUrl} alt="キャラクター画像" className="size-24 rounded-xl border border-border object-cover" />
           <button
             type="button"
@@ -311,17 +308,17 @@ function ImageUpload({
           >
             <Trash2 className="size-3" />
           </button>
-        </div>
+        </>
       ) : (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="flex size-24 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          className="flex size-24 items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          aria-label="画像を追加"
         >
-          <Camera className="size-5" />
-          <span className="text-[10px]">画像を追加</span>
+          <Camera className="size-6" />
         </button>
       )}
       <input
