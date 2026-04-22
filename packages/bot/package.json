@@ -1,0 +1,27 @@
+{
+  "name": "@irodori-tts/bot",
+  "type": "module",
+  "private": true,
+  "version": "0.0.3",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun run tsc --noEmit && bun build src/index.ts --outdir=dist --target=bun --external @discordjs/opus --external sodium-native --external @snazzah/davey",
+    "start": "bun run dist/index.js"
+  },
+  "dependencies": {
+    "@irodori-tts/shared": "workspace:*",
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.19.2",
+    "@google/genai": "^1.50.1",
+    "@snazzah/davey": "^0.1.11",
+    "@zodios/core": "^10.9.6",
+    "dayjs": "^1.11.20",
+    "discord.js": "^14.26.2",
+    "ioredis": "^5.10.1",
+    "sodium-native": "^5.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.12"
+  }
+}

@@ -119,6 +119,10 @@ This skill covers Workers-specific best practices and code review. For related t
 - **Workflows**: see [Rules of Workflows](https://developers.cloudflare.com/workflows/build/rules-of-workflows/)
 - **Wrangler CLI commands**: load the `wrangler` skill
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 ## Principles
 
 - **Be certain.** Retrieve before flagging. If unsure about an API, config field, or pattern, fetch the docs first.

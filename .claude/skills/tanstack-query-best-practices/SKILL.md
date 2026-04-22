@@ -5,6 +5,10 @@ description: TanStack Query (React Query) best practices for data fetching, cach
 
 # TanStack Query Best Practices
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 Comprehensive guidelines for implementing TanStack Query (React Query) patterns in React applications. These rules optimize data fetching, caching, mutations, and server state synchronization.
 
 ## When to Apply

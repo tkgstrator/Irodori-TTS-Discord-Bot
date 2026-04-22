@@ -409,3 +409,12 @@ $RECYCLE.BIN/
 # venv テンプレの `[Ss]cripts` が小文字の scripts/ まで弾くので明示的に許可する。
 !/scripts/
 !/scripts/**
+!packages/bot/scripts/
+!packages/bot/scripts/**
+
+# Vinext / Cloudflare Workers
+.vinext
+.wrangler
+
+# Playwright
+test-results/

@@ -95,6 +95,7 @@ After all tasks are complete:
 
 ## Constraints
 
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
 - Do not guess or speculate — say "unknown" when unsure
 - Verify the full blast radius before making changes
 - Runtime is **Bun** — use `bun` / `bunx`, never `npm` / `npx` / `yarn`

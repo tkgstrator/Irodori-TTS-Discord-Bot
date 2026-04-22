@@ -25,6 +25,7 @@ You are the E2E (end-to-end) test agent. You own Playwright setup and browser-dr
 
 ## Constraints
 
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
 - Use `bun` / `bunx`, never `npm` / `npx` / `yarn`.
 - Do not commit Playwright report artifacts (`playwright-report/`, `test-results/`) — add them to `.gitignore` if missing.
 - Browser binaries are installed via `bunx playwright install chromium` (chromium only unless asked otherwise).

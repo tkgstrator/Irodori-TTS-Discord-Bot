@@ -5,6 +5,10 @@ description: Prisma ORM with Cloudflare D1 — schema configuration, migration w
 
 # Prisma ORM + Cloudflare D1
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 Setup, migration, and deployment guide for Prisma with Cloudflare D1.
 
 ## Retrieval Source

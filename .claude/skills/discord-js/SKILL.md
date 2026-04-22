@@ -6,6 +6,10 @@ user-invocable: false
 
 # discord.js v14 Conventions
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 ## Client
 - Use `GatewayIntentBits` to declare required intents
 - Privileged intents (`MessageContent`, `GuildMembers`) must be enabled in the Discord Developer Portal

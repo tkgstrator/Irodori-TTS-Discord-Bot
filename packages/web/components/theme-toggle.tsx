@@ -16,10 +16,10 @@ export function ThemeToggle() {
 
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={<Button variant="ghost" size="icon-sm" onClick={() => setTheme(next)} aria-label={LABELS[theme]} />}
-      >
-        <Icon className="size-4" />
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-10" onClick={() => setTheme(next)} aria-label={LABELS[theme]}>
+          <Icon className="size-6" />
+        </Button>
       </TooltipTrigger>
       <TooltipContent>{LABELS[theme]}</TooltipContent>
     </Tooltip>

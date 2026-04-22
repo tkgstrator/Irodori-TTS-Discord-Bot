@@ -13,6 +13,10 @@ metadata:
 
 Vite is a next-generation frontend build tool with fast dev server (native ESM + HMR) and optimized production builds.
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 ## Preferences
 
 - Use TypeScript: prefer `vite.config.ts`

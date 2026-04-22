@@ -9,6 +9,10 @@ metadata:
 
 # Prisma CLI Reference
 
+## Interaction Rules
+
+- When presenting the user with a choice between multiple options, use the `AskUserQuestion` tool instead of asking in free-form text.
+
 Complete reference for all Prisma CLI commands. This skill provides guidance on command usage, options, and best practices for current Prisma releases.
 
 ## When to Apply

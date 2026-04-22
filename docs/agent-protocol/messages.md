@@ -55,9 +55,10 @@ type CharacterSpec = {
   ageGroup: AgeGroup
   gender: Gender
   speechStyle: SpeechStyle
+  firstPerson: FirstPerson            // 一人称（enum で指定）
 
   // ── 必須 enum 配列（WebUI のマルチセレクト） ──────────────
-  personality: Personality[]                     // 性格タグ 1〜4 個
+  personality: Personality[]          // 性格タグ 1〜4 個
 
   // ── 主人公との関係性（必須） ─────────────────────────
   // 主人公自身のエントリは 'self' 固定。1 ドラマにちょうど 1 人。
@@ -68,6 +69,18 @@ type CharacterSpec = {
   occupation?: Occupation
   attributes?: Attribute[]            // 属性タグ 0〜4 個
   background?: Background[]           // 経歴タグ 0〜3 個
+
+  // ── 他キャラの呼び方 ──────────────────────────────
+  // 二人称代名詞（指定すると相手の名前を呼ばず代名詞で固定。例: 'kimi' で「君」のみ）
+  secondPerson?: SecondPerson
+  // デフォルトの敬称パターン（全キャラに一律適用、例: 'chan' で "エマちゃん"）
+  // secondPerson が指定されていればそちらが優先される。
+  defaultHonorific?: Honorific
+  // 個別の上書き（alias → 呼称の自由文マップ）。
+  // 解決順: addressOf[<alias>] があれば最優先 → secondPerson（代名詞）
+  //        → defaultHonorific + name → 文脈推測。
+  // 例: { hiro: '兄さん' }（固有名詞や特殊呼称のため自由文を許容）
+  addressOf?: Record<string, string>
 
   // ── 自由文補足（v1 で唯一許される自由入力） ─────────────
   personaNote?: string                // 目標・価値観・トラウマ等の総合補足
@@ -85,7 +98,11 @@ type CharacterSpec = {
 - `personality` は必須（1〜4 個）。2 個以上で個性の層を作る（例: `['cheerful', 'naive']` で明るいが世間知らず）。
 - `attributes` は「キャラ属性タグ」で、日本のアニメ/ゲーム文化に寄せた慣用カテゴリ。不要なら省略。
 - **v1 では全キャラ human 固定**。`race` フィールドは存在しない（Race enum は v2 で復活予定、[`enums.md` Race](./enums.md#race) 参照）。
-- **v1 では自由文補足は `personaNote` のみ**。`ageNote` / `raceNote` / `occupationNote` / `speechStyleNote` / `relationshipNote` は存在しない。enum 粒度を越える情報（特殊な年齢、方言の詳細、関係性の補足等）は全て `personaNote` に集約するか、enum の範囲内で割り切る。
+- `firstPerson` は一人称（enum）。`'name'` を選ぶと自分の名前を一人称として使う。`'other'` を選んだ場合は `personaNote` で具体的な一人称を説明する。
+- `secondPerson` は二人称代名詞（enum、任意）。指定するとキャラは相手の名前を呼ばず、その代名詞で固定（例: `'kimi'` → 常に「君」）。
+- `defaultHonorific` は他キャラを呼ぶときの基本敬称（enum、任意）。例: `'chan'` なら Writer は相手を「◯◯ちゃん」と呼ばせる。`'none'` で呼び捨て。`secondPerson` が指定されていればそちらが優先され、これは無視される。
+- `addressOf` は個別の呼称上書き（alias → 呼称の自由文マップ）。例: `{ hiro: '兄さん' }`。固有名詞や特殊呼称を含むため v1 の例外として自由文を許容する。**Writer の解決順**: `addressOf[<alias>]` があれば最優先 → なければ `secondPerson`（代名詞） → なければ `defaultHonorific` を name に付ける → それも無ければ文脈推測。
+- **v1 では自由文補足は `personaNote` + `addressOf` の値のみ**。`ageNote` / `raceNote` / `occupationNote` / `speechStyleNote` / `relationshipNote` は存在しない。enum 粒度を越える情報（特殊な年齢、方言の詳細、関係性の補足等）は全て `personaNote` に集約するか、enum の範囲内で割り切る。
 
 **主人公と関係性のルール:**
 
@@ -96,7 +113,7 @@ type CharacterSpec = {
 - 他キャラ間の関係性（例：A さんと B さんは兄弟）は v1 では `DramaBible.relationships` の自由文でのみ表現する。キャラ組み合わせの enum 化は v2 optional（[`roadmap.md` §9.8](./roadmap.md#98-キャラ間関係マトリクス)）。
 
 **ナレーター運用規約:**
-Bible の `cast.speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`personality: ['stoic']`、`personaNote: '三人称の語り手'` 等を既定値とする。
+Bible の `cast.speakers` に `narrator` alias を 1 つ含めることを推奨する。ナレーションは VDS-JSON の `speech` cue として `speaker: 'narrator'` で書く。VDS 仕様側に新 `kind` は追加しない。ナレーターは `CharacterSpec` の `role: 'narrator'`、`ageGroup: 'ageless'`、`gender: 'unknown'`、`firstPerson: 'other'`（三人称の語り手なので本人視点の一人称を使わない）、`personality: ['stoic']`、`personaNote: '三人称の語り手'` 等を既定値とする。`addressOf` は原則指定しない（語り手は登場人物をフルネームや役割で呼ぶ）。
 
 ### 4.1.1 入力例：中学生 2 人の学園ライトノベル
 
@@ -124,11 +141,13 @@ const exampleBrief: DramaBrief = {
         ageGroup: 'teen',                   // 中学 2 年生 = 13〜14 歳 → teen (13-17)
         gender: 'female',
         speechStyle: 'casual_youthful',
+        firstPerson: 'boku',                // 一人称「ボク」（ボクっ娘）
         personality: ['cheerful', 'curious', 'emotional'],
         relationship: 'self',               // 主人公を一意に特定するキー
         occupation: 'student_middle',
         attributes: ['genki'],
         background: ['late_bloomer'],
+        defaultHonorific: 'chan',           // 他キャラを「〜ちゃん」付けで呼ぶ
         personaNote:
           'クラスで文化祭実行委員を務める中学 2 年生。好奇心旺盛で、気になることがあると頭より先に足が出るタイプ。' +
           '幼馴染のヒロには頼りつつも、からかわれると素直にムキになってしまう。'
@@ -141,11 +160,13 @@ const exampleBrief: DramaBrief = {
         role: 'companion',                  // 主人公と常に行動を共にする相棒
         ageGroup: 'teen',
         gender: 'male',
-        speechStyle: 'casual_youthful',
+        speechStyle: 'polite_casual',
+        firstPerson: 'watashi',             // 一人称「私」（知的な少年）
         personality: ['stoic', 'logical', 'loyal'],
         relationship: 'childhood_friend',   // 幼馴染
         occupation: 'student_middle',
         attributes: ['glasses', 'bookworm'],
+        secondPerson: 'kimi',               // 相手を名前でなく「君（きみ）」で呼ぶ
         personaNote:
           '幼稚園からの付き合いで家は隣同士、朝はいつも一緒に登校する。' +
           '口数は少ないが、エマの突飛な行動を冷静に拾ってフォローする役回り。' +
@@ -170,6 +191,9 @@ const exampleBrief: DramaBrief = {
 | `ageGroup: 'teen'` | 中学 2 年生は 13〜14 歳なので `'preteen'`（10-12）ではなく `'teen'`（13-17） |
 | `role` の使い分け | エマは `'protagonist'`、ヒロは常時同行する相棒なので `'companion'`（`'love_interest'` ではない） |
 | `relationship: 'childhood_friend'` | 幼稚園からの幼馴染を表現。`'best_friend'` でも通るが、**長い時間を共有してきた関係**を明示したい場合はこちら |
+| `firstPerson` を指定 | エマ=「ボク」（ボクっ娘属性）、ヒロ=「私」（知的な少年）で Writer に一人称の揺れを抑えさせる |
+| エマ: `defaultHonorific: 'chan'` | 他キャラを「◯◯ちゃん」と名前＋敬称で呼ぶ（例:「ヒロちゃん」） |
+| ヒロ: `secondPerson: 'kimi'` | 相手を名前で呼ばず、常に二人称代名詞「君（きみ）」で呼ぶ。`defaultHonorific: 'kun'`（名前＋「〜君（くん）」）とは**別概念** |
 | `personality` を 3 個 | 1 個（`cheerful` だけ等）だと単調になるので層を作る。エマは明るい＋好奇心＋感情的、ヒロは寡黙＋論理的＋忠実、で対比 |
 | `attributes` | エマに `'genki'`（元気）、ヒロに `'glasses'` + `'bookworm'` を入れることでライトノベル的な立ち位置を明示 |
 | `occupation: 'student_middle'` | 中学生を enum で明示。高校なら `'student_high'` |
@@ -337,6 +361,10 @@ type BeatSheet = {
     uuid: string
     persona: string
     speechStyle: string
+    firstPerson: FirstPerson                  // CharacterSpec から引き継ぐ一人称
+    secondPerson?: SecondPerson                // 二人称代名詞（CharacterSpec から引き継ぐ）
+    defaultHonorific?: Honorific               // 既定の敬称パターン（CharacterSpec から引き継ぐ）
+    addressOf?: Record<string, string>         // 他 alias への個別呼称マップ（CharacterSpec から引き継ぐ）
     // そのキャラが Beat 実行前時点で知っている事実の内容。Editor が Bible.facts と
     // characterStates[alias].knownFacts を照合して content を展開する。Writer は
     // この範囲でのみ喋らせてよい。narrator も同じルールで絞り、語り手の全知化を避ける。
