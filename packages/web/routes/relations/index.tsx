@@ -397,9 +397,7 @@ function RelationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">キャラクター関係図</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {characters.length} キャラクター · {relations.length} 関係
-            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">キャラクター間の関係性を視覚的に管理</p>
           </div>
           <Button size="lg" onClick={openAddDialog}>
             <Plus data-icon="inline-start" />
