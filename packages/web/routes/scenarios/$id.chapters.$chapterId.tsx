@@ -1,24 +1,26 @@
 import { createFileRoute, Link, useLocation, useParams } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Download, Loader2, Pause, RefreshCw, Sparkles } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Cue, Speaker } from '@/lib/scenarios'
-import { useScenarios } from '@/lib/scenarios'
+import { canRegenerateChapter, useScenarios } from '@/lib/scenarios'
 
-function SpeakerAvatar({ speaker, size = 'md' }: { speaker: Speaker; size?: 'sm' | 'md' }) {
-  const sizeClass = size === 'sm' ? 'size-4 text-[9px]' : 'size-7 text-xs'
+const SpeakerAvatar = ({ speaker, size = 'md' }: { speaker: Speaker; size?: 'sm' | 'md' }) => {
+  const sizeClass = size === 'sm' ? 'size-4 text-[9px]' : 'size-8 text-xs'
+
   return (
-    <span
-      className={`inline-flex items-center justify-center rounded-full font-bold ${sizeClass} ${speaker.colorClass} shrink-0`}
-      title={speaker.name}
-    >
-      {speaker.initial}
-    </span>
+    <Avatar className={sizeClass} title={speaker.name}>
+      <AvatarImage src={speaker.imageUrl ?? undefined} alt="" />
+      <AvatarFallback className={speaker.colorClass}>{speaker.initial}</AvatarFallback>
+    </Avatar>
   )
 }
 
-function SpeechCueCard({ cue, speaker }: { cue: Cue & { kind: 'speech' }; speaker: Speaker | undefined }) {
+const SpeechCueCard = ({ cue, speaker }: { cue: Cue & { kind: 'speech' }; speaker: Speaker | undefined }) => {
   const isNarrator = speaker?.alias === 'narrator'
+
   return (
     <div
       className={`rounded-xl border border-border px-4 py-3 transition-shadow hover:shadow-md ${isNarrator ? 'bg-secondary/40' : 'bg-card'}`}
@@ -36,7 +38,7 @@ function SpeechCueCard({ cue, speaker }: { cue: Cue & { kind: 'speech' }; speake
   )
 }
 
-function PauseCueRow({ duration }: { duration: number }) {
+const PauseCueRow = ({ duration }: { duration: number }) => {
   return (
     <div className="flex items-center justify-center gap-2 py-1">
       <div className="h-px w-12 bg-border" />
@@ -49,7 +51,7 @@ function PauseCueRow({ duration }: { duration: number }) {
   )
 }
 
-export function ChapterDetailPage() {
+export const ChapterDetailPage = () => {
   const { id, chapterId } = useParams({ strict: false })
   const { pathname } = useLocation()
   const { getScenario } = useScenarios()
@@ -83,41 +85,32 @@ export function ChapterDetailPage() {
     .filter((s): s is Speaker => s != null)
 
   const speechCueCount = chapter.cues.filter((c) => c.kind === 'speech').length
+  const regenHint =
+    chapter.status !== 'completed'
+      ? '生成済みの章のみ再生成できます'
+      : canRegenerateChapter(scenario.chapters, chapter.id)
+        ? null
+        : '後続の章があるため、この章は再生成できません'
+  const canRegen = regenHint === null
 
   return (
-    <>
-      <div className="sticky top-0 z-20 border-b border-border bg-card/95 px-6 py-4 backdrop-blur">
-        <div className="mx-auto max-w-3xl">
-          <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            {isPlotsRoute ? (
-              <Link to="/plots" className="transition-colors hover:text-foreground">
-                プロット管理
-              </Link>
-            ) : (
-              <Link to="/scenarios" className="transition-colors hover:text-foreground">
-                シナリオ管理
-              </Link>
-            )}
-            <ChevronRight className="size-3" />
-            {isPlotsRoute ? (
-              <Link to="/plots/$id" params={{ id }} className="transition-colors hover:text-foreground">
-                {scenario.title}
-              </Link>
-            ) : (
-              <Link to="/scenarios/$id" params={{ id }} className="transition-colors hover:text-foreground">
-                {scenario.title}
-              </Link>
-            )}
-            <ChevronRight className="size-3" />
-            <span className="font-medium text-foreground">第{chapter.number}章</span>
-          </nav>
+    <div className="sm:px-6">
+      <div className="sticky top-0 z-10 -mx-6 bg-background/95 px-6 pb-5 backdrop-blur-sm">
+        <div className="w-full">
+          <Link
+            to={isPlotsRoute ? '/plots/$id' : '/scenarios/$id'}
+            params={{ id }}
+            className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronLeft className="size-3.5" />
+            {scenario.title}
+          </Link>
 
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0 flex-1">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <h1 className="text-lg font-semibold">
-                  第{chapter.number}章: {chapter.title}
-                </h1>
+              <p className="text-sm text-muted-foreground">第{chapter.number}章</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight">{chapter.title}</h1>
                 <Badge
                   className={chapter.status === 'completed' ? 'bg-green-500 text-white hover:bg-green-500' : ''}
                   variant={chapter.status === 'completed' ? 'default' : 'secondary'}
@@ -131,13 +124,14 @@ export function ChapterDetailPage() {
                   </span>
                 )}
               </div>
+              <p className="mt-0.5 text-sm text-muted-foreground">{scenario.title} の章詳細とセリフを確認できます</p>
 
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                 <span>{chapter.cueCount} cues</span>
-                <span className="text-border">·</span>
+                <span className="hidden text-border sm:inline">|</span>
                 <span>約{chapter.durationMinutes}分</span>
-                <span className="text-border">·</span>
-                <div className="flex items-center gap-1">
+                <span className="hidden text-border sm:inline">|</span>
+                <div className="flex items-center gap-1.5">
                   {chapterSpeakers.map((s) => (
                     <SpeakerAvatar key={s.alias} speaker={s} size="sm" />
                   ))}
@@ -145,7 +139,7 @@ export function ChapterDetailPage() {
                 </div>
               </div>
 
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {prevChapter ? (
                   <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
                     {isPlotsRoute ? (
@@ -189,21 +183,36 @@ export function ChapterDetailPage() {
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                <RefreshCw className="size-3" />
-                この章を再生成
-              </Button>
-              <Button size="sm" className="gap-1.5 text-xs">
+            <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0 md:pt-0.5">
+              {canRegen ? (
+                <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs sm:w-auto">
+                  <RefreshCw className="size-3" />
+                  この章を再生成
+                </Button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs sm:w-auto" disabled>
+                        <RefreshCw className="size-3" />
+                        この章を再生成
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{regenHint}</TooltipContent>
+                </Tooltip>
+              )}
+              <Button size="sm" className="w-full gap-1.5 text-xs sm:w-auto">
                 <Download className="size-3" />
                 VDS出力
               </Button>
             </div>
           </div>
+          <div className="mt-5 border-b border-border" />
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl px-6 py-8">
+      <div className="mx-auto max-w-3xl py-8">
         {chapter.cues.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
             {chapter.status === 'generating' ? (
@@ -283,7 +292,7 @@ export function ChapterDetailPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
