@@ -43,7 +43,7 @@ export const Route = createFileRoute('/relations/')({
 
 const INITIAL_NODE_POSITIONS: Record<string, { x: number; y: number }> = {
   renka: { x: 80, y: 200 },
-  sakurako: { x: 400, y: 30 },
+  sakurako: { x: 400, y: 80 },
   shota: { x: 400, y: 370 },
   mizuki: { x: 720, y: 200 },
   hayato: { x: 720, y: 450 },
@@ -444,7 +444,7 @@ function RelationsPage() {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             fitView
-            fitViewOptions={{ padding: 0.2 }}
+            fitViewOptions={{ padding: 0.3 }}
             minZoom={0.3}
             maxZoom={2}
             proOptions={{ hideAttribution: true }}
