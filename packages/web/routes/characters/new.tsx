@@ -628,8 +628,8 @@ function CharacterNewPage() {
         </Link>
 
         <div className="mb-6">
-          <h1 className="text-xl font-semibold">キャラクター新規作成</h1>
-          <p className="mt-1 text-sm text-muted-foreground">ウィザード形式で順番に設定します</p>
+          <h1 className="text-2xl font-bold tracking-tight">キャラクター新規作成</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">ウィザード形式で順番に設定します</p>
         </div>
 
         <div className="mb-8 max-w-2xl">
