@@ -400,7 +400,7 @@ function RelationsPage() {
   )
 
   return (
-    <div className="-m-4 sm:-m-6 flex h-[calc(100svh-3.5rem)] flex-col">
+    <div className="flex h-full flex-col">
       {/* Header */}
       <div className="h-12 shrink-0 border-b border-border px-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
