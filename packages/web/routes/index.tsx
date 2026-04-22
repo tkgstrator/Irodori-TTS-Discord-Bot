@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { ArrowRight, BookOpen, Network, Settings, Sparkles, Users } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 type HomeAction = {
@@ -73,7 +72,7 @@ const workflowItems: ReadonlyArray<WorkflowItem> = [
 // ホームの主要導線を横幅を活かした行レイアウトで描画する。
 const HomeActionRow = ({ action }: { action: HomeAction }) => (
   <li className="border-b border-border/70 pb-5 last:border-b-0 last:pb-0">
-    <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-start">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
       <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-foreground ring-1 ring-border/70">
         <action.Icon className="size-5" aria-hidden="true" />
       </div>
@@ -87,7 +86,7 @@ const HomeActionRow = ({ action }: { action: HomeAction }) => (
       <Button
         asChild
         variant="outline"
-        className="h-11 w-full justify-between rounded-xl px-4 lg:mt-1 lg:w-auto lg:min-w-44"
+        className="col-span-2 h-11 w-full justify-between rounded-xl px-4 lg:col-span-1 lg:mt-1 lg:w-auto lg:min-w-44"
       >
         <Link to={action.to}>
           {action.cta}
@@ -105,19 +104,16 @@ const HomePage = () => {
       <section aria-labelledby="home-hero-title" className="border-b border-border/80 pb-10">
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)] xl:gap-10">
           <div className="space-y-5">
-            <Badge variant="outline" className="h-6 rounded-full px-2.5 text-xs">
-              Workspace overview
-            </Badge>
             <div className="space-y-3">
               <h1
                 id="home-hero-title"
                 className="max-w-3xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
               >
-                キャラクター設計からシナリオ整理まで、今すぐ始められるホーム
+                キャラクター設定、プロット整理、相関確認をここから始める
               </h1>
               <p className="max-w-3xl text-base leading-7 text-muted-foreground">
-                Irodori TTS の作業導線をひとつにまとめました。登場人物の設定、プロット管理、相関図の確認、
-                表示設定の調整をホームからすぐに開始できます。
+                この画面は制作の入口です。登場人物の設定、プロットの確認、相関図の見直し、表示設定の調整まで、
+                物語づくりに必要な作業へ迷わず移動できます。
               </p>
             </div>
 
