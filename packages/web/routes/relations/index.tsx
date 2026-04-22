@@ -1,5 +1,4 @@
 import {
-  applyNodeChanges,
   Background,
   BaseEdge,
   Controls,
@@ -10,17 +9,17 @@ import {
   Handle,
   MarkerType,
   type Node,
-  type NodeChange,
   type NodeProps,
   Position,
   ReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  useNodesState
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
 import { createFileRoute } from '@tanstack/react-router'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -253,7 +252,6 @@ function RelationsPage() {
   const { theme } = useTheme()
   const [selectedCharId, setSelectedCharId] = useState('renka')
   const [search, setSearch] = useState('')
-  const [nodePositions, setNodePositions] = useState(INITIAL_NODE_POSITIONS)
   const [dialog, setDialog] = useState<RelationDialogState>(EMPTY_DIALOG)
 
   const dark = isDarkMode(theme)
@@ -276,22 +274,40 @@ function RelationsPage() {
     return characters.filter((c) => c.name.includes(q) || c.role.toLowerCase().includes(q))
   }, [characters, search])
 
-  const nodes: CharacterNode[] = useMemo(
+  const initialNodes: CharacterNode[] = useMemo(
     () =>
-      filteredCharacters.map((char) => ({
+      characters.map((char) => ({
         id: char.id,
         type: 'character' as const,
-        position: nodePositions[char.id] ?? { x: 0, y: 0 },
+        position: INITIAL_NODE_POSITIONS[char.id] ?? { x: 0, y: 0 },
         data: {
           character: char,
-          relationCount: relationCountMap[char.id] ?? 0,
-          selected: char.id === selectedCharId,
-          avatarColor:
-            char.id === selectedCharId ? 'hsl(var(--primary))' : (AVATAR_COLORS[char.id] ?? 'hsl(var(--primary))')
+          relationCount: 0,
+          selected: char.id === 'renka',
+          avatarColor: AVATAR_COLORS[char.id] ?? 'hsl(var(--primary))'
         }
       })),
-    [filteredCharacters, relationCountMap, selectedCharId, nodePositions]
+    [characters]
   )
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+
+  useEffect(() => {
+    const filteredIds = new Set(filteredCharacters.map((c) => c.id))
+    setNodes((prev) =>
+      prev.map((node) => ({
+        ...node,
+        hidden: !filteredIds.has(node.id),
+        data: {
+          ...node.data,
+          relationCount: relationCountMap[node.id] ?? 0,
+          selected: node.id === selectedCharId,
+          avatarColor:
+            node.id === selectedCharId ? 'hsl(var(--primary))' : (AVATAR_COLORS[node.id] ?? 'hsl(var(--primary))')
+        }
+      }))
+    )
+  }, [filteredCharacters, relationCountMap, selectedCharId, setNodes])
 
   const edges: RelationEdge[] = useMemo(
     () =>
@@ -313,23 +329,6 @@ function RelationsPage() {
         }
       })),
     [relations, dark]
-  )
-
-  const onNodesChange = useCallback(
-    (changes: NodeChange<CharacterNode>[]) => {
-      const applied = applyNodeChanges(changes, nodes)
-      const positionChanges = changes.filter((c) => c.type === 'position' && c.position)
-      if (positionChanges.length > 0) {
-        setNodePositions((prev) => {
-          const next = { ...prev }
-          for (const node of applied) {
-            next[node.id] = node.position
-          }
-          return next
-        })
-      }
-    },
-    [nodes]
   )
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: CharacterNode) => {
