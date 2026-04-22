@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, VolumeOff } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Trash2, VolumeOff } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Badge } from '@/components/ui/badge'
@@ -269,15 +269,86 @@ function ControlledSelect({
   )
 }
 
+function ImageUpload({
+  imageUrl,
+  onImageChange
+}: {
+  imageUrl: string | null
+  onImageChange: (file: File | null) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = useCallback(
+    (file: File | null) => {
+      if (file?.type.startsWith('image/')) {
+        onImageChange(file)
+      }
+    },
+    [onImageChange]
+  )
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      const file = e.dataTransfer.files[0] ?? null
+      handleFile(file)
+    },
+    [handleFile]
+  )
+
+  return (
+    <div className="space-y-1.5">
+      <Label>
+        キャラクター画像 <span className="text-xs font-normal text-muted-foreground">任意</span>
+      </Label>
+      {imageUrl ? (
+        <div className="relative inline-block">
+          <img src={imageUrl} alt="キャラクター画像" className="size-24 rounded-xl border border-border object-cover" />
+          <button
+            type="button"
+            onClick={() => onImageChange(null)}
+            className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm transition-opacity hover:opacity-90"
+          >
+            <Trash2 className="size-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          className="flex size-24 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+        >
+          <Camera className="size-5" />
+          <span className="text-[10px]">画像を追加</span>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+      />
+    </div>
+  )
+}
+
 function Step1({
   control,
-  errors
+  errors,
+  imageUrl,
+  onImageChange
 }: {
   control: ReturnType<typeof useForm<CharacterForm>>['control']
   errors: ReturnType<typeof useForm<CharacterForm>>['formState']['errors']
+  imageUrl: string | null
+  onImageChange: (file: File | null) => void
 }) {
   return (
     <div className="space-y-4">
+      <ImageUpload imageUrl={imageUrl} onImageChange={onImageChange} />
       <div className="space-y-1.5">
         <Label>
           名前 <span className="text-destructive">*</span>
@@ -458,7 +529,13 @@ function findLabel(options: readonly { value: string; label: string }[], value: 
   return options.find((o) => o.value === value)?.label ?? ''
 }
 
-function CharacterPreview({ control }: { control: ReturnType<typeof useForm<CharacterForm>>['control'] }) {
+function CharacterPreview({
+  control,
+  imageUrl
+}: {
+  control: ReturnType<typeof useForm<CharacterForm>>['control']
+  imageUrl: string | null
+}) {
   const values = useWatch({ control })
 
   const name = values.name || 'キャラクター名'
@@ -479,9 +556,13 @@ function CharacterPreview({ control }: { control: ReturnType<typeof useForm<Char
 
       <div className="rounded-xl border border-border bg-card p-5 ring-1 ring-foreground/5">
         <div className="mb-4 flex items-start gap-3">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
-            {firstChar}
-          </div>
+          {imageUrl ? (
+            <img src={imageUrl} alt="" className="size-14 shrink-0 rounded-full border border-border object-cover" />
+          ) : (
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+              {firstChar}
+            </div>
+          )}
           <div className="min-w-0">
             <p className={cn('text-lg font-semibold', !values.name && 'text-muted-foreground')}>{name}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">
@@ -565,6 +646,15 @@ function CharacterPreview({ control }: { control: ReturnType<typeof useForm<Char
 function CharacterNewPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+  const handleImageChange = useCallback(
+    (file: File | null) => {
+      if (imageUrl) URL.revokeObjectURL(imageUrl)
+      setImageUrl(file ? URL.createObjectURL(file) : null)
+    },
+    [imageUrl]
+  )
 
   const {
     control,
@@ -647,20 +737,22 @@ function CharacterNewPage() {
                 <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo.description}</p>
               </div>
 
-              {step === 0 && <Step1 control={control} errors={errors} />}
+              {step === 0 && (
+                <Step1 control={control} errors={errors} imageUrl={imageUrl} onImageChange={handleImageChange} />
+              )}
               {step === 1 && <Step2 control={control} errors={errors} />}
               {step === 2 && <Step3 control={control} errors={errors} />}
             </div>
           </form>
 
           <aside className="hidden w-80 shrink-0 xl:block">
-            <CharacterPreview control={control} />
+            <CharacterPreview control={control} imageUrl={imageUrl} />
           </aside>
         </div>
       </div>
 
       <footer className="sticky bottom-0 z-10 border-t border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4 sm:px-6 lg:mx-0">
+        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4 sm:px-6">
           <Button variant="outline" size="lg" onClick={handleBack}>
             <ArrowLeft data-icon="inline-start" />
             {step === 0 ? 'キャンセル' : '前へ'}
