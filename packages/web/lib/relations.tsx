@@ -1,0 +1,98 @@
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+
+export type RelationType = 'family' | 'friend' | 'rival' | 'love'
+
+export interface RelationCharacter {
+  readonly id: string
+  readonly name: string
+  readonly initial: string
+  readonly role: string
+}
+
+export interface Relation {
+  readonly id: string
+  readonly sourceId: string
+  readonly targetId: string
+  readonly type: RelationType
+  readonly label: string
+}
+
+export type RelationInput = Omit<Relation, 'id'>
+
+interface RelationsContextValue {
+  readonly characters: readonly RelationCharacter[]
+  readonly relations: readonly Relation[]
+  readonly getCharacter: (id: string) => RelationCharacter | undefined
+  readonly getRelationsFor: (id: string) => readonly Relation[]
+  readonly addRelation: (input: RelationInput) => Relation
+  readonly updateRelation: (id: string, input: RelationInput) => void
+  readonly deleteRelation: (id: string) => void
+}
+
+const RelationsContext = createContext<RelationsContextValue | null>(null)
+
+const INITIAL_CHARACTERS: readonly RelationCharacter[] = [
+  { id: 'renka', name: '蓮花', initial: '蓮', role: '主人公' },
+  { id: 'sakurako', name: '桜子', initial: '桜', role: '蓮花の姉' },
+  { id: 'shota', name: '翔太', initial: '翔', role: '蓮花の恋人' },
+  { id: 'mizuki', name: '美月', initial: '美', role: '桜子の親友' },
+  { id: 'hayato', name: '隼人', initial: '隼', role: 'ライバル' },
+  { id: 'kazuki', name: '和樹', initial: '和', role: '幼馴染' }
+]
+
+const INITIAL_RELATIONS: readonly Relation[] = [
+  { id: 'r1', sourceId: 'renka', targetId: 'sakurako', type: 'family', label: '姉妹' },
+  { id: 'r2', sourceId: 'renka', targetId: 'shota', type: 'love', label: '恋人' },
+  { id: 'r3', sourceId: 'renka', targetId: 'kazuki', type: 'friend', label: '幼馴染' },
+  { id: 'r4', sourceId: 'sakurako', targetId: 'mizuki', type: 'friend', label: '親友' },
+  { id: 'r5', sourceId: 'shota', targetId: 'hayato', type: 'rival', label: 'ライバル' },
+  { id: 'r6', sourceId: 'mizuki', targetId: 'hayato', type: 'love', label: '片想い' },
+  { id: 'r7', sourceId: 'kazuki', targetId: 'shota', type: 'friend', label: '友人' },
+  { id: 'r8', sourceId: 'sakurako', targetId: 'shota', type: 'family', label: '義理の関係' }
+]
+
+export function RelationsProvider({ children }: { children: React.ReactNode }) {
+  const [relations, setRelations] = useState<Relation[]>([...INITIAL_RELATIONS])
+
+  const getCharacter = useCallback((id: string) => INITIAL_CHARACTERS.find((c) => c.id === id), [])
+
+  const getRelationsFor = useCallback(
+    (id: string) => relations.filter((r) => r.sourceId === id || r.targetId === id),
+    [relations]
+  )
+
+  const addRelation = useCallback((input: RelationInput): Relation => {
+    const relation: Relation = { ...input, id: crypto.randomUUID() }
+    setRelations((prev) => [...prev, relation])
+    return relation
+  }, [])
+
+  const updateRelation = useCallback((id: string, input: RelationInput) => {
+    setRelations((prev) => prev.map((r) => (r.id === id ? { ...input, id } : r)))
+  }, [])
+
+  const deleteRelation = useCallback((id: string) => {
+    setRelations((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
+  const value = useMemo(
+    (): RelationsContextValue => ({
+      characters: INITIAL_CHARACTERS,
+      relations,
+      getCharacter,
+      getRelationsFor,
+      addRelation,
+      updateRelation,
+      deleteRelation
+    }),
+    [relations, getCharacter, getRelationsFor, addRelation, updateRelation, deleteRelation]
+  )
+
+  return <RelationsContext.Provider value={value}>{children}</RelationsContext.Provider>
+}
+
+export function useRelations(): RelationsContextValue {
+  const ctx = useContext(RelationsContext)
+  if (!ctx) throw new Error('useRelations must be used within RelationsProvider')
+  return ctx
+}

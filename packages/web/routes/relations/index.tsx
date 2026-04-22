@@ -1,4 +1,5 @@
 import {
+  applyNodeChanges,
   Background,
   BaseEdge,
   Controls,
@@ -9,6 +10,7 @@ import {
   Handle,
   MarkerType,
   type Node,
+  type NodeChange,
   type NodeProps,
   Position,
   ReactFlow,
@@ -22,15 +24,25 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import type { RelationCharacter, RelationType } from '@/lib/relations'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { Relation, RelationCharacter, RelationType } from '@/lib/relations'
 import { useRelations } from '@/lib/relations'
 
 export const Route = createFileRoute('/relations/')({
   component: RelationsPageWrapper
 })
 
-const NODE_POSITIONS: Record<string, { x: number; y: number }> = {
+const INITIAL_NODE_POSITIONS: Record<string, { x: number; y: number }> = {
   renka: { x: 80, y: 200 },
   sakurako: { x: 400, y: 30 },
   shota: { x: 400, y: 370 },
@@ -61,6 +73,8 @@ const RELATION_TYPE_CONFIG: Record<RelationType, RelationTypeConfig> = {
   rival: { lightColor: '#ef4444', darkColor: '#f87171', label: 'ライバル', dashed: true },
   love: { lightColor: '#ec4899', darkColor: '#f472b6', label: '恋愛', dashed: false }
 }
+
+const RELATION_TYPES: readonly RelationType[] = ['family', 'friend', 'rival', 'love']
 
 function isDarkMode(theme: string): boolean {
   if (theme === 'dark') return true
@@ -169,12 +183,13 @@ function RelationEdgeComponent({
       />
       <EdgeLabelRenderer>
         <div
-          className="nodrag nopan pointer-events-none absolute rounded px-1.5 py-0.5 text-[9px] font-medium"
+          className="nodrag nopan absolute cursor-pointer rounded px-1.5 py-0.5 text-[9px] font-medium transition-opacity hover:opacity-100"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             color,
-            backgroundColor: dark ? 'hsl(var(--card))' : 'hsl(var(--card))',
-            border: `1px solid ${color}33`
+            backgroundColor: 'hsl(var(--card))',
+            border: `1px solid ${color}33`,
+            opacity: 0.85
           }}
         >
           {relationLabel}
@@ -206,6 +221,24 @@ function RelationTypeDot({ type }: { type: RelationType }) {
   )
 }
 
+interface RelationDialogState {
+  readonly open: boolean
+  readonly editingId: string | null
+  readonly sourceId: string
+  readonly targetId: string
+  readonly type: RelationType
+  readonly label: string
+}
+
+const EMPTY_DIALOG: RelationDialogState = {
+  open: false,
+  editingId: null,
+  sourceId: '',
+  targetId: '',
+  type: 'friend',
+  label: ''
+}
+
 function RelationsPageWrapper() {
   return (
     <ReactFlowProvider>
@@ -215,10 +248,14 @@ function RelationsPageWrapper() {
 }
 
 function RelationsPage() {
-  const { characters, relations, getCharacter, getRelationsFor } = useRelations()
+  const { characters, relations, getCharacter, getRelationsFor, addRelation, updateRelation, deleteRelation } =
+    useRelations()
   const { theme } = useTheme()
   const [selectedCharId, setSelectedCharId] = useState('renka')
   const [search, setSearch] = useState('')
+  const [nodePositions, setNodePositions] = useState(INITIAL_NODE_POSITIONS)
+  const [dialog, setDialog] = useState<RelationDialogState>(EMPTY_DIALOG)
+
   const dark = isDarkMode(theme)
 
   const selectedChar = useMemo(() => getCharacter(selectedCharId), [getCharacter, selectedCharId])
@@ -244,7 +281,7 @@ function RelationsPage() {
       filteredCharacters.map((char) => ({
         id: char.id,
         type: 'character' as const,
-        position: NODE_POSITIONS[char.id] ?? { x: 0, y: 0 },
+        position: nodePositions[char.id] ?? { x: 0, y: 0 },
         data: {
           character: char,
           relationCount: relationCountMap[char.id] ?? 0,
@@ -253,7 +290,7 @@ function RelationsPage() {
             char.id === selectedCharId ? 'hsl(var(--primary))' : (AVATAR_COLORS[char.id] ?? 'hsl(var(--primary))')
         }
       })),
-    [filteredCharacters, relationCountMap, selectedCharId]
+    [filteredCharacters, relationCountMap, selectedCharId, nodePositions]
   )
 
   const edges: RelationEdge[] = useMemo(
@@ -278,9 +315,90 @@ function RelationsPage() {
     [relations, dark]
   )
 
+  const onNodesChange = useCallback(
+    (changes: NodeChange<CharacterNode>[]) => {
+      const applied = applyNodeChanges(changes, nodes)
+      const positionChanges = changes.filter((c) => c.type === 'position' && c.position)
+      if (positionChanges.length > 0) {
+        setNodePositions((prev) => {
+          const next = { ...prev }
+          for (const node of applied) {
+            next[node.id] = node.position
+          }
+          return next
+        })
+      }
+    },
+    [nodes]
+  )
+
   const onNodeClick = useCallback((_: React.MouseEvent, node: CharacterNode) => {
     setSelectedCharId(node.id)
   }, [])
+
+  const onEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: RelationEdge) => {
+      const rel = relations.find((r) => r.id === edge.id)
+      if (!rel) return
+      setDialog({
+        open: true,
+        editingId: rel.id,
+        sourceId: rel.sourceId,
+        targetId: rel.targetId,
+        type: rel.type,
+        label: rel.label
+      })
+    },
+    [relations]
+  )
+
+  const openAddDialog = useCallback(() => {
+    setDialog({
+      ...EMPTY_DIALOG,
+      open: true,
+      sourceId: selectedCharId,
+      targetId: characters.find((c) => c.id !== selectedCharId)?.id ?? ''
+    })
+  }, [selectedCharId, characters])
+
+  const openEditDialog = useCallback((rel: Relation) => {
+    setDialog({
+      open: true,
+      editingId: rel.id,
+      sourceId: rel.sourceId,
+      targetId: rel.targetId,
+      type: rel.type,
+      label: rel.label
+    })
+  }, [])
+
+  const handleDialogSave = useCallback(() => {
+    if (!dialog.sourceId || !dialog.targetId || !dialog.label.trim()) return
+    const input = {
+      sourceId: dialog.sourceId,
+      targetId: dialog.targetId,
+      type: dialog.type,
+      label: dialog.label.trim()
+    }
+    if (dialog.editingId) {
+      updateRelation(dialog.editingId, input)
+    } else {
+      addRelation(input)
+    }
+    setDialog(EMPTY_DIALOG)
+  }, [dialog, addRelation, updateRelation])
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteRelation(id)
+    },
+    [deleteRelation]
+  )
+
+  const availableTargets = useMemo(
+    () => characters.filter((c) => c.id !== dialog.sourceId),
+    [characters, dialog.sourceId]
+  )
 
   return (
     <div className="-m-4 sm:-m-6 flex h-[calc(100svh-3.5rem)] flex-col">
@@ -307,7 +425,7 @@ function RelationsPage() {
               aria-label="キャラクターを検索"
             />
           </div>
-          <Button size="sm" className="h-8 gap-1.5 text-xs">
+          <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={openAddDialog}>
             <Plus className="size-3.5" />
             関係を追加
           </Button>
@@ -323,7 +441,9 @@ function RelationsPage() {
             edges={edges}
             nodeTypes={NODE_TYPES}
             edgeTypes={EDGE_TYPES}
+            onNodesChange={onNodesChange}
             onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
             fitView
             fitViewOptions={{ padding: 0.2 }}
             minZoom={0.3}
@@ -357,20 +477,10 @@ function RelationsPage() {
                     <p className="text-xs text-muted-foreground leading-tight mt-0.5">{selectedChar.role}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 h-8 text-xs gap-1">
-                    <Pencil className="size-3" />
-                    編集
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-8 text-xs gap-1 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="size-3" />
-                    削除
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1" onClick={openAddDialog}>
+                  <Plus className="size-3" />
+                  関係を追加
+                </Button>
               </div>
 
               {/* Relations */}
@@ -386,29 +496,51 @@ function RelationsPage() {
                     const cfg = RELATION_TYPE_CONFIG[rel.type]
                     const color = dark ? cfg.darkColor : cfg.lightColor
                     return (
-                      <button
-                        type="button"
+                      <div
                         key={rel.id}
-                        className="flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 text-left hover:bg-accent transition-colors w-full"
-                        onClick={() => setSelectedCharId(otherId)}
+                        className="group flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2"
                       >
-                        <div
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: AVATAR_COLORS[otherId] ?? 'hsl(var(--primary))' }}
+                        <button
+                          type="button"
+                          className="flex items-center gap-2.5 text-left flex-1 min-w-0"
+                          onClick={() => setSelectedCharId(otherId)}
                         >
-                          {other.initial}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium leading-tight">{other.name}</p>
-                          <p className="text-[0.625rem] text-muted-foreground leading-tight mt-0.5">{rel.label}</p>
-                        </div>
+                          <div
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                            style={{ backgroundColor: AVATAR_COLORS[otherId] ?? 'hsl(var(--primary))' }}
+                          >
+                            {other.initial}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium leading-tight">{other.name}</p>
+                            <p className="text-[0.625rem] text-muted-foreground leading-tight mt-0.5">{rel.label}</p>
+                          </div>
+                        </button>
                         <span
                           className="shrink-0 rounded-full px-1.5 py-0.5 text-[0.625rem] font-medium text-white"
                           style={{ backgroundColor: color }}
                         >
                           {cfg.label}
                         </span>
-                      </button>
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          <button
+                            type="button"
+                            className="size-6 flex items-center justify-center rounded hover:bg-accent"
+                            aria-label="編集"
+                            onClick={() => openEditDialog(rel)}
+                          >
+                            <Pencil className="size-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            type="button"
+                            className="size-6 flex items-center justify-center rounded hover:bg-destructive/10"
+                            aria-label="削除"
+                            onClick={() => handleDelete(rel.id)}
+                          >
+                            <Trash2 className="size-3 text-destructive" />
+                          </button>
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
@@ -431,6 +563,103 @@ function RelationsPage() {
           )}
         </div>
       </div>
+
+      {/* Relation Dialog */}
+      <Dialog open={dialog.open} onOpenChange={(open) => setDialog((prev) => (open ? prev : EMPTY_DIALOG))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{dialog.editingId ? '関係を編集' : '関係を追加'}</DialogTitle>
+            <DialogDescription>キャラクター間の関係を設定します。</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>ソース</Label>
+              <Select
+                value={dialog.sourceId}
+                onValueChange={(v) =>
+                  setDialog((prev) => ({
+                    ...prev,
+                    sourceId: v,
+                    targetId: prev.targetId === v ? '' : prev.targetId
+                  }))
+                }
+              >
+                <SelectTrigger className="w-full" aria-label="ソースキャラクター">
+                  <SelectValue placeholder="キャラクターを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {characters.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}（{c.role}）
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>ターゲット</Label>
+              <Select value={dialog.targetId} onValueChange={(v) => setDialog((prev) => ({ ...prev, targetId: v }))}>
+                <SelectTrigger className="w-full" aria-label="ターゲットキャラクター">
+                  <SelectValue placeholder="キャラクターを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTargets.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}（{c.role}）
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>関係タイプ</Label>
+              <Select
+                value={dialog.type}
+                onValueChange={(v) => setDialog((prev) => ({ ...prev, type: v as RelationType }))}
+              >
+                <SelectTrigger className="w-full" aria-label="関係タイプ">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RELATION_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block size-2.5 rounded-full"
+                          style={{ backgroundColor: RELATION_TYPE_CONFIG[t].lightColor }}
+                        />
+                        {RELATION_TYPE_CONFIG[t].label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>ラベル</Label>
+              <Input
+                value={dialog.label}
+                onChange={(e) => setDialog((prev) => ({ ...prev, label: e.target.value }))}
+                placeholder="例: 姉妹、恋人、ライバル"
+                aria-label="関係ラベル"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialog(EMPTY_DIALOG)}>
+              キャンセル
+            </Button>
+            <Button onClick={handleDialogSave} disabled={!dialog.sourceId || !dialog.targetId || !dialog.label.trim()}>
+              {dialog.editingId ? '更新' : '追加'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
