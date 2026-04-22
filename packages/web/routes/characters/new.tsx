@@ -1,10 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Trash2, VolumeOff } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Trash2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
-import { Controller, useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -85,9 +84,9 @@ const SPEECH_STYLES = [
   { value: 'polite_formal', label: '丁寧語' },
   { value: 'polite_casual', label: 'やや丁寧' },
   { value: 'neutral', label: '標準' },
-  { value: 'casual_youthful', label: 'カジュアル（若者）' },
-  { value: 'rough_masculine', label: '荒い（男性的）' },
-  { value: 'refined_feminine', label: '上品（女性的）' },
+  { value: 'casual_youthful', label: 'カジュアル' },
+  { value: 'rough_masculine', label: '荒い' },
+  { value: 'refined_feminine', label: '上品' },
   { value: 'archaic_samurai', label: '武士風' },
   { value: 'archaic_court', label: '宮廷風' },
   { value: 'dialect_regional', label: '方言' },
@@ -524,124 +523,6 @@ function Step3({
   )
 }
 
-function findLabel(options: readonly { value: string; label: string }[], value: string): string {
-  return options.find((o) => o.value === value)?.label ?? ''
-}
-
-function CharacterPreview({
-  control,
-  imageUrl
-}: {
-  control: ReturnType<typeof useForm<CharacterForm>>['control']
-  imageUrl: string | null
-}) {
-  const values = useWatch({ control })
-
-  const name = values.name || 'キャラクター名'
-  const firstChar = name.charAt(0) || '?'
-  const ageLabel = findLabel([...AGE_GROUPS], values.ageGroup ?? '')
-  const genderLabel = findLabel([...GENDERS], values.gender ?? '')
-  const occupationLabel = findLabel([...OCCUPATIONS], values.occupation ?? '')
-  const speechLabel = findLabel([...SPEECH_STYLES], values.speechStyle ?? '')
-  const firstPersonLabel = findLabel([...FIRST_PERSON], values.firstPerson ?? '')
-  const honorificLabel = findLabel([...HONORIFICS], values.honorific ?? '')
-  const personality = values.personalityTags ?? []
-  const attributes = values.attributeTags ?? []
-  const background = values.backgroundTags ?? []
-
-  return (
-    <div className="sticky top-6 space-y-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">プレビュー</p>
-
-      <div className="rounded-xl border border-border bg-card p-5 ring-1 ring-foreground/5">
-        <div className="mb-4 flex items-start gap-3">
-          {imageUrl ? (
-            <img src={imageUrl} alt="" className="size-14 shrink-0 rounded-full border border-border object-cover" />
-          ) : (
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
-              {firstChar}
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className={cn('text-lg font-semibold', !values.name && 'text-muted-foreground')}>{name}</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {[genderLabel, ageLabel, occupationLabel].filter(Boolean).join(' / ') || '—'}
-            </p>
-          </div>
-        </div>
-
-        {personality.length > 0 && (
-          <div className="mb-3">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">性格</p>
-            <div className="flex flex-wrap gap-1.5">
-              {personality.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(speechLabel || firstPersonLabel) && (
-          <div className="mb-3">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">口調</p>
-            <p className="text-sm">
-              {[
-                speechLabel,
-                firstPersonLabel ? `一人称: ${firstPersonLabel}` : '',
-                honorificLabel ? `敬称: ${honorificLabel}` : ''
-              ]
-                .filter(Boolean)
-                .join(' / ')}
-            </p>
-          </div>
-        )}
-
-        {attributes.length > 0 && (
-          <div className="mb-3">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">属性</p>
-            <div className="flex flex-wrap gap-1.5">
-              {attributes.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {background.length > 0 && (
-          <div className="mb-3">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">経歴</p>
-            <div className="flex flex-wrap gap-1.5">
-              {background.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {values.memo && (
-          <div className="mb-3">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">メモ</p>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{values.memo}</p>
-          </div>
-        )}
-
-        <div className="mt-4 border-t border-border pt-3">
-          <Badge variant="outline" className="gap-1 text-muted-foreground">
-            <VolumeOff className="size-2.5" />
-            音声未設定
-          </Badge>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function CharacterNewPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -725,29 +606,23 @@ function CharacterNewPage() {
           <StepProgress current={step + 1} total={STEPS.length} />
         </div>
 
-        <div className="mx-auto flex max-w-xl items-start gap-8 xl:mr-0 xl:ml-auto xl:max-w-none xl:justify-center">
-          <form className="w-full max-w-xl shrink-0" onSubmit={(e) => e.preventDefault()}>
-            <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
-              <div className="mb-5">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Step {step + 1} / {STEPS.length}
-                </p>
-                <h2 className="text-lg font-semibold">{stepInfo.label}</h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo.description}</p>
-              </div>
-
-              {step === 0 && (
-                <Step1 control={control} errors={errors} imageUrl={imageUrl} onImageChange={handleImageChange} />
-              )}
-              {step === 1 && <Step2 control={control} errors={errors} />}
-              {step === 2 && <Step3 control={control} errors={errors} />}
+        <form className="mx-auto max-w-xl" onSubmit={(e) => e.preventDefault()}>
+          <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
+            <div className="mb-5">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Step {step + 1} / {STEPS.length}
+              </p>
+              <h2 className="text-lg font-semibold">{stepInfo.label}</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo.description}</p>
             </div>
-          </form>
 
-          <aside className="hidden w-80 shrink-0 xl:block">
-            <CharacterPreview control={control} imageUrl={imageUrl} />
-          </aside>
-        </div>
+            {step === 0 && (
+              <Step1 control={control} errors={errors} imageUrl={imageUrl} onImageChange={handleImageChange} />
+            )}
+            {step === 1 && <Step2 control={control} errors={errors} />}
+            {step === 2 && <Step3 control={control} errors={errors} />}
+          </div>
+        </form>
       </div>
 
       <footer className="sticky bottom-0 z-10 border-t border-border bg-background">
