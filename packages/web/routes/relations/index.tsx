@@ -374,9 +374,18 @@ function RelationsPage() {
 
   const onEdgeClick = useCallback(
     (_: React.MouseEvent, edge: RelationEdge) => {
-      deleteRelation(edge.id)
+      const rel = relations.find((r) => r.id === edge.id)
+      if (!rel) return
+      setRelationDialog({
+        open: true,
+        editingId: rel.id,
+        sourceId: rel.sourceId,
+        targetId: rel.targetId,
+        type: rel.type,
+        label: rel.label
+      })
     },
-    [deleteRelation]
+    [relations]
   )
 
   const onConnect = useCallback((connection: Connection) => {
@@ -722,16 +731,30 @@ function RelationsPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRelationDialog(EMPTY_RELATION_DIALOG)}>
-              キャンセル
-            </Button>
-            <Button
-              onClick={handleRelationSave}
-              disabled={!relationDialog.sourceId || !relationDialog.targetId || !relationDialog.label.trim()}
-            >
-              {relationDialog.editingId ? '更新' : '追加'}
-            </Button>
+          <DialogFooter className={relationDialog.editingId ? 'sm:justify-between' : ''}>
+            {relationDialog.editingId && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  deleteRelation(relationDialog.editingId as string)
+                  setRelationDialog(EMPTY_RELATION_DIALOG)
+                }}
+              >
+                <Trash2 className="size-4" />
+                削除
+              </Button>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setRelationDialog(EMPTY_RELATION_DIALOG)}>
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleRelationSave}
+                disabled={!relationDialog.sourceId || !relationDialog.targetId || !relationDialog.label.trim()}
+              >
+                {relationDialog.editingId ? '更新' : '追加'}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
