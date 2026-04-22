@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRight, Check, ChevronLeft } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronLeft, VolumeOff } from 'lucide-react'
 import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -453,6 +454,114 @@ function Step3({
   )
 }
 
+function findLabel(options: readonly { value: string; label: string }[], value: string): string {
+  return options.find((o) => o.value === value)?.label ?? ''
+}
+
+function CharacterPreview({ control }: { control: ReturnType<typeof useForm<CharacterForm>>['control'] }) {
+  const values = useWatch({ control })
+
+  const name = values.name || 'キャラクター名'
+  const firstChar = name.charAt(0) || '?'
+  const ageLabel = findLabel([...AGE_GROUPS], values.ageGroup ?? '')
+  const genderLabel = findLabel([...GENDERS], values.gender ?? '')
+  const occupationLabel = findLabel([...OCCUPATIONS], values.occupation ?? '')
+  const speechLabel = findLabel([...SPEECH_STYLES], values.speechStyle ?? '')
+  const firstPersonLabel = findLabel([...FIRST_PERSON], values.firstPerson ?? '')
+  const honorificLabel = findLabel([...HONORIFICS], values.honorific ?? '')
+  const personality = values.personalityTags ?? []
+  const attributes = values.attributeTags ?? []
+  const background = values.backgroundTags ?? []
+
+  return (
+    <div className="sticky top-6 space-y-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">プレビュー</p>
+
+      <div className="rounded-xl border border-border bg-card p-5 ring-1 ring-foreground/5">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+            {firstChar}
+          </div>
+          <div className="min-w-0">
+            <p className={cn('text-lg font-semibold', !values.name && 'text-muted-foreground')}>{name}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {[genderLabel, ageLabel, occupationLabel].filter(Boolean).join(' / ') || '—'}
+            </p>
+          </div>
+        </div>
+
+        {personality.length > 0 && (
+          <div className="mb-3">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">性格</p>
+            <div className="flex flex-wrap gap-1.5">
+              {personality.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(speechLabel || firstPersonLabel) && (
+          <div className="mb-3">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">口調</p>
+            <p className="text-sm">
+              {[
+                speechLabel,
+                firstPersonLabel ? `一人称: ${firstPersonLabel}` : '',
+                honorificLabel ? `敬称: ${honorificLabel}` : ''
+              ]
+                .filter(Boolean)
+                .join(' / ')}
+            </p>
+          </div>
+        )}
+
+        {attributes.length > 0 && (
+          <div className="mb-3">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">属性</p>
+            <div className="flex flex-wrap gap-1.5">
+              {attributes.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {background.length > 0 && (
+          <div className="mb-3">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">経歴</p>
+            <div className="flex flex-wrap gap-1.5">
+              {background.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {values.memo && (
+          <div className="mb-3">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">メモ</p>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{values.memo}</p>
+          </div>
+        )}
+
+        <div className="mt-4 border-t border-border pt-3">
+          <Badge variant="outline" className="gap-1 text-muted-foreground">
+            <VolumeOff className="size-2.5" />
+            音声未設定
+          </Badge>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CharacterNewPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -518,34 +627,40 @@ function CharacterNewPage() {
           一覧に戻る
         </Link>
 
-        <form className="mx-auto max-w-2xl" onSubmit={(e) => e.preventDefault()}>
-          <div className="mb-6">
-            <h1 className="text-xl font-semibold">キャラクター新規作成</h1>
-            <p className="mt-1 text-sm text-muted-foreground">ウィザード形式で順番に設定します</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold">キャラクター新規作成</h1>
+          <p className="mt-1 text-sm text-muted-foreground">ウィザード形式で順番に設定します</p>
+        </div>
 
-          <div className="mb-8">
-            <StepProgress current={step + 1} total={STEPS.length} />
-          </div>
+        <div className="mb-8 max-w-2xl">
+          <StepProgress current={step + 1} total={STEPS.length} />
+        </div>
 
-          <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
-            <div className="mb-5">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Step {step + 1} / {STEPS.length}
-              </p>
-              <h2 className="text-lg font-semibold">{stepInfo.label}</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo.description}</p>
+        <div className="flex gap-8">
+          <form className="min-w-0 flex-1 max-w-2xl" onSubmit={(e) => e.preventDefault()}>
+            <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
+              <div className="mb-5">
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Step {step + 1} / {STEPS.length}
+                </p>
+                <h2 className="text-lg font-semibold">{stepInfo.label}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo.description}</p>
+              </div>
+
+              {step === 0 && <Step1 control={control} errors={errors} />}
+              {step === 1 && <Step2 control={control} errors={errors} />}
+              {step === 2 && <Step3 control={control} errors={errors} />}
             </div>
+          </form>
 
-            {step === 0 && <Step1 control={control} errors={errors} />}
-            {step === 1 && <Step2 control={control} errors={errors} />}
-            {step === 2 && <Step3 control={control} errors={errors} />}
-          </div>
-        </form>
+          <aside className="hidden w-80 shrink-0 lg:block">
+            <CharacterPreview control={control} />
+          </aside>
+        </div>
       </div>
 
       <footer className="sticky bottom-0 z-10 border-t border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4 sm:px-6 lg:mx-0">
           <Button variant="outline" size="lg" onClick={handleBack}>
             <ArrowLeft data-icon="inline-start" />
             {step === 0 ? 'キャンセル' : '前へ'}
