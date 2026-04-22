@@ -721,11 +721,11 @@ function CharacterNewPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">ウィザード形式で順番に設定します</p>
         </div>
 
-        <div className="mb-8 max-w-xl">
+        <div className="mx-auto mb-8 max-w-xl">
           <StepProgress current={step + 1} total={STEPS.length} />
         </div>
 
-        <div className="flex items-start gap-8">
+        <div className="mx-auto flex max-w-xl items-start gap-8 xl:mr-0 xl:ml-auto xl:max-w-none xl:justify-center">
           <form className="w-full max-w-xl shrink-0" onSubmit={(e) => e.preventDefault()}>
             <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
               <div className="mb-5">
