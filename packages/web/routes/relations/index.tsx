@@ -660,7 +660,7 @@ function RelationsPage() {
                 <SelectContent>
                   {characters.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.name}（{c.role}）
+                      {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -679,7 +679,7 @@ function RelationsPage() {
                 <SelectContent>
                   {availableTargets.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.name}（{c.role}）
+                      {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
