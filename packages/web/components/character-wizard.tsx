@@ -1,14 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Trash2 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useCallback, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { mergeImportedValues } from '@/lib/speaker-import'
 import { cn } from '@/lib/utils'
+import type { CharacterFormValues, SpeakerLink } from '@/schemas/character.dto'
+import { CharacterFormSchema } from '@/schemas/character.dto'
+import type { SpeakerImportTemplate } from '@/schemas/speaker.dto'
 
 const STEPS = [
   { label: '基本情報', description: 'キャラクターの基本プロフィールを設定してください' },
@@ -136,23 +140,6 @@ const ATTRIBUTE_TAGS = [
 
 const BACKGROUND_TAGS = ['孤児', '名家出身', '異世界転移', '記憶喪失', '天才', 'トラウマ'] as const
 
-export const characterSchema = z.object({
-  name: z.string().min(1, '名前は必須です'),
-  ageGroup: z.string(),
-  gender: z.string(),
-  occupation: z.string(),
-  personalityTags: z.array(z.string()).min(1, '性格タグを1つ以上選択してください').max(4, '性格タグは4つまでです'),
-  speechStyle: z.string(),
-  firstPerson: z.string(),
-  secondPerson: z.string(),
-  honorific: z.string(),
-  attributeTags: z.array(z.string()).max(4, '属性タグは4つまでです'),
-  backgroundTags: z.array(z.string()).max(3, '経歴タグは3つまでです'),
-  memo: z.string()
-})
-
-export type CharacterFormValues = z.infer<typeof characterSchema>
-
 export const DEFAULT_VALUES: CharacterFormValues = {
   name: '',
   ageGroup: 'young_adult',
@@ -165,7 +152,15 @@ export const DEFAULT_VALUES: CharacterFormValues = {
   honorific: 'san',
   attributeTags: [],
   backgroundTags: [],
-  memo: ''
+  memo: '',
+  speakerId: null
+}
+
+// 生成した blob URL だけを安全に解放する
+const revokeObjectUrl = (value: string | null) => {
+  if (value?.startsWith('blob:')) {
+    URL.revokeObjectURL(value)
+  }
 }
 
 function toggleInArray(arr: readonly string[], value: string, max: number): string[] {
@@ -345,15 +340,18 @@ function Step1({
   control,
   errors,
   imageUrl,
-  onImageChange
+  onImageChange,
+  actions
 }: {
   control: ReturnType<typeof useForm<CharacterFormValues>>['control']
   errors: ReturnType<typeof useForm<CharacterFormValues>>['formState']['errors']
   imageUrl: string | null
   onImageChange: (file: File | null) => void
+  actions?: ReactNode
 }) {
   return (
     <div className="space-y-4">
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       <div className="flex items-start gap-4">
         <ImageUpload imageUrl={imageUrl} onImageChange={onImageChange} />
         <div className="min-w-0 flex-1 space-y-1.5">
@@ -539,6 +537,8 @@ export function CharacterWizard({
   submitLabel,
   defaultValues,
   initialImageUrl,
+  initialSpeaker,
+  stepOneActions,
   onSubmit,
   onCancel
 }: {
@@ -547,29 +547,62 @@ export function CharacterWizard({
   submitLabel: string
   defaultValues: CharacterFormValues
   initialImageUrl?: string | null
-  onSubmit: (data: CharacterFormValues, imageUrl: string | null) => void
+  initialSpeaker?: SpeakerLink | null
+  stepOneActions?: (context: {
+    linkedSpeaker: SpeakerLink | null
+    applySpeakerTemplate: (template: SpeakerImportTemplate) => void
+    clearSpeaker: () => void
+    isSubmitting: boolean
+  }) => ReactNode
+  onSubmit: (data: CharacterFormValues, imageUrl: string | null) => Promise<void> | void
   onCancel: () => void
 }) {
   const [step, setStep] = useState(0)
   const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl ?? null)
+  const [linkedSpeaker, setLinkedSpeaker] = useState<SpeakerLink | null>(initialSpeaker ?? null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleImageChange = useCallback(
     (file: File | null) => {
-      if (imageUrl && !initialImageUrl) URL.revokeObjectURL(imageUrl)
+      revokeObjectUrl(imageUrl)
       setImageUrl(file ? URL.createObjectURL(file) : null)
     },
-    [imageUrl, initialImageUrl]
+    [imageUrl]
   )
 
   const {
     control,
+    getValues,
+    reset,
+    setValue,
     trigger,
     handleSubmit,
     formState: { errors }
   } = useForm<CharacterFormValues>({
-    resolver: zodResolver(characterSchema),
+    resolver: zodResolver(CharacterFormSchema),
     defaultValues
   })
+
+  // 話者テンプレートをフォームへ反映し、空値で既存入力を消さない
+  const applySpeakerTemplate = (template: SpeakerImportTemplate) => {
+    const currentValues = getValues()
+    const mergedValues = mergeImportedValues(currentValues, template.values)
+
+    reset({
+      ...mergedValues,
+      speakerId: template.speaker.id
+    })
+    setLinkedSpeaker(template.speaker)
+  }
+
+  // 明示的な話者連携を解除する
+  const clearSpeaker = () => {
+    setValue('speakerId', null, {
+      shouldDirty: true,
+      shouldTouch: true
+    })
+    setLinkedSpeaker(null)
+  }
 
   const isLast = step === STEPS.length - 1
 
@@ -579,7 +612,14 @@ export function CharacterWizard({
     if (!valid) return
 
     if (isLast) {
-      handleSubmit((data) => onSubmit(data, imageUrl))()
+      await handleSubmit(async (data) => {
+        setIsSubmitting(true)
+        try {
+          await onSubmit(data, imageUrl)
+        } finally {
+          setIsSubmitting(false)
+        }
+      })()
       return
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1))
@@ -594,6 +634,12 @@ export function CharacterWizard({
   }
 
   const stepInfo = STEPS[step]
+  const stepOneActionNodes = stepOneActions?.({
+    linkedSpeaker,
+    applySpeakerTemplate,
+    clearSpeaker,
+    isSubmitting
+  })
 
   return (
     <div className="flex flex-1 flex-col">
@@ -601,6 +647,7 @@ export function CharacterWizard({
         <button
           type="button"
           onClick={onCancel}
+          disabled={isSubmitting}
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronLeft className="size-4" />
@@ -627,7 +674,13 @@ export function CharacterWizard({
             </div>
 
             {step === 0 && (
-              <Step1 control={control} errors={errors} imageUrl={imageUrl} onImageChange={handleImageChange} />
+              <Step1
+                control={control}
+                errors={errors}
+                imageUrl={imageUrl}
+                onImageChange={handleImageChange}
+                actions={stepOneActionNodes}
+              />
             )}
             {step === 1 && <Step2 control={control} errors={errors} />}
             {step === 2 && <Step3 control={control} errors={errors} />}
@@ -637,15 +690,15 @@ export function CharacterWizard({
 
       <footer className="sticky bottom-0 z-10 border-t border-border bg-background">
         <div className="mx-auto flex h-16 max-w-xl items-center justify-between px-4 sm:px-6">
-          <Button variant="outline" size="lg" onClick={handleBack}>
+          <Button variant="outline" size="lg" onClick={handleBack} disabled={isSubmitting}>
             <ArrowLeft data-icon="inline-start" />
             {step === 0 ? 'キャンセル' : '前へ'}
           </Button>
           <span className="text-sm text-muted-foreground">
             {step + 1} / {STEPS.length}
           </span>
-          <Button size="lg" onClick={handleNext}>
-            {isLast ? submitLabel : '次へ'}
+          <Button size="lg" onClick={handleNext} disabled={isSubmitting}>
+            {isLast ? (isSubmitting ? '保存中...' : submitLabel) : '次へ'}
             {!isLast && <ArrowRight data-icon="inline-end" />}
           </Button>
         </div>
