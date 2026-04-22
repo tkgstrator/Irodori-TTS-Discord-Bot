@@ -1,3 +1,18 @@
-import { PrismaClient } from '../generated/prisma'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { z } from 'zod'
+import { PrismaClient } from '../generated/prisma/client'
 
-export const db = new PrismaClient()
+// PostgreSQL 接続文字列の必須チェックを行う
+const envSchema = z.object({
+  DATABASE_URL: z.string().min(1)
+})
+
+const envResult = envSchema.safeParse(process.env)
+
+if (!envResult.success) {
+  throw new Error('DATABASE_URL is required')
+}
+
+const adapter = new PrismaPg(envResult.data.DATABASE_URL)
+
+export const db = new PrismaClient({ adapter })

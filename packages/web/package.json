@@ -4,8 +4,11 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "bun ./scripts/dev.ts",
     "dev:server": "bun --watch server/index.ts",
+    "db:push": "bunx --bun prisma db push",
+    "db:seed": "bunx --bun prisma db seed",
+    "db:erd": "bunx --bun prisma generate --generator erd",
     "build": "vite build",
     "start": "bun server/index.ts"
   },
@@ -14,12 +17,15 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@hono/node-server": "^2.0.0",
     "@hookform/resolvers": "^5.2.2",
+    "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@tanstack/react-router": "^1.168.23",
+    "@xyflow/react": "^12.10.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "hono": "^4.12.14",
     "lucide-react": "^1.8.0",
+    "pg": "^8.20.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -36,6 +42,7 @@
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^6.0.1",
     "prisma": "^7.7.0",
+    "prisma-erd-generator": "^2.4.2",
     "tailwindcss": "^4.2.4",
     "vite": "^8.0.0"
   }

@@ -3,8 +3,22 @@ generator client {
   output   = "../generated/prisma"
 }
 
+generator erd {
+  provider     = "prisma-erd-generator"
+  output       = "./ERD.md"
+  theme        = "neutral"
+  disableEmoji = true
+}
+
 datasource db {
   provider = "postgresql"
+}
+
+enum ScenarioStatus {
+  draft
+  generating
+  completed
+  failed
 }
 
 model Character {
@@ -25,6 +39,81 @@ model Character {
   attributeTags   String[] @map("attribute_tags")
   backgroundTags  String[] @map("background_tags")
   memo            String   @default("")
+  speakerId       String?  @map("speaker_id")
 
+  speaker Speaker? @relation(fields: [speakerId], references: [id], onDelete: SetNull)
+
+  relationsFrom CharacterRelation[] @relation("RelationFrom")
+  relationsTo   CharacterRelation[] @relation("RelationTo")
+  narratorOf    Scenario[]          @relation("Narrator")
+  scenarioCasts ScenarioCast[]
+
+  @@index([speakerId])
   @@map("characters")
+}
+
+model Speaker {
+  id        String   @id
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name String
+
+  characters Character[]
+
+  @@map("speakers")
+}
+
+model CharacterRelation {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  fromCharacterId String @map("from_character_id")
+  toCharacterId   String @map("to_character_id")
+  relationType    String @map("relation_type")
+
+  fromCharacter Character @relation("RelationFrom", fields: [fromCharacterId], references: [id], onDelete: Cascade)
+  toCharacter   Character @relation("RelationTo", fields: [toCharacterId], references: [id], onDelete: Cascade)
+
+  @@unique([fromCharacterId, toCharacterId])
+  @@map("character_relations")
+}
+
+model Scenario {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  title   String
+  genres  String[]
+  tone    String
+  ending  String
+  status  ScenarioStatus @default(draft)
+  vdsJson Json?          @map("vds_json")
+
+  narratorId String?    @map("narrator_id")
+  narrator   Character? @relation("Narrator", fields: [narratorId], references: [id], onDelete: SetNull)
+
+  cast ScenarioCast[]
+
+  @@map("scenarios")
+}
+
+model ScenarioCast {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  scenarioId   String @map("scenario_id")
+  characterId  String @map("character_id")
+  role         String
+  relationship String
+  alias        String
+
+  scenario  Scenario  @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, characterId])
+  @@unique([scenarioId, alias])
+  @@map("scenario_casts")
 }
