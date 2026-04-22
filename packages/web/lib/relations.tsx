@@ -9,6 +9,8 @@ export interface RelationCharacter {
   readonly role: string
 }
 
+export type RelationCharacterInput = Omit<RelationCharacter, 'id'>
+
 export interface Relation {
   readonly id: string
   readonly sourceId: string
@@ -24,6 +26,8 @@ interface RelationsContextValue {
   readonly relations: readonly Relation[]
   readonly getCharacter: (id: string) => RelationCharacter | undefined
   readonly getRelationsFor: (id: string) => readonly Relation[]
+  readonly addCharacter: (input: RelationCharacterInput) => RelationCharacter
+  readonly deleteCharacter: (id: string) => void
   readonly addRelation: (input: RelationInput) => Relation
   readonly updateRelation: (id: string, input: RelationInput) => void
   readonly deleteRelation: (id: string) => void
@@ -52,14 +56,26 @@ const INITIAL_RELATIONS: readonly Relation[] = [
 ]
 
 export function RelationsProvider({ children }: { children: React.ReactNode }) {
+  const [characters, setCharacters] = useState<RelationCharacter[]>([...INITIAL_CHARACTERS])
   const [relations, setRelations] = useState<Relation[]>([...INITIAL_RELATIONS])
 
-  const getCharacter = useCallback((id: string) => INITIAL_CHARACTERS.find((c) => c.id === id), [])
+  const getCharacter = useCallback((id: string) => characters.find((c) => c.id === id), [characters])
 
   const getRelationsFor = useCallback(
     (id: string) => relations.filter((r) => r.sourceId === id || r.targetId === id),
     [relations]
   )
+
+  const addCharacter = useCallback((input: RelationCharacterInput): RelationCharacter => {
+    const character: RelationCharacter = { ...input, id: crypto.randomUUID() }
+    setCharacters((prev) => [...prev, character])
+    return character
+  }, [])
+
+  const deleteCharacter = useCallback((id: string) => {
+    setCharacters((prev) => prev.filter((c) => c.id !== id))
+    setRelations((prev) => prev.filter((r) => r.sourceId !== id && r.targetId !== id))
+  }, [])
 
   const addRelation = useCallback((input: RelationInput): Relation => {
     const relation: Relation = { ...input, id: crypto.randomUUID() }
@@ -77,15 +93,27 @@ export function RelationsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     (): RelationsContextValue => ({
-      characters: INITIAL_CHARACTERS,
+      characters,
       relations,
       getCharacter,
       getRelationsFor,
+      addCharacter,
+      deleteCharacter,
       addRelation,
       updateRelation,
       deleteRelation
     }),
-    [relations, getCharacter, getRelationsFor, addRelation, updateRelation, deleteRelation]
+    [
+      characters,
+      relations,
+      getCharacter,
+      getRelationsFor,
+      addCharacter,
+      deleteCharacter,
+      addRelation,
+      updateRelation,
+      deleteRelation
+    ]
   )
 
   return <RelationsContext.Provider value={value}>{children}</RelationsContext.Provider>
