@@ -721,12 +721,12 @@ function CharacterNewPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">ウィザード形式で順番に設定します</p>
         </div>
 
-        <div className="mb-8 max-w-2xl">
+        <div className="mb-8 max-w-xl">
           <StepProgress current={step + 1} total={STEPS.length} />
         </div>
 
         <div className="flex items-start gap-8">
-          <form className="w-full max-w-2xl shrink-0" onSubmit={(e) => e.preventDefault()}>
+          <form className="w-full max-w-xl shrink-0" onSubmit={(e) => e.preventDefault()}>
             <div className="rounded-xl border border-border bg-card p-6 ring-1 ring-foreground/5">
               <div className="mb-5">
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -751,7 +751,7 @@ function CharacterNewPage() {
       </div>
 
       <footer className="sticky bottom-0 z-10 border-t border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-xl items-center justify-between px-4 sm:px-6">
           <Button variant="outline" size="lg" onClick={handleBack}>
             <ArrowLeft data-icon="inline-start" />
             {step === 0 ? 'キャンセル' : '前へ'}
