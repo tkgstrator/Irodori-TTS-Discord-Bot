@@ -653,7 +653,7 @@ function CharacterNewPage() {
             </div>
           </form>
 
-          <aside className="hidden min-w-0 flex-1 lg:block">
+          <aside className="hidden min-w-0 flex-1 xl:block">
             <CharacterPreview control={control} />
           </aside>
         </div>
