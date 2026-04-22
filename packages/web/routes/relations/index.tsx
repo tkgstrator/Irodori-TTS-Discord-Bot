@@ -43,7 +43,7 @@ export const Route = createFileRoute('/relations/')({
 
 const INITIAL_NODE_POSITIONS: Record<string, { x: number; y: number }> = {
   renka: { x: 80, y: 200 },
-  sakurako: { x: 400, y: 80 },
+  sakurako: { x: 400, y: 30 },
   shota: { x: 400, y: 370 },
   mizuki: { x: 720, y: 200 },
   hayato: { x: 720, y: 450 },
@@ -402,7 +402,7 @@ function RelationsPage() {
   return (
     <div className="-m-4 sm:-m-6 flex h-[calc(100svh-3.5rem)] flex-col">
       {/* Header */}
-      <div className="relative z-10 h-12 shrink-0 border-b border-border bg-card px-4 flex items-center justify-between gap-3">
+      <div className="h-12 shrink-0 border-b border-border px-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-sm font-semibold whitespace-nowrap">キャラクター関係図</h1>
           <Badge variant="secondary" className="text-xs whitespace-nowrap">
@@ -444,7 +444,7 @@ function RelationsPage() {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             fitView
-            fitViewOptions={{ padding: 0.3 }}
+            fitViewOptions={{ padding: 0.2 }}
             minZoom={0.3}
             maxZoom={2}
             proOptions={{ hideAttribution: true }}
