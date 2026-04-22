@@ -1,9 +1,11 @@
 import { db } from '../server/db'
 import { syncSpeakerSeeds } from '../server/speaker-import'
+import { syncScenarioSeeds } from './scenario-seeds'
 
 // シード処理全体を実行する
 const main = async () => {
   await syncSpeakerSeeds()
+  await syncScenarioSeeds(db)
 }
 
 main()

@@ -9,15 +9,45 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ScenariosIndexRouteImport } from './routes/scenarios/index'
+import { Route as RelationsIndexRouteImport } from './routes/relations/index'
+import { Route as PlotsIndexRouteImport } from './routes/plots/index'
 import { Route as MockupsIndexRouteImport } from './routes/mockups/index'
 import { Route as CharactersIndexRouteImport } from './routes/characters/index'
+import { Route as ScenariosNewRouteImport } from './routes/scenarios/new'
+import { Route as ScenariosIdRouteImport } from './routes/scenarios/$id'
+import { Route as PlotsNewRouteImport } from './routes/plots/new'
+import { Route as PlotsIdRouteImport } from './routes/plots/$id'
 import { Route as CharactersNewRouteImport } from './routes/characters/new'
 import { Route as CharactersIdEditRouteImport } from './routes/characters/$id.edit'
+import { Route as ScenariosIdChaptersChapterIdRouteImport } from './routes/scenarios/$id.chapters.$chapterId'
+import { Route as PlotsIdChaptersChapterIdRouteImport } from './routes/plots/$id.chapters.$chapterId'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScenariosIndexRoute = ScenariosIndexRouteImport.update({
+  id: '/scenarios/',
+  path: '/scenarios/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelationsIndexRoute = RelationsIndexRouteImport.update({
+  id: '/relations/',
+  path: '/relations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlotsIndexRoute = PlotsIndexRouteImport.update({
+  id: '/plots/',
+  path: '/plots/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MockupsIndexRoute = MockupsIndexRouteImport.update({
@@ -30,6 +60,26 @@ const CharactersIndexRoute = CharactersIndexRouteImport.update({
   path: '/characters/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScenariosNewRoute = ScenariosNewRouteImport.update({
+  id: '/scenarios/new',
+  path: '/scenarios/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScenariosIdRoute = ScenariosIdRouteImport.update({
+  id: '/scenarios/$id',
+  path: '/scenarios/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlotsNewRoute = PlotsNewRouteImport.update({
+  id: '/plots/new',
+  path: '/plots/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlotsIdRoute = PlotsIdRouteImport.update({
+  id: '/plots/$id',
+  path: '/plots/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CharactersNewRoute = CharactersNewRouteImport.update({
   id: '/characters/new',
   path: '/characters/new',
@@ -40,68 +90,176 @@ const CharactersIdEditRoute = CharactersIdEditRouteImport.update({
   path: '/characters/$id/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScenariosIdChaptersChapterIdRoute =
+  ScenariosIdChaptersChapterIdRouteImport.update({
+    id: '/chapters/$chapterId',
+    path: '/chapters/$chapterId',
+    getParentRoute: () => ScenariosIdRoute,
+  } as any)
+const PlotsIdChaptersChapterIdRoute =
+  PlotsIdChaptersChapterIdRouteImport.update({
+    id: '/chapters/$chapterId',
+    path: '/chapters/$chapterId',
+    getParentRoute: () => PlotsIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/characters/new': typeof CharactersNewRoute
+  '/plots/$id': typeof PlotsIdRouteWithChildren
+  '/plots/new': typeof PlotsNewRoute
+  '/scenarios/$id': typeof ScenariosIdRouteWithChildren
+  '/scenarios/new': typeof ScenariosNewRoute
   '/characters/': typeof CharactersIndexRoute
   '/mockups/': typeof MockupsIndexRoute
+  '/plots/': typeof PlotsIndexRoute
+  '/relations/': typeof RelationsIndexRoute
+  '/scenarios/': typeof ScenariosIndexRoute
   '/characters/$id/edit': typeof CharactersIdEditRoute
+  '/plots/$id/chapters/$chapterId': typeof PlotsIdChaptersChapterIdRoute
+  '/scenarios/$id/chapters/$chapterId': typeof ScenariosIdChaptersChapterIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/characters/new': typeof CharactersNewRoute
+  '/plots/$id': typeof PlotsIdRouteWithChildren
+  '/plots/new': typeof PlotsNewRoute
+  '/scenarios/$id': typeof ScenariosIdRouteWithChildren
+  '/scenarios/new': typeof ScenariosNewRoute
   '/characters': typeof CharactersIndexRoute
   '/mockups': typeof MockupsIndexRoute
+  '/plots': typeof PlotsIndexRoute
+  '/relations': typeof RelationsIndexRoute
+  '/scenarios': typeof ScenariosIndexRoute
   '/characters/$id/edit': typeof CharactersIdEditRoute
+  '/plots/$id/chapters/$chapterId': typeof PlotsIdChaptersChapterIdRoute
+  '/scenarios/$id/chapters/$chapterId': typeof ScenariosIdChaptersChapterIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/characters/new': typeof CharactersNewRoute
+  '/plots/$id': typeof PlotsIdRouteWithChildren
+  '/plots/new': typeof PlotsNewRoute
+  '/scenarios/$id': typeof ScenariosIdRouteWithChildren
+  '/scenarios/new': typeof ScenariosNewRoute
   '/characters/': typeof CharactersIndexRoute
   '/mockups/': typeof MockupsIndexRoute
+  '/plots/': typeof PlotsIndexRoute
+  '/relations/': typeof RelationsIndexRoute
+  '/scenarios/': typeof ScenariosIndexRoute
   '/characters/$id/edit': typeof CharactersIdEditRoute
+  '/plots/$id/chapters/$chapterId': typeof PlotsIdChaptersChapterIdRoute
+  '/scenarios/$id/chapters/$chapterId': typeof ScenariosIdChaptersChapterIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/characters/new'
+    | '/plots/$id'
+    | '/plots/new'
+    | '/scenarios/$id'
+    | '/scenarios/new'
     | '/characters/'
     | '/mockups/'
+    | '/plots/'
+    | '/relations/'
+    | '/scenarios/'
     | '/characters/$id/edit'
+    | '/plots/$id/chapters/$chapterId'
+    | '/scenarios/$id/chapters/$chapterId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/settings'
     | '/characters/new'
+    | '/plots/$id'
+    | '/plots/new'
+    | '/scenarios/$id'
+    | '/scenarios/new'
     | '/characters'
     | '/mockups'
+    | '/plots'
+    | '/relations'
+    | '/scenarios'
     | '/characters/$id/edit'
+    | '/plots/$id/chapters/$chapterId'
+    | '/scenarios/$id/chapters/$chapterId'
   id:
     | '__root__'
     | '/'
+    | '/settings'
     | '/characters/new'
+    | '/plots/$id'
+    | '/plots/new'
+    | '/scenarios/$id'
+    | '/scenarios/new'
     | '/characters/'
     | '/mockups/'
+    | '/plots/'
+    | '/relations/'
+    | '/scenarios/'
     | '/characters/$id/edit'
+    | '/plots/$id/chapters/$chapterId'
+    | '/scenarios/$id/chapters/$chapterId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
   CharactersNewRoute: typeof CharactersNewRoute
+  PlotsIdRoute: typeof PlotsIdRouteWithChildren
+  PlotsNewRoute: typeof PlotsNewRoute
+  ScenariosIdRoute: typeof ScenariosIdRouteWithChildren
+  ScenariosNewRoute: typeof ScenariosNewRoute
   CharactersIndexRoute: typeof CharactersIndexRoute
   MockupsIndexRoute: typeof MockupsIndexRoute
+  PlotsIndexRoute: typeof PlotsIndexRoute
+  RelationsIndexRoute: typeof RelationsIndexRoute
+  ScenariosIndexRoute: typeof ScenariosIndexRoute
   CharactersIdEditRoute: typeof CharactersIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scenarios/': {
+      id: '/scenarios/'
+      path: '/scenarios'
+      fullPath: '/scenarios/'
+      preLoaderRoute: typeof ScenariosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relations/': {
+      id: '/relations/'
+      path: '/relations'
+      fullPath: '/relations/'
+      preLoaderRoute: typeof RelationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plots/': {
+      id: '/plots/'
+      path: '/plots'
+      fullPath: '/plots/'
+      preLoaderRoute: typeof PlotsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mockups/': {
@@ -118,6 +276,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CharactersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/scenarios/new': {
+      id: '/scenarios/new'
+      path: '/scenarios/new'
+      fullPath: '/scenarios/new'
+      preLoaderRoute: typeof ScenariosNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scenarios/$id': {
+      id: '/scenarios/$id'
+      path: '/scenarios/$id'
+      fullPath: '/scenarios/$id'
+      preLoaderRoute: typeof ScenariosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plots/new': {
+      id: '/plots/new'
+      path: '/plots/new'
+      fullPath: '/plots/new'
+      preLoaderRoute: typeof PlotsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plots/$id': {
+      id: '/plots/$id'
+      path: '/plots/$id'
+      fullPath: '/plots/$id'
+      preLoaderRoute: typeof PlotsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/characters/new': {
       id: '/characters/new'
       path: '/characters/new'
@@ -132,14 +318,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CharactersIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/scenarios/$id/chapters/$chapterId': {
+      id: '/scenarios/$id/chapters/$chapterId'
+      path: '/chapters/$chapterId'
+      fullPath: '/scenarios/$id/chapters/$chapterId'
+      preLoaderRoute: typeof ScenariosIdChaptersChapterIdRouteImport
+      parentRoute: typeof ScenariosIdRoute
+    }
+    '/plots/$id/chapters/$chapterId': {
+      id: '/plots/$id/chapters/$chapterId'
+      path: '/chapters/$chapterId'
+      fullPath: '/plots/$id/chapters/$chapterId'
+      preLoaderRoute: typeof PlotsIdChaptersChapterIdRouteImport
+      parentRoute: typeof PlotsIdRoute
+    }
   }
 }
 
+interface PlotsIdRouteChildren {
+  PlotsIdChaptersChapterIdRoute: typeof PlotsIdChaptersChapterIdRoute
+}
+
+const PlotsIdRouteChildren: PlotsIdRouteChildren = {
+  PlotsIdChaptersChapterIdRoute: PlotsIdChaptersChapterIdRoute,
+}
+
+const PlotsIdRouteWithChildren =
+  PlotsIdRoute._addFileChildren(PlotsIdRouteChildren)
+
+interface ScenariosIdRouteChildren {
+  ScenariosIdChaptersChapterIdRoute: typeof ScenariosIdChaptersChapterIdRoute
+}
+
+const ScenariosIdRouteChildren: ScenariosIdRouteChildren = {
+  ScenariosIdChaptersChapterIdRoute: ScenariosIdChaptersChapterIdRoute,
+}
+
+const ScenariosIdRouteWithChildren = ScenariosIdRoute._addFileChildren(
+  ScenariosIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
   CharactersNewRoute: CharactersNewRoute,
+  PlotsIdRoute: PlotsIdRouteWithChildren,
+  PlotsNewRoute: PlotsNewRoute,
+  ScenariosIdRoute: ScenariosIdRouteWithChildren,
+  ScenariosNewRoute: ScenariosNewRoute,
   CharactersIndexRoute: CharactersIndexRoute,
   MockupsIndexRoute: MockupsIndexRoute,
+  PlotsIndexRoute: PlotsIndexRoute,
+  RelationsIndexRoute: RelationsIndexRoute,
+  ScenariosIndexRoute: ScenariosIndexRoute,
   CharactersIdEditRoute: CharactersIdEditRoute,
 }
 export const routeTree = rootRouteImport
