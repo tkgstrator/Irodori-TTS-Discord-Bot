@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { ArrowRight, BookOpen, Network, Settings, Sparkles, Users } from 'lucide-react'
+import { PageContainer } from '@/components/page-container'
 import { Button } from '@/components/ui/button'
 
 type HomeAction = {
@@ -97,10 +98,19 @@ const HomeActionRow = ({ action }: { action: HomeAction }) => (
   </li>
 )
 
+// ホームの主要 CTA でアイコン付きでも文言が視覚的に中央に来るようにする。
+const HomeCtaLabel = ({ icon: Icon, label }: { icon: LucideIcon; label: string }) => (
+  <span className="grid w-full grid-cols-[1rem_minmax(0,1fr)_1rem] items-center gap-2">
+    <Icon className="size-4" aria-hidden="true" />
+    <span className="text-center">{label}</span>
+    <span aria-hidden="true" />
+  </span>
+)
+
 // ホーム画面を描画する。
 const HomePage = () => {
   return (
-    <main className="flex w-full flex-col gap-10 px-4 py-4 sm:px-0 sm:py-6">
+    <PageContainer className="flex flex-col gap-10">
       <section aria-labelledby="home-hero-title" className="border-b border-border/80 pb-10">
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)] xl:gap-10">
           <div className="space-y-5">
@@ -118,16 +128,14 @@ const HomePage = () => {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button asChild className="h-11 rounded-xl px-4">
+              <Button asChild className="h-11 rounded-xl px-4 sm:min-w-48">
                 <Link to="/characters/new">
-                  <Sparkles data-icon="inline-start" />
-                  キャラクターを追加
+                  <HomeCtaLabel icon={Sparkles} label="キャラクターを追加" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="h-11 rounded-xl px-4">
+              <Button asChild variant="outline" className="h-11 rounded-xl px-4 sm:min-w-48">
                 <Link to="/plots">
-                  <BookOpen data-icon="inline-start" />
-                  プロット一覧へ
+                  <HomeCtaLabel icon={BookOpen} label="プロット一覧へ" />
                 </Link>
               </Button>
             </div>
@@ -169,7 +177,7 @@ const HomePage = () => {
           ))}
         </ul>
       </section>
-    </main>
+    </PageContainer>
   )
 }
 

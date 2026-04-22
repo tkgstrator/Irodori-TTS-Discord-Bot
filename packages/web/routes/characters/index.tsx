@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { GENDERS } from '@/components/character-wizard'
+import { PageContainer } from '@/components/page-container'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -226,7 +227,7 @@ const CharactersPage = () => {
   }
 
   return (
-    <div className="p-4 pb-8 sm:p-6">
+    <PageContainer>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">キャラクター管理</h1>
@@ -238,10 +239,6 @@ const CharactersPage = () => {
             新規作成
           </Link>
         </Button>
-      </div>
-
-      <div className="mb-6 text-sm text-muted-foreground">
-        全 <strong className="text-foreground">{characters.length}</strong> キャラクター
       </div>
 
       {errorMessage && (
@@ -268,7 +265,7 @@ const CharactersPage = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {characters.map((character) => (
             <CharacterCard key={character.id} character={character} onDelete={setPendingDeleteCharacter} />
           ))}
@@ -306,7 +303,7 @@ const CharactersPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   )
 }
 
