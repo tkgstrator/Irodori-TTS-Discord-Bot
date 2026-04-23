@@ -1,35 +1,45 @@
 import { createFileRoute, Link, useLocation, useParams } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, Download, Loader2, Pause, RefreshCw, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Pause, RefreshCw } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Cue, Speaker } from '@/lib/scenarios'
+import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
+import type { ChapterCharacter, Cue, Speaker } from '@/lib/scenarios'
 import { canRegenerateChapter, useScenarios } from '@/lib/scenarios'
+import { createChapterVdsExport, createChapterVdsJsonExport } from '@/lib/vds'
 
-const SpeakerAvatar = ({ speaker, size = 'md' }: { speaker: Speaker; size?: 'sm' | 'md' }) => {
+const CharacterAvatar = ({ character, size = 'md' }: { character: ChapterCharacter; size?: 'sm' | 'md' }) => {
   const sizeClass = size === 'sm' ? 'size-4 text-[9px]' : 'size-8 text-xs'
+  const initial = character.name.charAt(0) || '?'
 
   return (
-    <Avatar className={sizeClass} title={speaker.name}>
-      <AvatarImage src={speaker.imageUrl ?? undefined} alt="" />
-      <AvatarFallback className={speaker.colorClass}>{speaker.initial}</AvatarFallback>
+    <Avatar className={sizeClass} title={character.name}>
+      <AvatarImage src={character.imageUrl ?? undefined} alt="" />
+      <AvatarFallback>{initial}</AvatarFallback>
     </Avatar>
   )
 }
 
-const SpeechCueCard = ({ cue, speaker }: { cue: Cue & { kind: 'speech' }; speaker: Speaker | undefined }) => {
-  const isNarrator = speaker?.alias === 'narrator'
+const SpeechCueCard = ({
+  cue,
+  speaker,
+  character
+}: {
+  cue: Cue & { kind: 'speech' }
+  speaker: Speaker | undefined
+  character: ChapterCharacter | undefined
+}) => {
+  const isNarrator = speaker?.alias === 'yuki'
 
   return (
     <div
       className={`rounded-xl border border-border px-4 py-3 transition-shadow hover:shadow-md ${isNarrator ? 'bg-secondary/40' : 'bg-card'}`}
     >
       <div className="flex items-start gap-3">
-        {speaker && <SpeakerAvatar speaker={speaker} />}
+        {character && <CharacterAvatar character={character} />}
         <div className="min-w-0 flex-1">
           <p className={`mb-1 text-xs font-semibold ${speaker?.nameColor ?? 'text-muted-foreground'}`}>
-            {speaker?.name ?? cue.speaker}
+            {character?.name ?? speaker?.name ?? cue.speaker}
           </p>
           <p className="text-sm leading-relaxed">{cue.text}</p>
         </div>
@@ -54,9 +64,25 @@ const PauseCueRow = ({ duration }: { duration: number }) => {
 export const ChapterDetailPage = () => {
   const { id, chapterId } = useParams({ strict: false })
   const { pathname } = useLocation()
-  const { getScenario } = useScenarios()
+  const { getScenario, isLoading, errorMessage } = useScenarios()
   const scenario = getScenario(id)
   const isPlotsRoute = pathname.startsWith('/plots')
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-muted-foreground">シナリオを読み込み中です</p>
+      </div>
+    )
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      </div>
+    )
+  }
 
   if (!scenario) {
     return (
@@ -80,10 +106,6 @@ export const ChapterDetailPage = () => {
   const prevChapter = chapterIndex > 0 ? scenario.chapters[chapterIndex - 1] : undefined
   const nextChapter = chapterIndex < scenario.chapters.length - 1 ? scenario.chapters[chapterIndex + 1] : undefined
 
-  const chapterSpeakers = chapter.speakers
-    .map((alias) => scenario.speakers.find((s) => s.alias === alias))
-    .filter((s): s is Speaker => s != null)
-
   const speechCueCount = chapter.cues.filter((c) => c.kind === 'speech').length
   const regenHint =
     chapter.status !== 'completed'
@@ -92,6 +114,16 @@ export const ChapterDetailPage = () => {
         ? null
         : '後続の章があるため、この章は再生成できません'
   const canRegen = regenHint === null
+  const chapterVdsExport = createChapterVdsExport({ scenario, chapter })
+  const chapterVdsJsonExport = createChapterVdsJsonExport({ scenario, chapter })
+  const chapterVdsPreviewReason =
+    !chapterVdsExport.ok && !chapterVdsJsonExport.ok
+      ? chapterVdsExport.reason
+      : !chapterVdsExport.ok
+        ? chapterVdsExport.reason
+        : !chapterVdsJsonExport.ok
+          ? chapterVdsJsonExport.reason
+          : null
 
   return (
     <div className="sm:px-6">
@@ -109,21 +141,7 @@ export const ChapterDetailPage = () => {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-sm text-muted-foreground">第{chapter.number}章</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight">{chapter.title}</h1>
-                <Badge
-                  className={chapter.status === 'completed' ? 'bg-green-500 text-white hover:bg-green-500' : ''}
-                  variant={chapter.status === 'completed' ? 'default' : 'secondary'}
-                >
-                  {chapter.status === 'completed' ? '生成済み' : chapter.status === 'generating' ? '生成中' : '未生成'}
-                </Badge>
-                {scenario.isAiGenerated && (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-violet-100 px-1.5 py-0.5 text-xs text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
-                    <Sparkles className="size-2.5" />
-                    AI生成
-                  </span>
-                )}
-              </div>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight">{chapter.title}</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">{scenario.title} の章詳細とセリフを確認できます</p>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
@@ -132,10 +150,10 @@ export const ChapterDetailPage = () => {
                 <span>約{chapter.durationMinutes}分</span>
                 <span className="hidden text-border sm:inline">|</span>
                 <div className="flex items-center gap-1.5">
-                  {chapterSpeakers.map((s) => (
-                    <SpeakerAvatar key={s.alias} speaker={s} size="sm" />
+                  {chapter.characters.map((character) => (
+                    <CharacterAvatar key={character.speakerId ?? character.name} character={character} size="sm" />
                   ))}
-                  <span className="ml-1">{chapterSpeakers.length}話者</span>
+                  <span className="ml-1">{chapter.characters.length}人</span>
                 </div>
               </div>
 
@@ -202,10 +220,28 @@ export const ChapterDetailPage = () => {
                   <TooltipContent>{regenHint}</TooltipContent>
                 </Tooltip>
               )}
-              <Button size="sm" className="w-full gap-1.5 text-xs sm:w-auto">
-                <Download className="size-3" />
-                VDS出力
-              </Button>
+              {chapterVdsPreviewReason === null ? (
+                <VdsPreviewDialog
+                  title={`第${chapter.number}章のVDS出力を確認`}
+                  description="この章の VDS / VDS JSON を確認してから出力できます。"
+                  vdsExport={chapterVdsExport}
+                  vdsJsonExport={chapterVdsJsonExport}
+                  triggerClassName="w-full gap-1.5 text-xs sm:w-auto"
+                  triggerLabel="VDSビュー"
+                  triggerSize="sm"
+                />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button size="sm" className="w-full gap-1.5 text-xs sm:w-auto" disabled>
+                        VDSビュー
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{chapterVdsPreviewReason}</TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
           <div className="mt-5 border-b border-border" />
@@ -232,7 +268,10 @@ export const ChapterDetailPage = () => {
                 return <PauseCueRow key={key} duration={cue.duration} />
               }
               const speaker = scenario.speakers.find((s) => s.alias === cue.speaker)
-              return <SpeechCueCard key={key} cue={cue} speaker={speaker} />
+              const character = chapter.characters.find(
+                (item) => item.speakerId !== null && item.speakerId === speaker?.speakerId
+              )
+              return <SpeechCueCard key={key} cue={cue} speaker={speaker} character={character} />
             })}
           </div>
         )}

@@ -5,7 +5,8 @@
   "version": "0.0.1",
   "exports": {
     "./irodori-api": "./src/irodori-api.ts",
-    "./enums": "./src/enums.ts"
+    "./enums": "./src/enums.ts",
+    "./voice-drama": "./src/voice-drama.dto.ts"
   },
   "dependencies": {
     "@zodios/core": "^10.9.6",
