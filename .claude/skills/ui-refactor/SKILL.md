@@ -36,6 +36,7 @@ For each component in scope, evaluate against these criteria:
 **Visual Design**
 - Color contrast (WCAG 2.2 AA: 4.5:1 for text, 3:1 for large text/UI)
 - Spacing consistency (uses Tailwind spacing scale, no magic numbers)
+- For spacing between repeated/listed elements, prefer `gap` on the parent layout; avoid `pb` / `mb` for inter-item spacing unless there is a clear one-off exception
 - Typography hierarchy (clear heading levels, readable body text >= 16px)
 - Dark/light mode parity (both themes look intentional, not broken)
 
