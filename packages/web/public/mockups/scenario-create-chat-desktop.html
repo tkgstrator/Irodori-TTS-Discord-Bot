@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>プロット作成 ステップ (Desktop)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Geist', 'sans-serif'] } } } }</script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); }
+    .field-input { height: 2.25rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--background); padding: 0 0.75rem; font-size: 0.875rem; color: var(--foreground); width: 100%; outline: none; transition: box-shadow 0.15s; }
+    .field-input:focus { box-shadow: 0 0 0 2px var(--ring); }
+    textarea.field-input { height: auto; padding: 0.5rem 0.75rem; resize: vertical; }
+    select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.65rem center; padding-right: 2rem; }
+    .genre-chip { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--background); color: var(--foreground); transition: all 0.15s; user-select: none; }
+    .genre-chip.selected { border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+    .genre-chip.disabled { opacity: 0.35; pointer-events: none; }
+    .radio-card { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: 0.8125rem; transition: border-color 0.15s; }
+    .radio-card.selected { border-color: var(--primary); background: var(--muted); }
+    .char-card { border-radius: var(--radius); border: 2px solid var(--border); background: var(--card); padding: 0.625rem; cursor: pointer; transition: all 0.15s; }
+    .char-card.selected { border-color: var(--primary); background: var(--muted); }
+    .char-card.dimmed { opacity: 0.35; pointer-events: none; }
+    .step-dot { height: 2rem; width: 2rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; transition: all 0.2s; }
+    .step-dot.done { background: var(--primary); color: var(--primary-foreground); }
+    .step-dot.active { background: var(--primary); color: var(--primary-foreground); box-shadow: 0 0 0 3px var(--ring); }
+    .step-dot.pending { background: var(--muted); color: var(--muted-foreground); border: 2px solid var(--border); }
+    .step-connector { height: 2px; flex: 1; transition: background 0.2s; }
+    .step-connector.done { background: var(--primary); }
+    .step-connector.pending { background: var(--border); }
+  </style>
+</head>
+<body class="min-h-screen pb-24">
+  <header class="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--background)]">
+    <div class="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        一覧に戻る
+      </a>
+      <span class="text-xs font-medium text-[var(--muted-foreground)]">ステップ</span>
+      <button onclick="toggleTheme()" class="h-8 w-8 flex items-center justify-center rounded-[var(--radius)] border border-[var(--border)] hover:bg-[var(--muted)]">
+        <svg id="iconSun" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg id="iconMoon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="max-w-2xl mx-auto px-6 pt-8 pb-2">
+    <h1 class="text-xl font-semibold">プロット作成</h1>
+    <p class="text-sm text-[var(--muted-foreground)] mt-1">プロットを作成してLLMにシナリオを生成してもらいます</p>
+  </div>
+
+  <!-- Step progress bar -->
+  <div class="max-w-2xl mx-auto px-6 py-6">
+    <div class="flex items-center gap-0">
+      <div class="flex flex-col items-center gap-1">
+        <div class="step-dot done">✓</div>
+        <span class="text-xs font-medium text-[var(--foreground)]">基本設定</span>
+      </div>
+      <div class="step-connector done mb-5"></div>
+      <div class="flex flex-col items-center gap-1">
+        <div class="step-dot active">2</div>
+        <span class="text-xs font-medium text-[var(--foreground)]">キャラ選択</span>
+      </div>
+      <div class="step-connector pending mb-5"></div>
+      <div class="flex flex-col items-center gap-1">
+        <div class="step-dot pending">3</div>
+        <span class="text-xs text-[var(--muted-foreground)]">関係性</span>
+      </div>
+      <div class="step-connector pending mb-5"></div>
+      <div class="flex flex-col items-center gap-1">
+        <div class="step-dot pending">4</div>
+        <span class="text-xs text-[var(--muted-foreground)]">生成</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1 (completed) - shown collapsed -->
+  <div class="max-w-2xl mx-auto px-6 mb-4">
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-5 w-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs flex items-center justify-center font-bold">✓</span>
+          <span class="text-sm font-semibold">基本設定</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+          <span class="bg-[var(--secondary)] border border-[var(--border)] px-2 py-0.5 rounded-full">学園</span>
+          <span class="bg-[var(--secondary)] border border-[var(--border)] px-2 py-0.5 rounded-full">恋愛</span>
+          <span>ほろ苦い</span>
+          <span>完結</span>
+          <button class="text-[var(--muted-foreground)] hover:text-[var(--foreground)] ml-1 underline text-xs">変更</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 (active) -->
+  <main class="max-w-2xl mx-auto px-6">
+    <section class="rounded-xl border-2 border-[var(--primary)] bg-[var(--card)] p-6 space-y-4">
+      <div class="pb-3 border-b border-[var(--border)] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-6 w-6 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs flex items-center justify-center font-bold">2</span>
+          <span class="text-sm font-semibold">キャラクター選択</span>
+        </div>
+        <span class="text-xs text-[var(--muted-foreground)]">3人まで選択可能</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="char-card selected space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:oklch(0.205 0 0)">蓮</span>
+            <div class="min-w-0"><p class="text-sm font-semibold truncate">蓮花</p><p class="text-xs text-[var(--muted-foreground)]">高校生</p></div>
+            <svg class="ml-auto shrink-0 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="flex flex-wrap gap-1"><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">明るい</span><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">好奇心旺盛</span></div>
+          <select class="field-input" style="height:1.875rem;font-size:0.72rem"><option selected>主人公</option><option>準主役</option><option>相棒</option><option>脇役</option><option>敵役</option><option>ライバル</option><option>師匠</option><option>恋愛対象</option><option>ナレーター</option></select>
+        </div>
+        <div class="char-card space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:#22c55e">桜</span>
+            <div class="min-w-0"><p class="text-sm font-semibold truncate">桜子</p><p class="text-xs text-[var(--muted-foreground)]">大学生</p></div>
+          </div>
+          <div class="flex flex-wrap gap-1"><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">真面目</span></div>
+        </div>
+        <div class="char-card selected space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:#ec4899">翔</span>
+            <div class="min-w-0"><p class="text-sm font-semibold truncate">翔太</p><p class="text-xs text-[var(--muted-foreground)]">高校生</p></div>
+            <svg class="ml-auto shrink-0 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="flex flex-wrap gap-1"><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">寡黙</span><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">勇敢</span></div>
+          <select class="field-input" style="height:1.875rem;font-size:0.72rem"><option>主人公</option><option>準主役</option><option>相棒</option><option>脇役</option><option>敵役</option><option>ライバル</option><option>師匠</option><option selected>恋愛対象</option><option>ナレーター</option></select>
+        </div>
+        <div class="char-card dimmed space-y-2">
+          <div class="flex items-center gap-2"><span class="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:#3b82f6">美</span><div class="min-w-0"><p class="text-sm font-semibold truncate">美月</p><p class="text-xs text-[var(--muted-foreground)]">高校生</p></div></div>
+          <div class="flex flex-wrap gap-1"><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">自信家</span></div>
+        </div>
+        <div class="char-card dimmed space-y-2">
+          <div class="flex items-center gap-2"><span class="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:#ef4444">隼</span><div class="min-w-0"><p class="text-sm font-semibold truncate">隼人</p><p class="text-xs text-[var(--muted-foreground)]">高校生</p></div></div>
+          <div class="flex flex-wrap gap-1"><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">熱血</span></div>
+        </div>
+        <div class="char-card dimmed space-y-2">
+          <div class="flex items-center gap-2"><span class="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:#3b82f6">和</span><div class="min-w-0"><p class="text-sm font-semibold truncate">和樹</p><p class="text-xs text-[var(--muted-foreground)]">高校生</p></div></div>
+          <div class="flex flex-wrap gap-1"><span class="text-xs bg-[var(--secondary)] px-1.5 py-0.5 rounded-full">穏やか</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Pending steps preview -->
+  <div class="max-w-2xl mx-auto px-6 mt-4 space-y-3">
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4 opacity-50">
+      <div class="flex items-center gap-2">
+        <span class="h-5 w-5 rounded-full border-2 border-[var(--border)] text-xs flex items-center justify-center text-[var(--muted-foreground)]">3</span>
+        <span class="text-sm font-medium text-[var(--muted-foreground)]">関係性設定</span>
+      </div>
+    </div>
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4 opacity-50">
+      <div class="flex items-center gap-2">
+        <span class="h-5 w-5 rounded-full border-2 border-[var(--border)] text-xs flex items-center justify-center text-[var(--muted-foreground)]">4</span>
+        <span class="text-sm font-medium text-[var(--muted-foreground)]">生成設定 &amp; 実行</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="fixed bottom-0 left-0 right-0 z-10 border-t border-[var(--border)] bg-[var(--background)]">
+    <div class="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between gap-3">
+      <button class="border border-[var(--border)] rounded-[var(--radius)] h-9 px-4 text-sm hover:bg-[var(--muted)]">キャンセル</button>
+      <div class="flex items-center gap-3">
+        <button class="border border-[var(--border)] rounded-[var(--radius)] h-9 px-4 text-sm hover:bg-[var(--muted)]">← 前へ</button>
+        <button class="bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] h-9 px-5 text-sm font-medium hover:opacity-90">次へ →</button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const toggleTheme = () => {
+      const html = document.documentElement
+      const isDark = html.classList.toggle('dark')
+      document.getElementById('iconSun').classList.toggle('hidden', isDark)
+      document.getElementById('iconMoon').classList.toggle('hidden', !isDark)
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター新規作成 ウィザード (Desktop)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['Geist', 'sans-serif'] } } }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); }
+    .field-input {
+      height: 2.25rem; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--background);
+      padding: 0 0.75rem; font-size: 0.875rem; color: var(--foreground);
+      width: 100%; outline: none; transition: box-shadow 0.15s;
+    }
+    .field-input:focus { box-shadow: 0 0 0 2px var(--ring); }
+    select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.65rem center; padding-right: 2rem; }
+    textarea.field-input { height: auto; padding: 0.5rem 0.75rem; resize: vertical; }
+    .chip { display: inline-flex; align-items: center; border-radius: 9999px; border: 1px solid var(--border); padding: 0.25rem 0.625rem; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
+    .chip:hover { background: var(--muted); }
+    .chip.selected { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+  </style>
+</head>
+<body class="min-h-screen pb-24">
+
+  <header class="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--background)]">
+    <div class="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        一覧に戻る
+      </a>
+      <button onclick="toggleTheme()" class="h-8 w-8 flex items-center justify-center rounded-[var(--radius)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">
+        <svg id="iconSun" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg id="iconMoon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="max-w-2xl mx-auto px-6 pt-8 pb-6">
+    <h1 class="text-xl font-semibold">キャラクター新規作成</h1>
+    <p class="text-sm text-[var(--muted-foreground)] mt-1">ウィザード形式で順番に設定します</p>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="max-w-2xl mx-auto px-6 mb-8">
+    <div class="flex items-center gap-0">
+      <div class="flex flex-col items-center gap-1.5 flex-1">
+        <div id="step-circle-1" class="h-8 w-8 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-semibold ring-4 ring-[var(--ring)] ring-offset-2 ring-offset-[var(--background)]">1</div>
+        <span id="step-label-1" class="text-xs font-semibold text-[var(--foreground)]">基本情報</span>
+      </div>
+      <div id="line-1" class="flex-1 h-0.5 bg-[var(--border)] mb-5"></div>
+      <div class="flex flex-col items-center gap-1.5 flex-1">
+        <div id="step-circle-2" class="h-8 w-8 rounded-full border-2 border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] flex items-center justify-center text-sm">2</div>
+        <span id="step-label-2" class="text-xs text-[var(--muted-foreground)]">性格・口調</span>
+      </div>
+      <div id="line-2" class="flex-1 h-0.5 bg-[var(--border)] mb-5"></div>
+      <div class="flex flex-col items-center gap-1.5 flex-1">
+        <div id="step-circle-3" class="h-8 w-8 rounded-full border-2 border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] flex items-center justify-center text-sm">3</div>
+        <span id="step-label-3" class="text-xs text-[var(--muted-foreground)]">属性・背景</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-2xl mx-auto px-6">
+
+    <!-- Step 1: 基本情報 -->
+    <div id="panel-1" class="step-panel active rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-5">
+      <div>
+        <p class="text-xs text-[var(--muted-foreground)] font-medium uppercase tracking-wide mb-1">Step 1 / 3</p>
+        <h2 class="text-lg font-semibold">基本情報</h2>
+        <p class="text-sm text-[var(--muted-foreground)] mt-0.5">キャラクターの基本プロフィールを設定してください</p>
+      </div>
+      <div class="space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium">名前 <span class="text-[var(--destructive)]">*</span></label>
+          <input type="text" class="field-input" placeholder="キャラクター名" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">ロール</label>
+            <select class="field-input">
+              <option value="protagonist">主人公</option>
+              <option value="deuteragonist">準主役</option>
+              <option value="companion">相棒</option>
+              <option value="supporting">脇役</option>
+              <option value="antagonist">敵役</option>
+              <option value="rival">ライバル</option>
+              <option value="mentor">師匠</option>
+              <option value="authority">権威者</option>
+              <option value="love_interest">恋愛対象</option>
+              <option value="comic_relief">お笑い担当</option>
+              <option value="narrator">ナレーター</option>
+              <option value="minor">端役</option>
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">年齢層</label>
+            <select class="field-input">
+              <option value="infant">乳幼児</option>
+              <option value="child">子供</option>
+              <option value="preteen">小学生</option>
+              <option value="teen">10代</option>
+              <option value="young_adult" selected>青年</option>
+              <option value="adult">成人</option>
+              <option value="middle_aged">中年</option>
+              <option value="elderly">高齢</option>
+              <option value="ageless">不老</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">性別</label>
+            <div class="flex flex-wrap gap-x-3 gap-y-1.5">
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="gender" value="male" checked class="accent-[var(--primary)]" /> 男性</label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="gender" value="female" class="accent-[var(--primary)]" /> 女性</label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="gender" value="nonbinary" class="accent-[var(--primary)]" /> ノンバイナリー</label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="gender" value="unknown" class="accent-[var(--primary)]" /> 不明</label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="gender" value="other" class="accent-[var(--primary)]" /> その他</label>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">職業</label>
+            <select class="field-input">
+              <option value="student_high">高校生</option>
+              <option value="student_college">大学生</option>
+              <option value="teacher">教師</option>
+              <option value="engineer">エンジニア</option>
+              <option value="adventurer">冒険者</option>
+              <option value="knight">騎士</option>
+              <option value="mage">魔法使い</option>
+              <option value="detective">探偵</option>
+              <option value="doctor">医師</option>
+              <option value="merchant">商人</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: 性格・口調 -->
+    <div id="panel-2" class="step-panel rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-5">
+      <div>
+        <p class="text-xs text-[var(--muted-foreground)] font-medium uppercase tracking-wide mb-1">Step 2 / 3</p>
+        <h2 class="text-lg font-semibold">性格・口調</h2>
+        <p class="text-sm text-[var(--muted-foreground)] mt-0.5">キャラクターの性格と話し方を設定してください</p>
+      </div>
+      <div class="space-y-4">
+        <div class="space-y-2">
+          <label class="text-sm font-medium">性格タグ <span class="text-[var(--destructive)]">*</span> <span class="text-xs text-[var(--muted-foreground)] font-normal">1〜4個選択</span></label>
+          <div class="flex flex-wrap gap-2">
+            <span class="chip selected" onclick="toggleChip(this)">明るい</span>
+            <span class="chip" onclick="toggleChip(this)">内気</span>
+            <span class="chip" onclick="toggleChip(this)">寡黙</span>
+            <span class="chip selected" onclick="toggleChip(this)">熱血</span>
+            <span class="chip" onclick="toggleChip(this)">穏やか</span>
+            <span class="chip" onclick="toggleChip(this)">優しい</span>
+            <span class="chip" onclick="toggleChip(this)">真面目</span>
+            <span class="chip" onclick="toggleChip(this)">天然</span>
+            <span class="chip" onclick="toggleChip(this)">傲慢</span>
+            <span class="chip" onclick="toggleChip(this)">勇敢</span>
+            <span class="chip" onclick="toggleChip(this)">自信家</span>
+            <span class="chip" onclick="toggleChip(this)">楽観的</span>
+            <span class="chip" onclick="toggleChip(this)">論理的</span>
+            <span class="chip" onclick="toggleChip(this)">頑固</span>
+            <span class="chip" onclick="toggleChip(this)">好奇心旺盛</span>
+            <span class="chip" onclick="toggleChip(this)">義理堅い</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">口調</label>
+            <select class="field-input">
+              <option value="polite_formal">丁寧語</option>
+              <option value="polite_casual">やや丁寧</option>
+              <option value="neutral" selected>標準</option>
+              <option value="casual_youthful">カジュアル（若者）</option>
+              <option value="rough_masculine">荒い（男性的）</option>
+              <option value="refined_feminine">上品（女性的）</option>
+              <option value="archaic_samurai">武士風</option>
+              <option value="archaic_court">宮廷風</option>
+              <option value="dialect_regional">方言</option>
+              <option value="childlike">子供っぽい</option>
+              <option value="eccentric">独特</option>
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">一人称</label>
+            <select class="field-input">
+              <option value="watashi">私</option>
+              <option value="watakushi">わたくし</option>
+              <option value="atashi">あたし</option>
+              <option value="boku" selected>僕</option>
+              <option value="ore">俺</option>
+              <option value="uchi">うち</option>
+              <option value="washi">ワシ</option>
+              <option value="name">自分の名前</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">二人称 <span class="text-xs text-[var(--muted-foreground)] font-normal">任意</span></label>
+            <select class="field-input">
+              <option value="">(なし)</option>
+              <option value="kimi">君</option>
+              <option value="omae">お前</option>
+              <option value="anata">あなた</option>
+              <option value="kisama">貴様</option>
+              <option value="onushi">お主</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">デフォルト敬称</label>
+            <select class="field-input">
+              <option value="none">呼び捨て</option>
+              <option value="san" selected>〜さん</option>
+              <option value="chan">〜ちゃん</option>
+              <option value="kun">〜君</option>
+              <option value="sama">〜様</option>
+              <option value="senpai">〜先輩</option>
+              <option value="sensei">〜先生</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-[var(--radius)] bg-[var(--muted)] px-4 py-3 flex items-center gap-3 text-sm text-[var(--muted-foreground)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Step 1 入力済み: 名前 <strong class="text-[var(--foreground)]">朝日 陽太</strong> / ロール <strong class="text-[var(--foreground)]">主人公</strong> / 男性 / 青年</span>
+      </div>
+    </div>
+
+    <!-- Step 3: 属性・背景 -->
+    <div id="panel-3" class="step-panel rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-5">
+      <div>
+        <p class="text-xs text-[var(--muted-foreground)] font-medium uppercase tracking-wide mb-1">Step 3 / 3</p>
+        <h2 class="text-lg font-semibold">属性・背景</h2>
+        <p class="text-sm text-[var(--muted-foreground)] mt-0.5">属性タグ・経歴・設定メモを入力してください</p>
+      </div>
+      <div class="space-y-4">
+        <div class="space-y-2">
+          <label class="text-sm font-medium">属性タグ <span class="text-xs text-[var(--muted-foreground)] font-normal">0〜4個任意</span></label>
+          <div class="flex flex-wrap gap-2">
+            <span class="chip" onclick="toggleChip(this)">眼鏡</span>
+            <span class="chip" onclick="toggleChip(this)">ツンデレ</span>
+            <span class="chip" onclick="toggleChip(this)">ヤンデレ</span>
+            <span class="chip" onclick="toggleChip(this)">クーデレ</span>
+            <span class="chip selected" onclick="toggleChip(this)">元気</span>
+            <span class="chip" onclick="toggleChip(this)">読書家</span>
+            <span class="chip" onclick="toggleChip(this)">体育会系</span>
+            <span class="chip" onclick="toggleChip(this)">お嬢様</span>
+            <span class="chip" onclick="toggleChip(this)">メイド</span>
+            <span class="chip" onclick="toggleChip(this)">いたずらっ子</span>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium">経歴タグ <span class="text-xs text-[var(--muted-foreground)] font-normal">0〜3個任意</span></label>
+          <div class="flex flex-wrap gap-2">
+            <span class="chip" onclick="toggleChip(this)">孤児</span>
+            <span class="chip" onclick="toggleChip(this)">名家出身</span>
+            <span class="chip" onclick="toggleChip(this)">異世界転移</span>
+            <span class="chip" onclick="toggleChip(this)">記憶喪失</span>
+            <span class="chip" onclick="toggleChip(this)">天才</span>
+            <span class="chip" onclick="toggleChip(this)">トラウマ</span>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium">説明メモ <span class="text-xs text-[var(--muted-foreground)] font-normal">任意</span></label>
+          <textarea class="field-input w-full" rows="3" placeholder="その他の設定メモ..."></textarea>
+        </div>
+      </div>
+    </div>
+
+
+  </main>
+
+  <footer class="fixed bottom-0 left-0 right-0 z-10 border-t border-[var(--border)] bg-[var(--background)]">
+    <div class="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
+      <button onclick="changeStep(-1)" class="border border-[var(--border)] bg-[var(--background)] rounded-[var(--radius)] h-9 px-4 text-sm hover:bg-[var(--muted)] transition-colors flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        前へ
+      </button>
+      <span id="stepCounter" class="text-sm text-[var(--muted-foreground)]">1 / 3</span>
+      <button onclick="changeStep(1)" class="bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] h-9 px-4 text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
+        次へ
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    const currentStep = { value: 1 }
+
+    const renderStep = () => {
+      const s = currentStep.value
+      const TOTAL = 3
+      for (const i of [1, 2, 3]) {
+        document.getElementById('panel-' + i).classList.toggle('active', i === s)
+        const circle = document.getElementById('step-circle-' + i)
+        const label = document.getElementById('step-label-' + i)
+        if (i < s) {
+          circle.className = 'h-8 w-8 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-medium'
+          circle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+          label.className = 'text-xs text-[var(--muted-foreground)]'
+        } else if (i === s) {
+          circle.className = 'h-8 w-8 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-sm font-semibold ring-4 ring-[var(--ring)] ring-offset-2 ring-offset-[var(--background)]'
+          circle.innerHTML = String(i)
+          label.className = 'text-xs font-semibold text-[var(--foreground)]'
+        } else {
+          circle.className = 'h-8 w-8 rounded-full border-2 border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] flex items-center justify-center text-sm'
+          circle.innerHTML = String(i)
+          label.className = 'text-xs text-[var(--muted-foreground)]'
+        }
+        if (i < TOTAL) {
+          document.getElementById('line-' + i).style.background = i < s ? 'var(--primary)' : 'var(--border)'
+        }
+      }
+      document.getElementById('stepCounter').textContent = s + ' / ' + TOTAL
+    }
+
+    const changeStep = (dir) => {
+      const next = currentStep.value + dir
+      if (next < 1 || next > 3) return
+      currentStep.value = next
+      renderStep()
+    }
+
+    const toggleTheme = () => {
+      const html = document.documentElement
+      const isDark = html.classList.toggle('dark')
+      document.getElementById('iconSun').classList.toggle('hidden', isDark)
+      document.getElementById('iconMoon').classList.toggle('hidden', !isDark)
+    }
+    const toggleChip = (el) => { el.classList.toggle('selected') }
+  </script>
+</body>
+</html>

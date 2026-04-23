@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター関係図 — リスト (Mobile)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Geist', 'sans-serif'] },
+          colors: {
+            background: 'var(--background)', foreground: 'var(--foreground)',
+            card: 'var(--card)', 'card-foreground': 'var(--card-foreground)',
+            primary: 'var(--primary)', 'primary-foreground': 'var(--primary-foreground)',
+            secondary: 'var(--secondary)', 'secondary-foreground': 'var(--secondary-foreground)',
+            muted: 'var(--muted)', 'muted-foreground': 'var(--muted-foreground)',
+            accent: 'var(--accent)', 'accent-foreground': 'var(--accent-foreground)',
+            destructive: 'var(--destructive)',
+            border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',
+          },
+          borderRadius: { xl: 'calc(var(--radius) * 1.4)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body {
+      font-family: 'Geist', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      max-width: 375px;
+      margin-inline: auto;
+    }
+    .rel-family { color: #22c55e; background: #22c55e1a; border-color: #22c55e40; }
+    .rel-friend  { color: #3b82f6; background: #3b82f61a; border-color: #3b82f640; }
+    .rel-rival   { color: #ef4444; background: #ef44441a; border-color: #ef444440; }
+    .rel-love    { color: #ec4899; background: #ec48991a; border-color: #ec489940; }
+    .dark .rel-family { color: #4ade80; background: #4ade801a; border-color: #4ade8040; }
+    .dark .rel-friend  { color: #60a5fa; background: #60a5fa1a; border-color: #60a5fa40; }
+    .dark .rel-rival   { color: #f87171; background: #f871711a; border-color: #f8717140; }
+    .dark .rel-love    { color: #f472b6; background: #f472b61a; border-color: #f472b640; }
+    .avatar-family { background: #22c55e; }
+    .avatar-friend  { background: #3b82f6; }
+    .avatar-rival   { background: #ef4444; }
+    .avatar-love    { background: #ec4899; }
+    .dark .avatar-family { background: #4ade80; }
+    .dark .avatar-friend  { background: #60a5fa; }
+    .dark .avatar-rival   { background: #f87171; }
+    .dark .avatar-love    { background: #f472b6; }
+    /* Collapsible: details open/closed */
+    .group-body { display: none; }
+    .group-expanded .group-body { display: block; }
+    .group-expanded .chevron { transform: rotate(180deg); }
+    .chevron { transition: transform 0.2s; }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+  <!-- Compact top bar (h-12) -->
+  <div class="flex h-12 shrink-0 items-center justify-between border-b px-3" style="border-color:var(--border)">
+    <div class="flex items-center gap-2">
+      <a href="index.html" class="inline-flex items-center justify-center h-7 w-7 rounded-lg" style="color:var(--muted-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+      <h1 class="text-xs font-semibold">関係図</h1>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <!-- Filter -->
+      <button class="inline-flex h-7 w-7 items-center justify-center rounded-lg border" style="border-color:var(--input);background:var(--background);color:var(--muted-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      </button>
+      <!-- Dark mode -->
+      <button onclick="document.documentElement.classList.toggle('dark')" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border" style="border-color:var(--input);background:var(--background)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="block dark:hidden"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden dark:block"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <!-- Add -->
+      <button class="inline-flex h-7 w-7 items-center justify-center rounded-lg" style="background:var(--primary);color:var(--primary-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Legend pills -->
+  <div class="flex shrink-0 items-center gap-2 overflow-x-auto border-b px-3 py-2" style="border-color:var(--border);background:var(--card)">
+    <div class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0 rel-family">
+      <span class="h-1.5 w-1.5 rounded-full" style="background:#22c55e"></span>
+      家族
+    </div>
+    <div class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0 rel-friend">
+      <span class="h-1.5 w-1.5 rounded-full" style="background:#3b82f6"></span>
+      友人
+    </div>
+    <div class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0 rel-rival">
+      <span class="h-1.5 w-1.5 rounded-full" style="background:#ef4444"></span>
+      ライバル
+    </div>
+    <div class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0 rel-love">
+      <span class="h-1.5 w-1.5 rounded-full" style="background:#ec4899"></span>
+      恋愛
+    </div>
+  </div>
+
+  <!-- Collapsible list -->
+  <div class="flex-1 overflow-y-auto divide-y" style="border-color:var(--border)">
+
+    <!-- ===== 蓮花 (expanded) ===== -->
+    <div class="group-expanded">
+      <button onclick="this.closest('div').classList.toggle('group-expanded')" class="flex w-full items-center gap-2.5 px-3 py-2.5" style="background:var(--card)">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold">蓮花</p>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">主人公 · 17歳</p>
+        </div>
+        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">3</span>
+        <svg class="chevron shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="group-body divide-y pl-12 pr-3" style="border-color:var(--border)">
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-family">桜</div>
+          <span class="flex-1 text-xs">桜子</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-family">姉妹</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-love">翔</div>
+          <span class="flex-1 text-xs">翔太</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-love">恋人</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-friend">和</div>
+          <span class="flex-1 text-xs">和樹</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-friend">幼馴染</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 桜子 (expanded) ===== -->
+    <div class="group-expanded">
+      <button onclick="this.closest('div').classList.toggle('group-expanded')" class="flex w-full items-center gap-2.5 px-3 py-2.5" style="background:var(--card)">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white avatar-family">桜</div>
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold">桜子</p>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">蓮花の姉 · 20歳</p>
+        </div>
+        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">3</span>
+        <svg class="chevron shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="group-body divide-y pl-12 pr-3" style="border-color:var(--border)">
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+          <span class="flex-1 text-xs">蓮花</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-family">姉妹</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-friend">美</div>
+          <span class="flex-1 text-xs">美月</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-friend">親友</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-love">翔</div>
+          <span class="flex-1 text-xs">翔太</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-family">義理の関係</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 翔太 (collapsed) ===== -->
+    <div>
+      <button onclick="this.closest('div').classList.toggle('group-expanded')" class="flex w-full items-center gap-2.5 px-3 py-2.5" style="background:var(--card)">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white avatar-love">翔</div>
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold">翔太</p>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">蓮花の恋人 · 18歳</p>
+        </div>
+        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">4</span>
+        <svg class="chevron shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="group-body divide-y pl-12 pr-3" style="border-color:var(--border)">
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+          <span class="flex-1 text-xs">蓮花</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-love">恋人</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-family">桜</div>
+          <span class="flex-1 text-xs">桜子</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-family">義理の関係</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-rival">隼</div>
+          <span class="flex-1 text-xs">隼人</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-rival">ライバル</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-friend">和</div>
+          <span class="flex-1 text-xs">和樹</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-friend">友人</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 美月 (collapsed) ===== -->
+    <div>
+      <button onclick="this.closest('div').classList.toggle('group-expanded')" class="flex w-full items-center gap-2.5 px-3 py-2.5" style="background:var(--card)">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white avatar-friend">美</div>
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold">美月</p>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">桜子の親友 · 19歳</p>
+        </div>
+        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">2</span>
+        <svg class="chevron shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="group-body divide-y pl-12 pr-3" style="border-color:var(--border)">
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-family">桜</div>
+          <span class="flex-1 text-xs">桜子</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-friend">親友</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-rival">隼</div>
+          <span class="flex-1 text-xs">隼人</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-love">片想い</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 隼人 (collapsed) ===== -->
+    <div>
+      <button onclick="this.closest('div').classList.toggle('group-expanded')" class="flex w-full items-center gap-2.5 px-3 py-2.5" style="background:var(--card)">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white avatar-rival">隼</div>
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold">隼人</p>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">ライバル · 18歳</p>
+        </div>
+        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">2</span>
+        <svg class="chevron shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="group-body divide-y pl-12 pr-3" style="border-color:var(--border)">
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-love">翔</div>
+          <span class="flex-1 text-xs">翔太</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-rival">ライバル</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-friend">美</div>
+          <span class="flex-1 text-xs">美月</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-love">片想い</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 和樹 (collapsed) ===== -->
+    <div>
+      <button onclick="this.closest('div').classList.toggle('group-expanded')" class="flex w-full items-center gap-2.5 px-3 py-2.5" style="background:var(--card)">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white avatar-friend">和</div>
+        <div class="min-w-0 flex-1 text-left">
+          <p class="text-sm font-semibold">和樹</p>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">幼馴染 · 17歳</p>
+        </div>
+        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">2</span>
+        <svg class="chevron shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="group-body divide-y pl-12 pr-3" style="border-color:var(--border)">
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+          <span class="flex-1 text-xs">蓮花</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-friend">幼馴染</span>
+        </div>
+        <div class="flex items-center gap-2 py-2" style="background:var(--background)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground);flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white avatar-love">翔</div>
+          <span class="flex-1 text-xs">翔太</span>
+          <span class="rounded-full border px-1.5 py-0.5 text-[10px] font-medium rel-friend">友人</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

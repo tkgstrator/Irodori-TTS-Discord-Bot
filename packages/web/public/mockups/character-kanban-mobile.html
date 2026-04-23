@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター管理 - カンバン (Mobile)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Geist', 'sans-serif'] },
+          colors: {
+            background: 'var(--background)', foreground: 'var(--foreground)',
+            card: 'var(--card)', 'card-foreground': 'var(--card-foreground)',
+            primary: 'var(--primary)', 'primary-foreground': 'var(--primary-foreground)',
+            secondary: 'var(--secondary)', 'secondary-foreground': 'var(--secondary-foreground)',
+            muted: 'var(--muted)', 'muted-foreground': 'var(--muted-foreground)',
+            accent: 'var(--accent)', 'accent-foreground': 'var(--accent-foreground)',
+            destructive: 'var(--destructive)',
+            border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',
+          },
+          borderRadius: { xl: 'calc(var(--radius) * 1.4)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); }
+    .chevron-open { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="min-h-screen bg-background">
+  <div class="mx-auto max-w-[390px] px-4 py-5">
+
+    <!-- Back link -->
+    <a href="index.html" class="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      一覧に戻る
+    </a>
+
+    <!-- Page header -->
+    <div class="mb-4">
+      <div class="flex items-center justify-between">
+        <h1 class="text-xl font-bold tracking-tight">キャラクター管理</h1>
+        <button class="inline-flex h-8 items-center gap-1 rounded-[var(--radius)] bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新規作成
+        </button>
+      </div>
+      <p class="mt-0.5 text-xs text-muted-foreground">カンバン — ロール別アコーディオン</p>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-5">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="キャラクターを検索…" class="h-9 w-full rounded-[var(--radius)] border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground" />
+    </div>
+
+    <!-- Accordion sections -->
+    <div class="flex flex-col gap-3">
+
+      <!-- Section: 主人公 -->
+      <div class="rounded-xl border border-border ring-1 ring-foreground/5 overflow-hidden">
+        <button onclick="toggleSection('protagonist')" class="flex w-full items-center justify-between bg-primary/10 px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-primary">主人公</span>
+            <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">1</span>
+          </div>
+          <svg id="chevron-protagonist" class="chevron-open text-primary/70 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <div id="section-protagonist" class="flex flex-col gap-2 bg-muted/30 p-3">
+          <!-- Card: 朝日 陽太 -->
+          <div class="flex items-center gap-3 rounded-xl border border-border bg-card p-3 ring-1 ring-foreground/5">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">陽</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold">朝日 陽太</p>
+                <span class="inline-flex items-center gap-1 rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  音声済み
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-muted-foreground">男性・17歳</p>
+              <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">明るく前向きな高校2年生。何事にも全力で取り組む姿勢が周囲を巻き込んでいく。</p>
+            </div>
+          </div>
+          <!-- Add button -->
+          <button class="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/30 py-2 text-xs text-primary/70 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            キャラクターを追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: ヒロイン -->
+      <div class="rounded-xl border border-border ring-1 ring-foreground/5 overflow-hidden">
+        <button onclick="toggleSection('heroine')" class="flex w-full items-center justify-between bg-primary/10 px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-primary">ヒロイン</span>
+            <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">2</span>
+          </div>
+          <svg id="chevron-heroine" class="chevron-open text-primary/70 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <div id="section-heroine" class="flex flex-col gap-2 bg-muted/30 p-3">
+          <!-- Card: 月城 凛 -->
+          <div class="flex items-center gap-3 rounded-xl border border-border bg-card p-3 ring-1 ring-foreground/5">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">月</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold">月城 凛</p>
+                <span class="inline-flex items-center gap-1 rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  音声済み
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-muted-foreground">女性・17歳</p>
+              <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">冷静沈着な生徒会長。表面上はクールだが、仲間想いの一面を持つ。</p>
+            </div>
+          </div>
+          <!-- Card: 雪村 ユキ -->
+          <div class="flex items-center gap-3 rounded-xl border border-border bg-card p-3 ring-1 ring-foreground/5">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">雪</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold">雪村 ユキ</p>
+                <span class="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  未設定
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-muted-foreground">女性・16歳</p>
+              <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">図書委員の物静かな少女。本の世界に没頭しがちだが、意外な行動力を秘めている。</p>
+            </div>
+          </div>
+          <!-- Add button -->
+          <button class="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/30 py-2 text-xs text-primary/70 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            キャラクターを追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: サブキャラ -->
+      <div class="rounded-xl border border-border ring-1 ring-foreground/5 overflow-hidden">
+        <button onclick="toggleSection('sub')" class="flex w-full items-center justify-between bg-secondary px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-secondary-foreground">サブキャラ</span>
+            <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary-foreground/10 px-1.5 text-xs font-medium text-secondary-foreground">2</span>
+          </div>
+          <svg id="chevron-sub" class="chevron-open text-secondary-foreground/70 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <div id="section-sub" class="flex flex-col gap-2 bg-muted/30 p-3">
+          <!-- Card: 蒼井 大和 -->
+          <div class="flex items-center gap-3 rounded-xl border border-border bg-card p-3 ring-1 ring-foreground/5">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground">蒼</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold">蒼井 大和</p>
+                <span class="inline-flex items-center gap-1 rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  音声済み
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-muted-foreground">男性・17歳</p>
+              <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">陽太の幼馴染でムードメーカー。コミカルな言動の裏に鋭い洞察力を隠す。</p>
+            </div>
+          </div>
+          <!-- Card: 白石 先生 -->
+          <div class="flex items-center gap-3 rounded-xl border border-border bg-card p-3 ring-1 ring-foreground/5">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground">白</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold">白石 先生</p>
+                <span class="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  未設定
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-muted-foreground">男性・34歳</p>
+              <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">担任教師。生徒に寄り添う温厚な性格だが、かつては別の顔を持っていた。</p>
+            </div>
+          </div>
+          <!-- Add button -->
+          <button class="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-secondary-foreground/20 py-2 text-xs text-secondary-foreground/60 transition-colors hover:border-secondary-foreground/30 hover:bg-secondary hover:text-secondary-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            キャラクターを追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: 敵キャラ -->
+      <div class="rounded-xl border border-border ring-1 ring-foreground/5 overflow-hidden">
+        <button onclick="toggleSection('enemy')" class="flex w-full items-center justify-between bg-destructive/10 px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-destructive">敵キャラ</span>
+            <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive/20 px-1.5 text-xs font-medium text-destructive">1</span>
+          </div>
+          <svg id="chevron-enemy" class="chevron-open text-destructive/70 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <div id="section-enemy" class="flex flex-col gap-2 bg-muted/30 p-3">
+          <!-- Card: 紅林 アカネ -->
+          <div class="flex items-center gap-3 rounded-xl border border-border bg-card p-3 ring-1 ring-foreground/5">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-sm font-bold text-destructive">紅</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold">紅林 アカネ</p>
+                <span class="inline-flex items-center gap-1 rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950/30 dark:text-green-400 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  音声済み
+                </span>
+              </div>
+              <p class="mt-0.5 text-xs text-muted-foreground">女性・16歳</p>
+              <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">謎多き転校生。目的は不明だが、陽太たちの行動を監視しているようだ。</p>
+            </div>
+          </div>
+          <!-- Add button -->
+          <button class="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/20 py-2 text-xs text-destructive/60 transition-colors hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            キャラクターを追加
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer summary -->
+    <div class="mt-5 flex items-center justify-center gap-3 text-xs text-muted-foreground">
+      <span>合計 6 名</span>
+      <span>·</span>
+      <span class="inline-flex items-center gap-1">
+        <span class="inline-block size-1.5 rounded-full bg-green-500"></span>
+        設定済み 4
+      </span>
+      <span>·</span>
+      <span class="inline-flex items-center gap-1">
+        <span class="inline-block size-1.5 rounded-full bg-muted-foreground/40"></span>
+        未設定 2
+      </span>
+    </div>
+
+    <!-- Bottom padding for dark mode toggle -->
+    <div class="h-16"></div>
+  </div>
+
+  <!-- Dark mode toggle -->
+  <button onclick="document.documentElement.classList.toggle('dark')" class="fixed bottom-4 right-4 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm hover:bg-secondary" title="テーマ切替">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+
+  <script>
+    const toggleSection = (id) => {
+      const section = document.getElementById('section-' + id)
+      const chevron = document.getElementById('chevron-' + id)
+      const isHidden = section.style.display === 'none'
+      section.style.display = isHidden ? 'flex' : 'none'
+      chevron.classList.toggle('chevron-open', isHidden)
+    }
+  </script>
+</body>
+</html>

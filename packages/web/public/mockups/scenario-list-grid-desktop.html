@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>シナリオ管理 グリッド (Desktop)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Geist', 'sans-serif'] },
+          colors: {
+            background: 'var(--background)', foreground: 'var(--foreground)',
+            card: 'var(--card)', 'card-foreground': 'var(--card-foreground)',
+            primary: 'var(--primary)', 'primary-foreground': 'var(--primary-foreground)',
+            secondary: 'var(--secondary)', 'secondary-foreground': 'var(--secondary-foreground)',
+            muted: 'var(--muted)', 'muted-foreground': 'var(--muted-foreground)',
+            accent: 'var(--accent)', 'accent-foreground': 'var(--accent-foreground)',
+            destructive: 'var(--destructive)',
+            border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',
+          },
+          borderRadius: { xl: 'calc(var(--radius) * 1.4)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); }
+    .grid-card { transition: box-shadow 0.15s, transform 0.15s; }
+    .grid-card:hover { box-shadow: 0 4px 16px oklch(0 0 0 / 10%); transform: translateY(-1px); }
+    .card-overlay { opacity: 0; transition: opacity 0.15s; }
+    .grid-card:hover .card-overlay { opacity: 1; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .pulse { animation: pulse-dot 1.5s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-6 py-8">
+
+    <a href="index.html" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      一覧に戻る
+    </a>
+
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <h1 class="text-xl font-semibold">シナリオ管理</h1>
+        <p class="text-sm text-muted-foreground mt-0.5">プロットからLLMがシナリオを自動生成</p>
+      </div>
+      <button class="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        新規プロット作成
+      </button>
+    </div>
+
+    <div class="flex items-center gap-3 mb-4">
+      <div class="relative flex-1 max-w-xs">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="タイトルで検索..." class="h-9 w-full pl-8 pr-3 text-sm rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+      </div>
+      <div class="relative">
+        <select class="h-9 pl-3 pr-8 text-sm rounded-lg border border-border bg-card text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer">
+          <option>すべて</option><option>未生成</option><option>生成中</option><option>生成済み</option>
+        </select>
+        <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="relative">
+        <select class="h-9 pl-3 pr-8 text-sm rounded-lg border border-border bg-card text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer">
+          <option>すべてのジャンル</option><option>学園</option><option>恋愛</option><option>ファンタジー</option><option>SF</option>
+        </select>
+        <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="relative">
+        <select class="h-9 pl-3 pr-8 text-sm rounded-lg border border-border bg-card text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer">
+          <option>更新日順</option><option>タイトル順</option><option>セリフ数順</option>
+        </select>
+        <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 text-xs text-muted-foreground mb-5 px-1">
+      <span>全 <strong class="text-foreground font-semibold">5</strong> シナリオ</span>
+      <span class="text-border">|</span>
+      <span>生成済み: <strong class="text-green-500 font-semibold">3</strong></span>
+      <span class="text-border">|</span>
+      <span>生成中: <strong class="text-blue-500 font-semibold">1</strong></span>
+      <span class="text-border">|</span>
+      <span>未生成: <strong class="text-muted-foreground font-semibold">1</strong></span>
+    </div>
+
+    <!-- AI badge snippet (reused inline) -->
+    <!-- ✦ sparkle path for AI生成 badge -->
+
+    <div class="grid grid-cols-3 gap-4">
+
+      <!-- Card: 夏の約束 (生成済み) -->
+      <div class="grid-card relative rounded-xl border border-border bg-card overflow-hidden flex flex-col">
+        <div class="p-4 flex-1">
+          <div class="flex items-start justify-between mb-1.5">
+            <h3 class="font-semibold text-sm leading-snug flex-1 mr-2">夏の約束</h3>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white flex-shrink-0">生成済み</span>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              AI生成
+            </span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">学園</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300">恋愛</span>
+          </div>
+          <p class="text-xs text-muted-foreground mb-0.5">トーン: <span class="italic">ほろ苦い</span></p>
+          <p class="text-xs text-muted-foreground mb-2">プロット元: <span class="font-medium text-foreground">蓮花 · 翔太</span></p>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">48</span>
+              <span class="text-xs text-muted-foreground">セリフ</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">3</span>
+              <span class="text-xs text-muted-foreground">話者</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">8</span>
+              <span class="text-xs text-muted-foreground">分</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 pb-3 flex items-center justify-between">
+          <span class="text-xs text-muted-foreground">更新: 2026-04-20</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-foreground/5 flex items-center justify-center gap-2">
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            再生成
+          </button>
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            編集
+          </button>
+        </div>
+      </div>
+
+      <!-- Card: 冬の幻想曲 (生成済み) -->
+      <div class="grid-card relative rounded-xl border border-border bg-card overflow-hidden flex flex-col">
+        <div class="p-4 flex-1">
+          <div class="flex items-start justify-between mb-1.5">
+            <h3 class="font-semibold text-sm leading-snug flex-1 mr-2">冬の幻想曲</h3>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white flex-shrink-0">生成済み</span>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              AI生成
+            </span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">ファンタジー</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">ミステリー</span>
+          </div>
+          <p class="text-xs text-muted-foreground mb-0.5">トーン: <span class="italic">幻想的</span></p>
+          <p class="text-xs text-muted-foreground mb-2">プロット元: <span class="font-medium text-foreground">桜子 · 美月 · 隼人</span></p>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">36</span>
+              <span class="text-xs text-muted-foreground">セリフ</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">4</span>
+              <span class="text-xs text-muted-foreground">話者</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">6</span>
+              <span class="text-xs text-muted-foreground">分</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 pb-3">
+          <span class="text-xs text-muted-foreground">更新: 2026-04-21</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-foreground/5 flex items-center justify-center gap-2">
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            再生成
+          </button>
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            編集
+          </button>
+        </div>
+      </div>
+
+      <!-- Card: 星降る夜に (生成中) -->
+      <div class="grid-card relative rounded-xl border border-blue-200 dark:border-blue-800/50 bg-card overflow-hidden flex flex-col">
+        <div class="p-4 flex-1">
+          <div class="flex items-start justify-between mb-1.5">
+            <h3 class="font-semibold text-sm leading-snug flex-1 mr-2">星降る夜に</h3>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500 text-white flex-shrink-0">
+              <span class="size-1.5 rounded-full bg-white pulse"></span>生成中
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              AI生成
+            </span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300">恋愛</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">日常</span>
+          </div>
+          <p class="text-xs text-muted-foreground mb-0.5">トーン: <span class="italic">メランコリック</span></p>
+          <p class="text-xs text-muted-foreground mb-2">プロット元: <span class="font-medium text-foreground">蓮花 · 和樹</span></p>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">24</span>
+              <span class="text-xs text-muted-foreground">セリフ</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">2</span>
+              <span class="text-xs text-muted-foreground">話者</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">4</span>
+              <span class="text-xs text-muted-foreground">分</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 pb-3">
+          <span class="text-xs text-muted-foreground">更新: 2026-04-19</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-foreground/5 flex items-center justify-center gap-2">
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            編集
+          </button>
+        </div>
+      </div>
+
+      <!-- Card: 紅の記憶 (生成済み) -->
+      <div class="grid-card relative rounded-xl border border-border bg-card overflow-hidden flex flex-col">
+        <div class="p-4 flex-1">
+          <div class="flex items-start justify-between mb-1.5">
+            <h3 class="font-semibold text-sm leading-snug flex-1 mr-2">紅の記憶</h3>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white flex-shrink-0">生成済み</span>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              AI生成
+            </span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">歴史</span>
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">サスペンス</span>
+          </div>
+          <p class="text-xs text-muted-foreground mb-0.5">トーン: <span class="italic">シリアス</span></p>
+          <p class="text-xs text-muted-foreground mb-2">プロット元: <span class="font-medium text-foreground">翔太 · 隼人 · 桜子</span></p>
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">15</span>
+              <span class="text-xs text-muted-foreground">セリフ</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">5</span>
+              <span class="text-xs text-muted-foreground">話者</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">3</span>
+              <span class="text-xs text-muted-foreground">分</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 pb-3">
+          <span class="text-xs text-muted-foreground">更新: 2026-04-18</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-foreground/5 flex items-center justify-center gap-2">
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            再生成
+          </button>
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            編集
+          </button>
+        </div>
+      </div>
+
+      <!-- Card: 蒼天の彼方 (未生成) -->
+      <div class="grid-card relative rounded-xl border-2 border-dashed border-border bg-card/50 overflow-hidden flex flex-col">
+        <div class="p-4 flex-1">
+          <div class="flex items-start justify-between mb-1.5">
+            <h3 class="font-semibold text-sm leading-snug flex-1 mr-2 text-muted-foreground">蒼天の彼方</h3>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground flex-shrink-0">未生成</span>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">SF</span>
+          </div>
+          <p class="text-xs text-muted-foreground mb-0.5 italic">プロット元未設定</p>
+          <p class="text-xs text-muted-foreground mb-2">トーン: <span class="italic">緊迫</span></p>
+          <div class="grid grid-cols-3 gap-2 mt-2 opacity-40">
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">0</span>
+              <span class="text-xs text-muted-foreground">セリフ</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">0</span>
+              <span class="text-xs text-muted-foreground">話者</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5 rounded-lg bg-secondary p-2">
+              <span class="text-sm font-semibold">—</span>
+              <span class="text-xs text-muted-foreground">分</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 pb-3">
+          <span class="text-xs text-muted-foreground">更新: 2026-04-22</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-foreground/5 flex items-center justify-center gap-2">
+          <button class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-card border border-border text-xs font-medium hover:bg-secondary transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            編集
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <button onclick="document.documentElement.classList.toggle('dark')" class="fixed bottom-4 right-4 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm hover:bg-secondary" title="テーマ切替">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+</body>
+</html>

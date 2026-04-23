@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>プロット作成 シングルページ (Mobile)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Geist', 'sans-serif'] } } } }</script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); max-width: 390px; margin: 0 auto; }
+    .field-input { height: 2.25rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--background); padding: 0 0.75rem; font-size: 0.875rem; color: var(--foreground); width: 100%; outline: none; transition: box-shadow 0.15s; }
+    .field-input:focus { box-shadow: 0 0 0 2px var(--ring); }
+    textarea.field-input { height: auto; padding: 0.5rem 0.75rem; resize: vertical; }
+    select.field-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.65rem center; padding-right: 2rem; }
+    .genre-chip { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--background); color: var(--foreground); transition: all 0.15s; user-select: none; }
+    .genre-chip.selected { border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+    .genre-chip.disabled { opacity: 0.35; pointer-events: none; }
+    .radio-card { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: 0.8125rem; transition: border-color 0.15s; }
+    .radio-card.selected { border-color: var(--primary); background: var(--muted); }
+    .char-card { border-radius: var(--radius); border: 2px solid var(--border); background: var(--card); padding: 0.625rem; cursor: pointer; transition: all 0.15s; }
+    .char-card.selected { border-color: var(--primary); background: var(--muted); }
+    .char-card.dimmed { opacity: 0.35; pointer-events: none; }
+    .section-num { height: 1.375rem; width: 1.375rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; background: var(--primary); color: var(--primary-foreground); }
+    /* Horizontal section nav */
+    .sec-nav { display: flex; overflow-x: auto; gap: 0; border-bottom: 1px solid var(--border); background: var(--background); }
+    .sec-nav-btn { flex-shrink: 0; padding: 0.6rem 0.875rem; font-size: 0.8rem; color: var(--muted-foreground); border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .sec-nav-btn.active { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+  </style>
+</head>
+<body class="min-h-screen pb-20">
+  <header class="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--background)]">
+    <div class="px-4 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-1 text-sm text-[var(--muted-foreground)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        戻る
+      </a>
+      <span class="text-sm font-semibold">プロット作成</span>
+      <button onclick="toggleTheme()" class="h-8 w-8 flex items-center justify-center rounded-[var(--radius)] border border-[var(--border)] hover:bg-[var(--muted)]">
+        <svg id="iconSun" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg id="iconMoon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      </button>
+    </div>
+    <!-- Section jump nav -->
+    <div class="sec-nav">
+      <a href="#m1" class="sec-nav-btn active">基本設定</a>
+      <a href="#m2" class="sec-nav-btn">キャラ選択</a>
+      <a href="#m3" class="sec-nav-btn">関係性</a>
+      <a href="#m4" class="sec-nav-btn">生成</a>
+    </div>
+  </header>
+
+  <div class="px-4 pt-4 pb-2">
+    <p class="text-xs text-[var(--muted-foreground)]">プロットを作成してLLMにシナリオを生成してもらいます</p>
+  </div>
+
+  <main class="px-4 space-y-8 pb-24">
+
+    <section id="m1" class="space-y-4">
+      <h2 class="text-sm font-semibold flex items-center gap-2 border-b border-[var(--border)] pb-2.5">
+        <span class="section-num">1</span>基本設定
+      </h2>
+      <div class="space-y-1.5"><label class="text-sm font-medium">タイトル <span class="text-[var(--destructive)]">*</span></label><input type="text" class="field-input" value="夏の約束" placeholder="プロットのタイトル" /></div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium">ジャンル <span class="text-xs text-[var(--muted-foreground)] font-normal">1〜3個</span></label>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="genre-chip selected">学園</span><span class="genre-chip">日常</span><span class="genre-chip selected">恋愛</span>
+          <span class="genre-chip disabled">SF</span><span class="genre-chip disabled">ファンタジー</span><span class="genre-chip disabled">ミステリー</span>
+          <span class="genre-chip disabled">ホラー</span><span class="genre-chip disabled">サスペンス</span><span class="genre-chip disabled">コメディ</span>
+          <span class="genre-chip disabled">歴史</span><span class="genre-chip disabled">お仕事</span><span class="genre-chip disabled">ハートフル</span>
+        </div>
+      </div>
+      <div class="space-y-1.5"><label class="text-sm font-medium">トーン</label><select class="field-input"><option>軽快</option><option>ユーモラス</option><option>前向き</option><option>幻想的</option><option selected>ほろ苦い</option><option>メランコリック</option><option>シリアス</option><option>緊迫</option><option>ダーク</option></select></div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium">エンディング</label>
+        <div class="flex gap-2">
+          <label class="radio-card flex-1"><input type="radio" name="ending" class="shrink-0" /><div><p class="font-medium text-sm">ループ</p><p class="text-xs text-[var(--muted-foreground)]">続く</p></div></label>
+          <label class="radio-card selected flex-1"><input type="radio" name="ending" checked class="shrink-0" /><div><p class="font-medium text-sm">完結</p><p class="text-xs text-[var(--muted-foreground)]">物語が閉じる</p></div></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="m2" class="space-y-3">
+      <h2 class="text-sm font-semibold flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+        <span class="flex items-center gap-2"><span class="section-num">2</span>キャラクター選択</span>
+        <span class="text-xs font-normal text-[var(--muted-foreground)]">3人まで</span>
+      </h2>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="char-card selected space-y-1.5">
+          <div class="flex items-center gap-2"><span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:oklch(0.205 0 0)">蓮</span><div class="min-w-0"><p class="text-sm font-semibold truncate">蓮花</p></div><svg class="ml-auto shrink-0 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <select class="field-input" style="height:1.75rem;font-size:0.7rem"><option selected>主人公</option><option>準主役</option><option>相棒</option><option>脇役</option><option>敵役</option><option>ライバル</option><option>師匠</option><option>恋愛対象</option><option>ナレーター</option></select>
+        </div>
+        <div class="char-card space-y-1.5"><div class="flex items-center gap-2"><span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:#22c55e">桜</span><div class="min-w-0"><p class="text-sm font-semibold truncate">桜子</p></div></div></div>
+        <div class="char-card selected space-y-1.5">
+          <div class="flex items-center gap-2"><span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:#ec4899">翔</span><div class="min-w-0"><p class="text-sm font-semibold truncate">翔太</p></div><svg class="ml-auto shrink-0 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <select class="field-input" style="height:1.75rem;font-size:0.7rem"><option>主人公</option><option>準主役</option><option>相棒</option><option>脇役</option><option>敵役</option><option>ライバル</option><option>師匠</option><option selected>恋愛対象</option><option>ナレーター</option></select>
+        </div>
+        <div class="char-card dimmed"><div class="flex items-center gap-2"><span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:#3b82f6">美</span><p class="text-sm font-semibold">美月</p></div></div>
+        <div class="char-card dimmed"><div class="flex items-center gap-2"><span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:#ef4444">隼</span><p class="text-sm font-semibold">隼人</p></div></div>
+        <div class="char-card dimmed"><div class="flex items-center gap-2"><span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style="background:#3b82f6">和</span><p class="text-sm font-semibold">和樹</p></div></div>
+      </div>
+    </section>
+
+    <section id="m3" class="space-y-3">
+      <h2 class="text-sm font-semibold flex items-center gap-2 border-b border-[var(--border)] pb-2.5">
+        <span class="section-num">3</span>関係性設定
+      </h2>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1 shrink-0"><span class="h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:oklch(0.205 0 0)">蓮</span><span class="text-xs">蓮花</span></div>
+        <span class="text-[var(--muted-foreground)] text-xs shrink-0">―</span>
+        <select class="field-input flex-1" style="height:2rem;font-size:0.75rem"><option selected>幼馴染</option><option>恋人</option><option>友人</option><option>ライバル</option><option>クラスメイト</option><option>先輩後輩</option></select>
+        <span class="text-[var(--muted-foreground)] text-xs shrink-0">―</span>
+        <div class="flex items-center gap-1 shrink-0"><span class="h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:#ec4899">翔</span><span class="text-xs">翔太</span></div>
+      </div>
+    </section>
+
+    <section id="m4" class="space-y-4">
+      <h2 class="text-sm font-semibold flex items-center gap-2 border-b border-[var(--border)] pb-2.5">
+        <span class="section-num">4</span>生成設定
+      </h2>
+      <div class="space-y-1.5"><label class="text-sm font-medium">プロンプト補足 <span class="text-xs text-[var(--muted-foreground)] font-normal">任意</span></label><textarea class="field-input" rows="3" placeholder="LLMへの追加指示（例: 季節は夏、学校の屋上でのシーンを含めて）"></textarea></div>
+      <div class="space-y-1.5">
+        <button class="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] h-11 text-sm font-semibold">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
+          シナリオを生成する
+        </button>
+        <p class="text-xs text-center text-[var(--muted-foreground)]">生成には30秒〜1分かかります</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="fixed bottom-0 left-0 right-0 z-10 border-t border-[var(--border)] bg-[var(--background)]">
+    <div class="max-w-[390px] mx-auto px-4 h-16 flex items-center justify-between gap-2">
+      <button class="border border-[var(--border)] rounded-[var(--radius)] h-9 px-3 text-sm">キャンセル</button>
+      <button class="bg-[var(--secondary)] text-[var(--secondary-foreground)] rounded-[var(--radius)] h-9 px-3 text-sm border border-[var(--border)]">下書き保存</button>
+      <button class="flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] h-9 px-3 text-sm font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
+        生成する
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    const toggleTheme = () => {
+      const html = document.documentElement
+      const isDark = html.classList.toggle('dark')
+      document.getElementById('iconSun').classList.toggle('hidden', isDark)
+      document.getElementById('iconMoon').classList.toggle('hidden', !isDark)
+    }
+  </script>
+</body>
+</html>
