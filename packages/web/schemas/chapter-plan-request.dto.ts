@@ -7,8 +7,8 @@ import { StoryCharacterContextSchema } from './story-character-context.dto'
 
 // 章計画時に参照するシナリオの固定情報を定義する。
 export const ChapterPlanRequestScenarioSchema = z.object({
-  title: z.string().trim().min(1),
-  genres: z.array(ScenarioGenreSchema).min(1),
+  title: z.string().trim().nonempty(),
+  genres: z.array(ScenarioGenreSchema).nonempty(),
   tone: ScenarioToneSchema
 })
 
@@ -28,7 +28,7 @@ export const ChapterPlanRequestSchema = z.object({
   dramaId: z.string().uuid(),
   model: LlmRequestModelSchema,
   scenario: ChapterPlanRequestScenarioSchema,
-  characters: z.array(StoryCharacterContextSchema).min(1, '章設計には登場人物が必要です'),
+  characters: z.array(StoryCharacterContextSchema).nonempty('章設計には登場人物が必要です'),
   completedChapters: z.array(ChapterDigestSchema),
   request: ChapterPlanRequestInputSchema
 })

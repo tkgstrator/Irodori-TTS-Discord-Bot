@@ -1,19 +1,23 @@
 import { createFileRoute, Link, useLocation, useNavigate, useParams } from '@tanstack/react-router'
 import { ChevronLeft, Loader2, Play, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PageSuspense } from '@/components/page-suspense'
 import { Button } from '@/components/ui/button'
 import { requestChapterPlan, resolveChapterPlanCharacterNames } from '@/lib/chapter-plan'
 import { clearChapterPlanPreview, loadChapterPlanPreview, saveChapterPlanPreview } from '@/lib/chapter-plan-preview'
 import { buildChapterPlanDebugPayload } from '@/lib/chapter-plan-prompt'
-import { useScenarios } from '@/lib/scenarios'
+import { useSuspenseCharacters } from '@/lib/characters'
+import { useScenarioMutations, useSuspenseScenarios } from '@/lib/scenarios'
 import type { ChapterPlanPreviewState } from '@/schemas/chapter-plan-preview.dto'
 
 // 章計画プレビュー画面を描画する。
-export const ChapterPlanPreviewPage = () => {
+const ChapterPlanPreviewPageContent = () => {
   const { id } = useParams({ strict: false })
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { appendNextChapter, getScenario, isLoading, errorMessage } = useScenarios()
+  const { characters } = useSuspenseCharacters()
+  const { getScenario, scenarios } = useSuspenseScenarios()
+  const { appendNextChapter } = useScenarioMutations({ characters, scenarios })
   const [isChapterGenerating, setIsChapterGenerating] = useState(false)
   const [preview, setPreview] = useState<ChapterPlanPreviewState | null>(() =>
     loadChapterPlanPreview({ scenarioId: id })
@@ -130,22 +134,6 @@ export const ChapterPlanPreviewPage = () => {
       plan: null,
       errorMessage: null
     })
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">シナリオを読み込み中です</p>
-      </div>
-    )
-  }
-
-  if (errorMessage) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-destructive">{errorMessage}</p>
-      </div>
-    )
   }
 
   if (!scenario) {
@@ -322,6 +310,12 @@ export const ChapterPlanPreviewPage = () => {
     </div>
   )
 }
+
+export const ChapterPlanPreviewPage = () => (
+  <PageSuspense label="シナリオを読み込み中です">
+    <ChapterPlanPreviewPageContent />
+  </PageSuspense>
+)
 
 export const Route = createFileRoute('/scenarios/$id/chapter-plan')({
   component: ChapterPlanPreviewPage

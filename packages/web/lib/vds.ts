@@ -52,27 +52,23 @@ const formatSynthOptions = (options: VdsSynthOptions | undefined): string => {
   return optionText.length > 0 ? ` [${optionText}]` : ''
 }
 
-// エイリアスに対応する VDS 話者定義を解決する。
-const resolveSpeakerRef = ({ scenario, alias }: { scenario: Scenario; alias: string }) => {
-  const speaker = scenario.speakers.find((item) => item.alias === alias)
+// 話者 UUID に対応する VDS 話者定義を解決する。
+const resolveSpeakerRef = ({ scenario, speakerId }: { scenario: Scenario; speakerId: string }) => {
+  const speaker = scenario.speakers.find((item) => item.speakerId === speakerId)
 
   if (!speaker) {
     return {
       ok: false,
-      reason: `話者エイリアス「${alias}」が見つからないため VDS を出力できません`
-    } as const
-  }
-
-  if (!speaker.speakerId) {
-    return {
-      ok: false,
-      reason: `話者エイリアス「${alias}」に speakerId がないため VDS を出力できません`
+      reason: `話者UUID「${speakerId}」が見つからないため VDS を出力できません`
     } as const
   }
 
   return {
     ok: true,
-    data: { uuid: speaker.speakerId }
+    data: {
+      alias: speaker.alias,
+      speakerRef: { uuid: speakerId }
+    }
   } as const
 }
 
@@ -87,28 +83,35 @@ const buildVdsJson = ({
   cues: readonly VoiceDramaCue[]
 }) => {
   const speakerMap = new Map<string, SpeakerRef>()
+  const normalizedCues: VoiceDramaCue[] = []
 
   for (const cue of cues) {
     if (cue.kind === 'pause') {
+      normalizedCues.push(cue)
       continue
     }
 
-    const speakerRef = resolveSpeakerRef({ scenario, alias: cue.speaker })
+    const speakerRef = resolveSpeakerRef({ scenario, speakerId: cue.speaker })
 
     if (!speakerRef.ok) {
       return speakerRef
     }
 
-    if (!speakerMap.has(cue.speaker)) {
-      speakerMap.set(cue.speaker, speakerRef.data)
+    if (!speakerMap.has(speakerRef.data.alias)) {
+      speakerMap.set(speakerRef.data.alias, speakerRef.data.speakerRef)
     }
+
+    normalizedCues.push({
+      ...cue,
+      speaker: speakerRef.data.alias
+    })
   }
 
   const parseResult = VdsJsonSchema.safeParse({
     version: 1,
     title: normalizeVdsText(title),
     speakers: Object.fromEntries(speakerMap),
-    cues
+    cues: normalizedCues
   })
 
   if (!parseResult.success) {
@@ -150,7 +153,9 @@ const serializeVdsDocument = ({ vds, bodyLines }: { vds: VdsJson; bodyLines: rea
 }
 
 // シナリオ全体の章群を VDS 本文へ整形する。
-const serializeScenarioBody = (chapters: readonly Chapter[]): string[] =>
+const serializeScenarioBody = (
+  chapters: readonly { number: number; title: string; cues: readonly VoiceDramaCue[] }[]
+): string[] =>
   chapters.flatMap((chapter, index) => [
     ...(index > 0 ? [''] : []),
     `# 第${chapter.number}章: ${normalizeVdsText(chapter.title)}`,
@@ -187,7 +192,7 @@ export const createChapterVdsExport = ({
     fileName: `scenario-${scenario.id}-chapter-${chapter.number}.vds`,
     content: serializeVdsDocument({
       vds: vdsResult.data,
-      bodyLines: chapter.cues.map((cue) => serializeCue(cue))
+      bodyLines: vdsResult.data.cues.map((cue) => serializeCue(cue))
     })
   } as const
 }
@@ -227,12 +232,38 @@ export const createChapterVdsJsonExport = ({
 // シナリオ全体の VDS 出力内容を組み立てる。
 export const createScenarioVdsExport = (scenario: Scenario): VdsExportResult => {
   const chapters = scenario.chapters.filter((chapter) => chapter.cues.length > 0)
+  const normalizedChapters = chapters.map((chapter) => {
+    const vdsResult = buildVdsJson({
+      scenario,
+      title: '',
+      cues: chapter.cues
+    })
+
+    if (!vdsResult.ok) {
+      return vdsResult
+    }
+
+    return {
+      ok: true,
+      data: {
+        number: chapter.number,
+        title: chapter.title,
+        cues: vdsResult.data.cues
+      }
+    } as const
+  })
 
   if (chapters.length === 0) {
     return {
       ok: false,
       reason: 'このプロットには出力できるセリフがありません'
     } as const
+  }
+
+  const failedChapter = normalizedChapters.find((chapter) => !chapter.ok)
+
+  if (failedChapter && !failedChapter.ok) {
+    return failedChapter
   }
 
   const vdsResult = buildVdsJson({
@@ -250,7 +281,7 @@ export const createScenarioVdsExport = (scenario: Scenario): VdsExportResult => 
     fileName: `scenario-${scenario.id}.vds`,
     content: serializeVdsDocument({
       vds: vdsResult.data,
-      bodyLines: serializeScenarioBody(chapters)
+      bodyLines: serializeScenarioBody(normalizedChapters.flatMap((chapter) => (chapter.ok ? [chapter.data] : [])))
     })
   } as const
 }

@@ -72,7 +72,7 @@ export const ScenarioSeedScenarioSchema = z
   .object({
     id: z.uuid(),
     title: z.string().nonempty(),
-    genres: z.array(z.string().nonempty()).min(1),
+    genres: z.array(z.string().nonempty()).nonempty(),
     tone: z.string().nonempty(),
     ending: z.string().nonempty(),
     status: ScenarioSeedStatusSchema,
@@ -135,7 +135,7 @@ export const ScenarioSeedCharacterSchema = z
 export const ScenarioSeedSetSchema = z
   .object({
     characters: z.array(ScenarioSeedCharacterSchema),
-    scenarios: z.array(ScenarioSeedScenarioSchema).min(1)
+    scenarios: z.array(ScenarioSeedScenarioSchema).nonempty()
   })
   .strict()
 

@@ -35,21 +35,33 @@ const getClient = () => {
   return createdClient
 }
 
+// request 依存の整合も含めた章計画スキーマを組み立てる。
+const buildChapterPlanSchema = (request: ChapterPlanRequest) =>
+  ChapterPlanSchema.superRefine((data, ctx) => {
+    if (data.dramaId !== request.dramaId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['dramaId'],
+        message: 'Chapter plan dramaId mismatch'
+      })
+    }
+
+    if (data.chapter.number !== request.request.nextChapterNumber) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['chapter', 'number'],
+        message: 'Chapter plan number mismatch'
+      })
+    }
+  })
+
 // Gemini から返った JSON テキストを検証する。
 export const parseChapterPlanText = ({ request, text }: { request: ChapterPlanRequest; text: string }): ChapterPlan => {
   const jsonResult = parseJsonText(text)
-  const planResult = ChapterPlanSchema.safeParse(jsonResult)
+  const planResult = buildChapterPlanSchema(request).safeParse(jsonResult)
 
   if (!planResult.success) {
     throw new Error(`Invalid chapter plan response: ${formatZodIssues(planResult.error)}`)
-  }
-
-  if (planResult.data.dramaId !== request.dramaId) {
-    throw new Error('Chapter plan dramaId mismatch')
-  }
-
-  if (planResult.data.chapter.number !== request.request.nextChapterNumber) {
-    throw new Error('Chapter plan number mismatch')
   }
 
   return planResult.data

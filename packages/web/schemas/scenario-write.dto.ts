@@ -3,10 +3,10 @@ import { ScenarioGenreSchema, ScenarioToneSchema, scenarioCharacterLimit } from 
 
 // シナリオ作成 API の入力を定義する。
 export const ScenarioCreateApiSchema = z.object({
-  title: z.string().trim().min(1, 'タイトルは必須です').max(60, 'タイトルは60文字以内で入力してください'),
+  title: z.string().trim().nonempty('タイトルは必須です').max(60, 'タイトルは60文字以内で入力してください'),
   genres: z
     .array(ScenarioGenreSchema)
-    .min(1, 'ジャンルを1つ以上選択してください')
+    .nonempty('ジャンルを1つ以上選択してください')
     .max(3, 'ジャンルは3つまで選択できます'),
   tone: ScenarioToneSchema,
   characterIds: z

@@ -22,6 +22,7 @@ const createCharacterInput = (label: string) => {
     honorific: 'san',
     attributeTags: [],
     backgroundTags: [],
+    sampleQuotes: [],
     memo: `scenario-db-test:${token}`,
     speakerId: null
   }
@@ -240,7 +241,7 @@ describe('Scenario DB operations', () => {
     expect(row?.cast.map((cast) => cast.characterId)).toEqual([yuki.id])
   })
 
-  test('PUT /scenarios/:id は章作成後のキャスト変更を拒否する', async () => {
+  test('PUT /scenarios/:id は章作成後でもキャスト追加を許可する', async () => {
     const ema = await createCharacter('ema')
     const hiro = await createCharacter('hiro')
     const yuki = await createCharacter('yuki')
@@ -280,6 +281,69 @@ describe('Scenario DB operations', () => {
         title: 'キャスト固定テスト',
         genres: ['学園'],
         tone: 'ほろ苦い',
+        characterIds: [ema.id, hiro.id, yuki.id]
+      })
+    })
+
+    expect(response.status).toBe(200)
+
+    const row = await db.scenario.findUnique({
+      where: {
+        id: scenarioBody.id
+      },
+      include: {
+        cast: {
+          orderBy: {
+            createdAt: 'asc'
+          }
+        }
+      }
+    })
+
+    expect(row?.cast.map((cast) => cast.characterId)).toEqual([ema.id, hiro.id, yuki.id])
+    expect(row?.cast[2]?.alias).toBe('char3')
+  })
+
+  test('PUT /scenarios/:id は章作成後のキャスト削除を拒否する', async () => {
+    const ema = await createCharacter('ema')
+    const hiro = await createCharacter('hiro')
+    const yuki = await createCharacter('yuki')
+    const createScenarioResponse = await api.request('/scenarios', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: 'キャスト削除拒否テスト',
+        genres: ['学園'],
+        tone: 'ほろ苦い',
+        characterIds: [ema.id, hiro.id, yuki.id]
+      })
+    })
+    const scenarioBody = await createScenarioResponse.json()
+    trackScenarioId(scenarioBody.id)
+
+    await api.request(`/scenarios/${scenarioBody.id}/chapters`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: '第1章',
+        synopsis: '章生成中',
+        characterIds: [ema.id]
+      })
+    })
+
+    const response = await api.request(`/scenarios/${scenarioBody.id}`, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: 'キャスト削除拒否テスト',
+        genres: ['学園'],
+        tone: 'ほろ苦い',
         characterIds: [ema.id, yuki.id]
       })
     })
@@ -299,6 +363,150 @@ describe('Scenario DB operations', () => {
       }
     })
 
-    expect(row?.cast.map((cast) => cast.characterId)).toEqual([ema.id, hiro.id])
+    expect(row?.cast.map((cast) => cast.characterId)).toEqual([ema.id, hiro.id, yuki.id])
+  })
+
+  test('DELETE /scenarios/:id/chapters/:chapterId/episode は最新の完成章を下書きに戻す', async () => {
+    const ema = await createCharacter('ema')
+    const createScenarioResponse = await api.request('/scenarios', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: 'エピソード削除テスト',
+        genres: ['学園'],
+        tone: 'ほろ苦い',
+        characterIds: [ema.id]
+      })
+    })
+    const scenarioBody = await createScenarioResponse.json()
+    trackScenarioId(scenarioBody.id)
+
+    const createdChapter = await db.scenarioChapter.create({
+      data: {
+        scenarioId: scenarioBody.id,
+        number: 1,
+        title: '第1章',
+        status: 'completed',
+        cueCount: 1,
+        durationMinutes: 1.2,
+        synopsis: '完成済みの章',
+        characters: {
+          create: {
+            characterId: ema.id
+          }
+        },
+        cues: {
+          create: {
+            order: 1,
+            kind: 'speech',
+            speakerAlias: 'char1',
+            text: 'テスト用のセリフです。',
+            pauseDuration: null
+          }
+        }
+      }
+    })
+
+    const response = await api.request(`/scenarios/${scenarioBody.id}/chapters/${createdChapter.id}/episode`, {
+      method: 'DELETE'
+    })
+
+    expect(response.status).toBe(200)
+
+    const row = await db.scenario.findUnique({
+      where: {
+        id: scenarioBody.id
+      },
+      include: {
+        chapters: {
+          include: {
+            cues: true
+          }
+        }
+      }
+    })
+
+    expect(row?.chapters[0]?.status).toBe('draft')
+    expect(row?.chapters[0]?.cueCount).toBe(0)
+    expect(row?.chapters[0]?.durationMinutes).toBe(0)
+    expect(row?.chapters[0]?.cues).toHaveLength(0)
+  })
+
+  test('DELETE /scenarios/:id/chapters/:chapterId/episode は最新以外の完成章を拒否する', async () => {
+    const ema = await createCharacter('ema')
+    const createScenarioResponse = await api.request('/scenarios', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: 'エピソード削除制約テスト',
+        genres: ['学園'],
+        tone: 'ほろ苦い',
+        characterIds: [ema.id]
+      })
+    })
+    const scenarioBody = await createScenarioResponse.json()
+    trackScenarioId(scenarioBody.id)
+
+    const firstChapter = await db.scenarioChapter.create({
+      data: {
+        scenarioId: scenarioBody.id,
+        number: 1,
+        title: '第1章',
+        status: 'completed',
+        cueCount: 1,
+        durationMinutes: 1,
+        synopsis: '最初の完成章',
+        characters: {
+          create: {
+            characterId: ema.id
+          }
+        },
+        cues: {
+          create: {
+            order: 1,
+            kind: 'speech',
+            speakerAlias: 'char1',
+            text: '最初の章です。',
+            pauseDuration: null
+          }
+        }
+      }
+    })
+
+    await db.scenarioChapter.create({
+      data: {
+        scenarioId: scenarioBody.id,
+        number: 2,
+        title: '第2章',
+        status: 'completed',
+        cueCount: 1,
+        durationMinutes: 1,
+        synopsis: '最新の完成章',
+        characters: {
+          create: {
+            characterId: ema.id
+          }
+        },
+        cues: {
+          create: {
+            order: 1,
+            kind: 'speech',
+            speakerAlias: 'char1',
+            text: '最新の章です。',
+            pauseDuration: null
+          }
+        }
+      }
+    })
+
+    const response = await api.request(`/scenarios/${scenarioBody.id}/chapters/${firstChapter.id}/episode`, {
+      method: 'DELETE'
+    })
+
+    expect(response.status).toBe(409)
   })
 })

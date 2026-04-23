@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useLocation, useParams } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, Loader2, Pause, RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Pause, RefreshCw, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { PageSuspense } from '@/components/page-suspense'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
+import { useSuspenseCharacters } from '@/lib/characters'
 import type { ChapterCharacter, Cue, Speaker } from '@/lib/scenarios'
-import { canRegenerateChapter, useScenarios } from '@/lib/scenarios'
+import { canRegenerateChapter, useScenarioMutations, useSuspenseResolvedScenarios } from '@/lib/scenarios'
 import { createChapterVdsExport, createChapterVdsJsonExport } from '@/lib/vds'
 
 const CharacterAvatar = ({ character, size = 'md' }: { character: ChapterCharacter; size?: 'sm' | 'md' }) => {
@@ -61,28 +64,17 @@ const PauseCueRow = ({ duration }: { duration: number }) => {
   )
 }
 
-export const ChapterDetailPage = () => {
+const ChapterDetailPageContent = () => {
   const { id, chapterId } = useParams({ strict: false })
   const { pathname } = useLocation()
-  const { getScenario, isLoading, errorMessage } = useScenarios()
+  const { characters } = useSuspenseCharacters()
+  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
+  const { createEpisodeFromChapter, deleteEpisodeFromChapter } = useScenarioMutations({ scenarios })
   const scenario = getScenario(id)
   const isPlotsRoute = pathname.startsWith('/plots')
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">シナリオを読み込み中です</p>
-      </div>
-    )
-  }
-
-  if (errorMessage) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-destructive">{errorMessage}</p>
-      </div>
-    )
-  }
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [regenError, setRegenError] = useState<string | null>(null)
 
   if (!scenario) {
     return (
@@ -114,6 +106,13 @@ export const ChapterDetailPage = () => {
         ? null
         : '後続の章があるため、この章は再生成できません'
   const canRegen = regenHint === null
+  const deleteHint =
+    chapter.status !== 'completed'
+      ? '生成済みの章のみエピソードを削除できます'
+      : canRegenerateChapter(scenario.chapters, chapter.id)
+        ? null
+        : '後続の章があるため、この章のエピソードは削除できません'
+  const canDeleteEpisode = deleteHint === null
   const chapterVdsExport = createChapterVdsExport({ scenario, chapter })
   const chapterVdsJsonExport = createChapterVdsJsonExport({ scenario, chapter })
   const chapterVdsPreviewReason =
@@ -124,6 +123,32 @@ export const ChapterDetailPage = () => {
         : !chapterVdsJsonExport.ok
           ? chapterVdsJsonExport.reason
           : null
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true)
+    setRegenError(null)
+
+    try {
+      await createEpisodeFromChapter(scenario.id, chapter.id)
+    } catch (error) {
+      setRegenError(error instanceof Error ? error.message : 'Failed to regenerate chapter')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
+  const handleDeleteEpisode = async () => {
+    setIsDeleting(true)
+    setRegenError(null)
+
+    try {
+      await deleteEpisodeFromChapter(scenario.id, chapter.id)
+    } catch (error) {
+      setRegenError(error instanceof Error ? error.message : 'Failed to delete episode')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="sm:px-6">
@@ -203,9 +228,24 @@ export const ChapterDetailPage = () => {
 
             <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0 md:pt-0.5">
               {canRegen ? (
-                <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs sm:w-auto">
-                  <RefreshCw className="size-3" />
-                  この章を再生成
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs sm:w-auto"
+                  onClick={() => void handleRegenerate()}
+                  disabled={isRegenerating}
+                >
+                  {isRegenerating ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      再生成中...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="size-3" />
+                      この章を再生成
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Tooltip>
@@ -218,6 +258,39 @@ export const ChapterDetailPage = () => {
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>{regenHint}</TooltipContent>
+                </Tooltip>
+              )}
+              {canDeleteEpisode ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs sm:w-auto"
+                  onClick={() => void handleDeleteEpisode()}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      削除中...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="size-3" />
+                      エピソード削除
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs sm:w-auto" disabled>
+                        <Trash2 className="size-3" />
+                        エピソード削除
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{deleteHint}</TooltipContent>
                 </Tooltip>
               )}
               {chapterVdsPreviewReason === null ? (
@@ -244,6 +317,7 @@ export const ChapterDetailPage = () => {
               )}
             </div>
           </div>
+          {regenError && <p className="mt-3 text-sm text-destructive">{regenError}</p>}
           <div className="mt-5 border-b border-border" />
         </div>
       </div>
@@ -267,7 +341,7 @@ export const ChapterDetailPage = () => {
               if (cue.kind === 'pause') {
                 return <PauseCueRow key={key} duration={cue.duration} />
               }
-              const speaker = scenario.speakers.find((s) => s.alias === cue.speaker)
+              const speaker = scenario.speakers.find((s) => s.speakerId === cue.speaker)
               const character = chapter.characters.find(
                 (item) => item.speakerId !== null && item.speakerId === speaker?.speakerId
               )
@@ -334,6 +408,12 @@ export const ChapterDetailPage = () => {
     </div>
   )
 }
+
+export const ChapterDetailPage = () => (
+  <PageSuspense label="シナリオを読み込み中です">
+    <ChapterDetailPageContent />
+  </PageSuspense>
+)
 
 export const Route = createFileRoute('/scenarios/$id/chapters/$chapterId')({
   component: ChapterDetailPage

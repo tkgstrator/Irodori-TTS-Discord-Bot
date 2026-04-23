@@ -28,6 +28,7 @@ describe('ScenarioGenerateRequestSchema', () => {
           honorific: 'san',
           attributeTags: ['transfer-student'],
           backgroundTags: ['library-club'],
+          sampleQuotes: ['そうなんだ', 'うれしいな'],
           memo: '感情が顔に出やすい',
           speakerId: null
         }

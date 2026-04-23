@@ -13,6 +13,7 @@ import {
   ScenarioCreateApiSchema,
   ScenarioUpdateApiSchema
 } from '../../schemas/scenario-write.dto'
+import { estimateEpisodeDuration, validateEpisodeCues, writeChapterEpisode } from '../chapter-episode-writer'
 import { planChapter } from '../chapter-planner'
 import { db } from '../db'
 
@@ -155,6 +156,23 @@ const findCharactersByIds = async (characterIds: readonly string[]) => {
       createdAt: 'asc'
     }
   })
+}
+
+// 既存 cast から削除対象と追加対象の characterId を算出する。
+const resolveCastChanges = ({
+  currentCharacterIds,
+  requestedCharacterIds
+}: {
+  currentCharacterIds: readonly string[]
+  requestedCharacterIds: readonly string[]
+}) => {
+  const currentCharacterIdSet = new Set(currentCharacterIds)
+  const requestedCharacterIdSet = new Set(requestedCharacterIds)
+
+  return {
+    removedCharacterIds: currentCharacterIds.filter((characterId) => !requestedCharacterIdSet.has(characterId)),
+    addedCharacterIds: requestedCharacterIds.filter((characterId) => !currentCharacterIdSet.has(characterId))
+  }
 }
 
 // シナリオ取得結果を API スキーマで検証して返す。
@@ -312,12 +330,13 @@ scenarios.put('/:id', async (c) => {
 
   const currentCharacterIds = scenario.cast.map((cast) => cast.characterId)
   const hasCreatedChapters = scenario.chapters.length > 0
-  const isSameCast =
-    currentCharacterIds.length === bodyResult.data.characterIds.length &&
-    currentCharacterIds.every((characterId, index) => characterId === bodyResult.data.characterIds[index])
+  const { removedCharacterIds, addedCharacterIds } = resolveCastChanges({
+    currentCharacterIds,
+    requestedCharacterIds: bodyResult.data.characterIds
+  })
 
-  if (hasCreatedChapters && !isSameCast) {
-    return c.json({ error: 'Cannot change cast after chapters have been created' }, 409)
+  if (hasCreatedChapters && removedCharacterIds.length > 0) {
+    return c.json({ error: 'Cannot remove cast members after chapters have been created' }, 409)
   }
 
   await db.$transaction(async (tx) => {
@@ -350,6 +369,16 @@ scenarios.put('/:id', async (c) => {
           }))
         })
       }
+    } else if (addedCharacterIds.length > 0) {
+      await tx.scenarioCast.createMany({
+        data: addedCharacterIds.map((characterId, index) => ({
+          scenarioId: scenario.id,
+          characterId,
+          role: 'companion',
+          relationship: 'other',
+          alias: createCastAlias(currentCharacterIds.length + index)
+        }))
+      })
     }
   })
 
@@ -483,4 +512,235 @@ scenarios.post('/:id/chapter-plan', async (c) => {
     console.error('Failed to generate chapter plan.', error)
     return c.json({ error: error instanceof Error ? error.message : 'Failed to generate chapter plan' }, 502)
   }
+})
+
+scenarios.post('/:id/chapters/:chapterId/create', async (c) => {
+  const scenario = await db.scenario.findUnique({
+    where: {
+      id: c.req.param('id')
+    },
+    include: {
+      cast: {
+        include: {
+          character: true
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      },
+      chapters: {
+        include: {
+          characters: {
+            include: {
+              character: true
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          },
+          cues: {
+            orderBy: {
+              order: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          number: 'asc'
+        }
+      }
+    }
+  })
+
+  if (scenario === null) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  const chapter = scenario.chapters.find((item) => item.id === c.req.param('chapterId'))
+  const chapterIndex = scenario.chapters.findIndex((item) => item.id === c.req.param('chapterId'))
+
+  if (!chapter) {
+    return c.json({ error: 'Chapter not found' }, 404)
+  }
+
+  if (chapter.status !== 'draft' && chapter.status !== 'completed') {
+    return c.json({ error: 'Only draft or completed chapters can be created' }, 409)
+  }
+
+  if (chapter.status === 'completed' && chapterIndex !== scenario.chapters.length - 1) {
+    return c.json({ error: 'Only the latest completed chapter can be regenerated' }, 409)
+  }
+
+  const chapterCharacterIds = new Set(chapter.characters.map((item) => item.characterId))
+  const cast = scenario.cast.filter((item) => chapterCharacterIds.has(item.characterId))
+
+  if (cast.length === 0) {
+    return c.json({ error: 'Chapter cast is empty' }, 400)
+  }
+
+  if (cast.some((item) => item.character.speakerId === null)) {
+    return c.json({ error: 'All chapter characters must have a linked speakerId' }, 400)
+  }
+
+  try {
+    const cues = await writeChapterEpisode({
+      model: 'gemini-2.5-flash',
+      scenario: {
+        title: scenario.title,
+        genres: scenario.genres,
+        tone: scenario.tone
+      },
+      chapter: {
+        title: chapter.title,
+        synopsis: chapter.synopsis
+      },
+      cast: cast.map((item) => ({
+        alias: item.alias,
+        character: item.character
+      }))
+    })
+    validateEpisodeCues({
+      cues,
+      speakerAliases: cast.map((item) => item.alias)
+    })
+
+    await db.$transaction(async (tx) => {
+      await tx.scenarioCue.deleteMany({
+        where: {
+          chapterId: chapter.id
+        }
+      })
+
+      await tx.scenarioCue.createMany({
+        data: cues.map((cue, index) =>
+          cue.kind === 'speech'
+            ? {
+                chapterId: chapter.id,
+                order: index + 1,
+                kind: 'speech',
+                speakerAlias: cue.speaker,
+                text: cue.text,
+                pauseDuration: null
+              }
+            : {
+                chapterId: chapter.id,
+                order: index + 1,
+                kind: 'pause',
+                speakerAlias: null,
+                text: null,
+                pauseDuration: cue.duration
+              }
+        )
+      })
+
+      await tx.scenarioChapter.update({
+        where: {
+          id: chapter.id
+        },
+        data: {
+          status: 'completed',
+          cueCount: cues.length,
+          durationMinutes: estimateEpisodeDuration(cues)
+        }
+      })
+
+      await tx.scenario.update({
+        where: {
+          id: scenario.id
+        },
+        data: {
+          status: 'completed'
+        }
+      })
+    })
+
+    const row = await db.scenario.findUnique({
+      where: {
+        id: scenario.id
+      },
+      include: scenarioInclude
+    })
+
+    return c.json(toScenarioApi(row))
+  } catch (error) {
+    console.error('Failed to create chapter episode.', error)
+    return c.json({ error: error instanceof Error ? error.message : 'Failed to create chapter episode' }, 502)
+  }
+})
+
+scenarios.delete('/:id/chapters/:chapterId/episode', async (c) => {
+  const scenario = await db.scenario.findUnique({
+    where: {
+      id: c.req.param('id')
+    },
+    include: {
+      chapters: {
+        include: {
+          cues: {
+            orderBy: {
+              order: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          number: 'asc'
+        }
+      }
+    }
+  })
+
+  if (scenario === null) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  const chapter = scenario.chapters.find((item) => item.id === c.req.param('chapterId'))
+  const chapterIndex = scenario.chapters.findIndex((item) => item.id === c.req.param('chapterId'))
+
+  if (!chapter) {
+    return c.json({ error: 'Chapter not found' }, 404)
+  }
+
+  if (chapter.status !== 'completed') {
+    return c.json({ error: 'Only completed chapters can delete episodes' }, 409)
+  }
+
+  if (chapterIndex !== scenario.chapters.length - 1) {
+    return c.json({ error: 'Only the latest completed chapter can delete episodes' }, 409)
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.scenarioCue.deleteMany({
+      where: {
+        chapterId: chapter.id
+      }
+    })
+
+    await tx.scenarioChapter.update({
+      where: {
+        id: chapter.id
+      },
+      data: {
+        status: 'draft',
+        cueCount: 0,
+        durationMinutes: 0
+      }
+    })
+
+    await tx.scenario.update({
+      where: {
+        id: scenario.id
+      },
+      data: {
+        status: 'draft'
+      }
+    })
+  })
+
+  const row = await db.scenario.findUnique({
+    where: {
+      id: scenario.id
+    },
+    include: scenarioInclude
+  })
+
+  return c.json(toScenarioApi(row))
 })

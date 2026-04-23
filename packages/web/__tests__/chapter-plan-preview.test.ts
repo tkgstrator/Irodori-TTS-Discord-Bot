@@ -31,6 +31,7 @@ const previewFixture = {
         honorific: 'san',
         attributeTags: [],
         backgroundTags: [],
+        sampleQuotes: ['会えてうれしい'],
         memo: '明るく真っ直ぐ。',
         speakerId: null
       }
