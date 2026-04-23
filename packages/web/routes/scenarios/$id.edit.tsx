@@ -3,12 +3,13 @@ import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-r
 import { ChevronLeft, Loader2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { PageSuspense } from '@/components/page-suspense'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCharacters } from '@/lib/characters'
-import { useScenarios } from '@/lib/scenarios'
+import { useSuspenseCharacters } from '@/lib/characters'
+import { useScenarioMutations, useSuspenseResolvedScenarios } from '@/lib/scenarios'
 import {
   ScenarioCreateFormSchema,
   type ScenarioCreateFormValues,
@@ -37,16 +38,12 @@ const createScenarioEditDefaults = ({
   promptNote: ''
 })
 
-export const ScenarioEditPage = () => {
+const ScenarioEditPageContent = () => {
   const navigate = useNavigate()
   const { id } = useParams({ strict: false })
-  const { characters, isLoading: isCharactersLoading, errorMessage: charactersErrorMessage } = useCharacters()
-  const {
-    getScenario,
-    isLoading: isScenariosLoading,
-    errorMessage: scenariosErrorMessage,
-    updateScenario
-  } = useScenarios()
+  const { characters } = useSuspenseCharacters()
+  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
+  const { updateScenario } = useScenarioMutations({ scenarios })
   const scenario = getScenario(id)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
@@ -95,22 +92,6 @@ export const ScenarioEditPage = () => {
     () => characters.filter((character) => selectedCharacterIds.includes(character.id)),
     [characters, selectedCharacterIds]
   )
-
-  if (isScenariosLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">プロットを読み込み中です</p>
-      </div>
-    )
-  }
-
-  if (scenariosErrorMessage) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-destructive">{scenariosErrorMessage}</p>
-      </div>
-    )
-  }
 
   if (!scenario) {
     return (
@@ -260,14 +241,14 @@ export const ScenarioEditPage = () => {
             <div className="space-y-1">
               <h2 className="text-lg font-semibold tracking-tight">登場キャラクター</h2>
               <p className="text-sm text-muted-foreground">
-                最大{scenarioCharacterLimit}人まで選択できます。章を作成済みのプロットでは変更できません。
+                最大{scenarioCharacterLimit}人まで選択できます。章作成後は既存キャラクターを残したまま追加のみできます。
               </p>
             </div>
 
             <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <span>
                 {hasCreatedChapters
-                  ? '章を作成済みのためキャラクター構成は固定されています。'
+                  ? '章を作成済みのため既存キャラクターは固定され、新規追加のみ可能です。'
                   : '選択内容は一覧カードと詳細ヘッダーに反映されます。'}
               </span>
               <span>
@@ -275,14 +256,14 @@ export const ScenarioEditPage = () => {
               </span>
             </div>
 
-            {isCharactersLoading ? (
-              <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                Loading characters...
-              </div>
-            ) : charactersErrorMessage ? (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-                {charactersErrorMessage}
+            {characters.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5">
+                <p className="text-sm text-muted-foreground">
+                  キャラクターが未登録のため、先にキャラクター作成が必要です。
+                </p>
+                <Button asChild variant="outline" size="lg" className="mt-4 h-11">
+                  <Link to="/characters/new">キャラクターを追加</Link>
+                </Button>
               </div>
             ) : (
               <Controller
@@ -292,7 +273,10 @@ export const ScenarioEditPage = () => {
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {characters.map((character) => {
                       const active = field.value.includes(character.id)
-                      const disabled = hasCreatedChapters || (!active && field.value.length >= scenarioCharacterLimit)
+                      const isExistingCharacter = selectedScenarioCharacterIds.includes(character.id)
+                      const disabled =
+                        (hasCreatedChapters && active && isExistingCharacter) ||
+                        (!active && field.value.length >= scenarioCharacterLimit)
                       const summary = characterBaseSummary(character)
 
                       return (
@@ -407,6 +391,12 @@ export const ScenarioEditPage = () => {
     </div>
   )
 }
+
+export const ScenarioEditPage = () => (
+  <PageSuspense label="プロットを読み込み中です">
+    <ScenarioEditPageContent />
+  </PageSuspense>
+)
 
 export const Route = createFileRoute('/scenarios/$id/edit')({
   component: ScenarioEditPage

@@ -1,14 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { z } from 'zod'
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import type { ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
 import type { Character } from '@/schemas/character.dto'
-import { ScenarioApiListSchema, ScenarioApiSchema } from '@/schemas/scenario-api.dto'
 import {
   ScenarioAppendChapterApiSchema,
   type ScenarioCreateApiInput,
   type ScenarioUpdateApiInput
 } from '@/schemas/scenario-write.dto'
-import { useCharacters } from './characters'
+import { backendApi, readApiErrorMessage } from './backend-api'
 
 export type ScenarioStatus = 'draft' | 'generating' | 'completed'
 export type ChapterStatus = 'draft' | 'generating' | 'completed'
@@ -146,73 +144,6 @@ export const createNextChapter = ({
   }
 }
 
-interface ScenariosContextValue {
-  readonly scenarios: readonly Scenario[]
-  readonly isLoading: boolean
-  readonly errorMessage: string | null
-  readonly getScenario: (id: string) => Scenario | undefined
-  readonly refreshScenarios: () => Promise<void>
-  readonly addScenario: (input: ScenarioCreateApiInput) => Promise<Scenario>
-  readonly updateScenario: (id: string, input: ScenarioUpdateApiInput) => Promise<Scenario>
-  readonly appendNextChapter: (id: string, input?: ChapterGenerateFormValues) => Promise<Scenario | undefined>
-  readonly deleteScenario: (id: string) => void
-}
-
-const ScenariosContext = createContext<ScenariosContextValue | null>(null)
-
-const ErrorResponseSchema = z.object({
-  error: z.string()
-})
-
-// API エラーの本文から表示用メッセージを取り出す
-const readErrorMessage = async (response: Response): Promise<string> => {
-  const text = await response.text()
-
-  if (!text) {
-    return `Request failed with status ${response.status}`
-  }
-
-  try {
-    const result = ErrorResponseSchema.safeParse(JSON.parse(text))
-
-    if (result.success) {
-      return result.data.error
-    }
-  } catch {
-    return text
-  }
-
-  return `Request failed with status ${response.status}`
-}
-
-// JSON API を呼び出してレスポンスを検証する
-const requestJson = async <TSchema extends z.ZodTypeAny>(
-  path: string,
-  schema: TSchema,
-  init?: RequestInit
-): Promise<z.infer<TSchema>> => {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      'content-type': 'application/json',
-      ...init?.headers
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error(await readErrorMessage(response))
-  }
-
-  const body = await response.json()
-  const result = schema.safeParse(body)
-
-  if (!result.success) {
-    throw new Error('Invalid API response')
-  }
-
-  return result.data
-}
-
 // speakerId 経由で chapter.characters に最新の character 情報を反映する。
 const resolveChapterCharacters = (
   chapters: readonly Chapter[],
@@ -275,56 +206,105 @@ export const resolveScenarioState = ({
   }
 }
 
-export function ScenariosProvider({ children }: { children: React.ReactNode }) {
-  const { characters } = useCharacters()
-  const [scenarios, setScenarios] = useState<Scenario[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+/**
+ * Query error を UI 向けの Error へ正規化する。
+ */
+const toApiError = (error: unknown, fallback: string) => new Error(readApiErrorMessage(error, fallback))
 
-  const refreshScenarios = useCallback(async () => {
-    setIsLoading(true)
-    setErrorMessage(null)
+/**
+ * scenarios 一覧の query key を定義する。
+ */
+export const scenarioKeys = {
+  all: ['scenarios'] as const
+}
 
+/**
+ * scenarios 一覧取得の query options を定義する。
+ */
+export const scenariosQueryOptions = queryOptions({
+  queryKey: scenarioKeys.all,
+  queryFn: async () => {
     try {
-      const rows = await requestJson('/api/scenarios', ScenarioApiListSchema)
-      setScenarios(rows)
+      return await backendApi.listScenarios()
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to load scenarios')
-    } finally {
-      setIsLoading(false)
+      throw toApiError(error, 'Failed to load scenarios')
     }
-  }, [])
+  }
+})
 
-  useEffect(() => {
-    void refreshScenarios()
-  }, [refreshScenarios])
+/**
+ * 生の scenarios 一覧を Suspense で取得する。
+ */
+export const useSuspenseScenarios = () => {
+  const query = useSuspenseQuery(scenariosQueryOptions)
 
-  const value = useMemo((): ScenariosContextValue => {
-    const resolvedScenarios = scenarios.map((scenario) => resolveScenarioState({ scenario, characters }))
-    const getScenario = (id: string) => resolvedScenarios.find((scenario) => scenario.id === id)
+  return {
+    ...query,
+    scenarios: query.data,
+    getScenario: (id: string) => query.data.find((scenario) => scenario.id === id)
+  }
+}
 
-    const addScenario = async (input: ScenarioCreateApiInput): Promise<Scenario> => {
-      const row = await requestJson('/api/scenarios', ScenarioApiSchema, {
-        method: 'POST',
-        body: JSON.stringify(input)
-      })
+/**
+ * character 情報を反映した scenarios 一覧を Suspense で取得する。
+ */
+export const useSuspenseResolvedScenarios = (characters: readonly Character[] = []) => {
+  const query = useSuspenseQuery({
+    ...scenariosQueryOptions,
+    select: (rows: readonly Scenario[]) => rows.map((scenario) => resolveScenarioState({ scenario, characters }))
+  })
 
-      setScenarios((prev) => [row, ...prev])
-      return row
+  return {
+    ...query,
+    scenarios: query.data,
+    getScenario: (id: string) => query.data.find((scenario) => scenario.id === id)
+  }
+}
+
+/**
+ * scenarios 更新系 mutation をまとめて提供する。
+ */
+export const useScenarioMutations = ({
+  characters = [],
+  scenarios = []
+}: {
+  characters?: readonly Character[]
+  scenarios?: readonly Scenario[]
+} = {}) => {
+  const queryClient = useQueryClient()
+  const addScenarioMutation = useMutation({
+    mutationFn: async (input: ScenarioCreateApiInput) => {
+      try {
+        return await backendApi.createScenario(input)
+      } catch (error) {
+        throw toApiError(error, 'Failed to create scenario')
+      }
+    },
+    onSuccess: (scenario) => {
+      queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) => [scenario, ...prev])
     }
-
-    const updateScenario = async (id: string, input: ScenarioUpdateApiInput): Promise<Scenario> => {
-      const row = await requestJson(`/api/scenarios/${id}`, ScenarioApiSchema, {
-        method: 'PUT',
-        body: JSON.stringify(input)
-      })
-
-      setScenarios((prev) => prev.map((item) => (item.id === id ? row : item)))
-      return row
+  })
+  const updateScenarioMutation = useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: ScenarioUpdateApiInput }) => {
+      try {
+        return await backendApi.updateScenario(input, {
+          params: {
+            id
+          }
+        })
+      } catch (error) {
+        throw toApiError(error, 'Failed to update scenario')
+      }
+    },
+    onSuccess: (scenario, variables) => {
+      queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
+        prev.map((item) => (item.id === variables.id ? scenario : item))
+      )
     }
-
-    const appendNextChapter = async (id: string, input?: ChapterGenerateFormValues) => {
-      const scenario = resolvedScenarios.find((item) => item.id === id)
+  })
+  const appendNextChapterMutation = useMutation({
+    mutationFn: async ({ id, input }: { id: string; input?: ChapterGenerateFormValues }) => {
+      const scenario = scenarios.find((item) => item.id === id)
 
       if (!scenario || !canGenerateNextChapter(scenario.chapters)) {
         return undefined
@@ -351,37 +331,78 @@ export function ScenariosProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Invalid chapter append request')
       }
 
-      const row = await requestJson(`/api/scenarios/${id}/chapters`, ScenarioApiSchema, {
-        method: 'POST',
-        body: JSON.stringify(bodyResult.data)
-      })
+      try {
+        return await backendApi.appendScenarioChapter(bodyResult.data, {
+          params: {
+            id
+          }
+        })
+      } catch (error) {
+        throw toApiError(error, 'Failed to append scenario chapter')
+      }
+    },
+    onSuccess: (scenario, variables) => {
+      if (!scenario) {
+        return
+      }
 
-      setScenarios((prev) => prev.map((item) => (item.id === id ? row : item)))
-      return row
+      queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
+        prev.map((item) => (item.id === variables.id ? scenario : item))
+      )
     }
-
-    const deleteScenario = (id: string) => {
-      setScenarios((prev) => prev.filter((s) => s.id !== id))
+  })
+  const createEpisodeFromChapterMutation = useMutation({
+    mutationFn: async ({ scenarioId, chapterId }: { scenarioId: string; chapterId: string }) => {
+      try {
+        return await backendApi.createScenarioEpisode(undefined, {
+          params: {
+            id: scenarioId,
+            chapterId
+          }
+        })
+      } catch (error) {
+        throw toApiError(error, 'Failed to create episode')
+      }
+    },
+    onSuccess: (scenario, variables) => {
+      queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
+        prev.map((item) => (item.id === variables.scenarioId ? scenario : item))
+      )
     }
-
-    return {
-      scenarios: resolvedScenarios,
-      isLoading,
-      errorMessage,
-      getScenario,
-      refreshScenarios,
-      addScenario,
-      updateScenario,
-      appendNextChapter,
-      deleteScenario
+  })
+  const deleteEpisodeFromChapterMutation = useMutation({
+    mutationFn: async ({ scenarioId, chapterId }: { scenarioId: string; chapterId: string }) => {
+      try {
+        return await backendApi.deleteScenarioEpisode(undefined, {
+          params: {
+            id: scenarioId,
+            chapterId
+          }
+        })
+      } catch (error) {
+        throw toApiError(error, 'Failed to delete episode')
+      }
+    },
+    onSuccess: (scenario, variables) => {
+      queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
+        prev.map((item) => (item.id === variables.scenarioId ? scenario : item))
+      )
     }
-  }, [characters, errorMessage, isLoading, refreshScenarios, scenarios])
+  })
 
-  return <ScenariosContext.Provider value={value}>{children}</ScenariosContext.Provider>
-}
-
-export function useScenarios(): ScenariosContextValue {
-  const ctx = useContext(ScenariosContext)
-  if (!ctx) throw new Error('useScenarios must be used within ScenariosProvider')
-  return ctx
+  return {
+    addScenario: addScenarioMutation.mutateAsync,
+    updateScenario: (id: string, input: ScenarioUpdateApiInput) => updateScenarioMutation.mutateAsync({ id, input }),
+    appendNextChapter: (id: string, input?: ChapterGenerateFormValues) =>
+      appendNextChapterMutation.mutateAsync({ id, input }),
+    createEpisodeFromChapter: (scenarioId: string, chapterId: string) =>
+      createEpisodeFromChapterMutation.mutateAsync({ scenarioId, chapterId }),
+    deleteEpisodeFromChapter: (scenarioId: string, chapterId: string) =>
+      deleteEpisodeFromChapterMutation.mutateAsync({ scenarioId, chapterId }),
+    deleteScenario: (id: string) => {
+      queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
+        prev.filter((scenario) => scenario.id !== id)
+      )
+    }
+  }
 }

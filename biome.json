@@ -2,7 +2,13 @@
   "$schema": "https://biomejs.dev/schemas/2.4.11/schema.json",
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "includes": ["packages/**/*.{ts,tsx}", "!packages/**/node_modules", "!packages/**/components/ui/*.tsx"]
+    "includes": [
+      "packages/**/*.{ts,tsx}",
+      "!packages/**/node_modules",
+      "!packages/**/components/ui/*.tsx",
+      "!**/routeTree.gen.ts",
+      "!**/generated/prisma/*.ts"
+    ]
   },
   "linter": {
     "enabled": true,
