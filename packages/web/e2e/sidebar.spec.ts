@@ -1,6 +1,6 @@
+import path from 'node:path'
 import { test } from '@playwright/test'
 import sharp from 'sharp'
-import path from 'node:path'
 
 const SCREENSHOT_DIR = path.resolve(import.meta.dirname, '..', 'screenshots')
 

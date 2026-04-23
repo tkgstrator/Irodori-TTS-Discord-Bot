@@ -4,6 +4,7 @@ import { Check, ChevronLeft, Eye, Loader2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useLlmSettings } from '@/components/llm-settings-provider'
+import { PageSuspense } from '@/components/page-suspense'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,8 +19,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { getAgeGroupLabel, getGenderLabel, getOccupationLabel } from '@/lib/character-options'
-import { useCharacters } from '@/lib/characters'
-import { useScenarios } from '@/lib/scenarios'
+import { useSuspenseCharacters } from '@/lib/characters'
+import { useScenarioMutations } from '@/lib/scenarios'
 import { cn } from '@/lib/utils'
 import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
 import {
@@ -175,10 +176,10 @@ export const CharacterCard = ({
   </button>
 )
 
-export const ScenarioNewPage = () => {
+const ScenarioNewPageContent = () => {
   const navigate = useNavigate()
-  const { addScenario } = useScenarios()
-  const { characters, isLoading, errorMessage } = useCharacters()
+  const { addScenario } = useScenarioMutations()
+  const { characters } = useSuspenseCharacters()
   const { llmSettings, setEditorModel, setWriterModel } = useLlmSettings()
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -514,16 +515,7 @@ export const ScenarioNewPage = () => {
               </span>
             </div>
 
-            {isLoading ? (
-              <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                Loading characters...
-              </div>
-            ) : errorMessage ? (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-                {errorMessage}
-              </div>
-            ) : characters.length === 0 ? (
+            {characters.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5">
                 <p className="text-sm text-muted-foreground">
                   キャラクターが未登録のため、先にキャラクター作成が必要です。
@@ -665,6 +657,12 @@ export const ScenarioNewPage = () => {
     </div>
   )
 }
+
+export const ScenarioNewPage = () => (
+  <PageSuspense label="キャラクターを読み込み中です">
+    <ScenarioNewPageContent />
+  </PageSuspense>
+)
 
 export const Route = createFileRoute('/scenarios/new')({
   component: ScenarioNewPage

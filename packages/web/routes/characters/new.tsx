@@ -3,7 +3,7 @@ import { CharacterWizard, DEFAULT_VALUES } from '@/components/character-wizard'
 import { SpeakerImportButton } from '@/components/speaker-import-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useCharacters } from '@/lib/characters'
+import { useCharacterMutations } from '@/lib/characters'
 
 export const Route = createFileRoute('/characters/new')({
   component: CharacterNewPage
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/characters/new')({
 
 function CharacterNewPage() {
   const navigate = useNavigate()
-  const { addCharacter } = useCharacters()
+  const { addCharacter } = useCharacterMutations()
 
   return (
     <CharacterWizard

@@ -1,28 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CharacterWizard } from '@/components/character-wizard'
+import { PageSuspense } from '@/components/page-suspense'
 import { SpeakerImportButton } from '@/components/speaker-import-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useCharacters } from '@/lib/characters'
+import { useCharacterMutations, useSuspenseCharacters } from '@/lib/characters'
 import type { CharacterFormValues } from '@/schemas/character.dto'
 
-export const Route = createFileRoute('/characters/$id/edit')({
-  component: CharacterEditPage
-})
-
-function CharacterEditPage() {
+const CharacterEditPageContent = () => {
   const { id } = Route.useParams()
   const navigate = useNavigate()
-  const { getCharacter, updateCharacter, isLoading } = useCharacters()
+  const { getCharacter } = useSuspenseCharacters()
+  const { updateCharacter } = useCharacterMutations()
   const character = getCharacter(id)
-
-  if (isLoading && !character) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">キャラクターを読み込み中です</p>
-      </div>
-    )
-  }
 
   if (!character) {
     return (
@@ -44,6 +34,7 @@ function CharacterEditPage() {
     honorific: character.honorific,
     attributeTags: [...character.attributeTags],
     backgroundTags: [...character.backgroundTags],
+    sampleQuotes: [...character.sampleQuotes],
     memo: character.memo,
     speakerId: character.speakerId
   }
@@ -82,3 +73,13 @@ function CharacterEditPage() {
     />
   )
 }
+
+const CharacterEditPage = () => (
+  <PageSuspense label="キャラクターを読み込み中です">
+    <CharacterEditPageContent />
+  </PageSuspense>
+)
+
+export const Route = createFileRoute('/characters/$id/edit')({
+  component: CharacterEditPage
+})
