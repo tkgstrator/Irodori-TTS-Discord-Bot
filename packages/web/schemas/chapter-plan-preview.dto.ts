@@ -15,7 +15,7 @@ export const ChapterPlanPreviewStateSchema = z.object({
   status: ChapterPlanPreviewStatusSchema,
   request: ChapterPlanRequestSchema,
   plan: ChapterPlanSchema.nullable(),
-  errorMessage: z.string().trim().min(1).nullable()
+  errorMessage: z.string().trim().nonempty().nullable()
 })
 
 export type ChapterPlanPreviewOrigin = z.infer<typeof ChapterPlanPreviewOriginSchema>

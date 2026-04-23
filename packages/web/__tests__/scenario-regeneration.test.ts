@@ -106,6 +106,7 @@ describe('createNextChapter', () => {
           honorific: 'san',
           attributeTags: [],
           backgroundTags: [],
+          sampleQuotes: ['よろしくね'],
           memo: '',
           speakerId: 'speaker-ema',
           createdAt: '2026-04-22',

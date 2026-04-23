@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const ChapterDigestSchema = z.object({
   chapterId: z.string().nonempty(),
   number: z.number().int().positive(),
-  title: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
+  title: z.string().trim().nonempty(),
+  summary: z.string().trim().nonempty(),
   presentCharacterIds: z.array(z.string().uuid())
 })
 

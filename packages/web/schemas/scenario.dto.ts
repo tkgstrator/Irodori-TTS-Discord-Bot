@@ -36,10 +36,10 @@ export const ScenarioToneSchema = z.enum(ScenarioToneValues)
 
 // プロット作成フォームの入力値を検証する
 export const ScenarioCreateFormSchema = z.object({
-  title: z.string().trim().min(1, 'タイトルは必須です').max(60, 'タイトルは60文字以内で入力してください'),
+  title: z.string().trim().nonempty('タイトルは必須です').max(60, 'タイトルは60文字以内で入力してください'),
   genres: z
     .array(ScenarioGenreSchema)
-    .min(1, 'ジャンルを1つ以上選択してください')
+    .nonempty('ジャンルを1つ以上選択してください')
     .max(3, 'ジャンルは3つまで選択できます'),
   tone: ScenarioToneSchema,
   plotCharacterIds: z

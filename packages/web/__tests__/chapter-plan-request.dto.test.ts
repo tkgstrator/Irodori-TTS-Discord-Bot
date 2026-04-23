@@ -29,6 +29,7 @@ describe('ChapterPlanRequestSchema', () => {
           honorific: 'san',
           attributeTags: [],
           backgroundTags: [],
+          sampleQuotes: ['星がきれいだね'],
           memo: '星を見ると落ち着く。',
           speakerId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
         }
@@ -81,6 +82,7 @@ describe('ChapterPlanRequestSchema', () => {
           honorific: 'san',
           attributeTags: [],
           backgroundTags: [],
+          sampleQuotes: [],
           memo: '',
           speakerId: null
         }

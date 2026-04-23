@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createFileRoute, Link, Outlet, useLocation, useMatches, useParams } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useLocation, useMatches, useNavigate, useParams } from '@tanstack/react-router'
 import {
   Check,
   ChevronLeft,
@@ -15,6 +15,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useLlmSettings } from '@/components/llm-settings-provider'
+import { PageSuspense } from '@/components/page-suspense'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,9 +32,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
 import { buildChapterPlanRequest, requestChapterPlan } from '@/lib/chapter-plan'
-import { useCharacters } from '@/lib/characters'
+import { useSuspenseCharacters } from '@/lib/characters'
 import type { Chapter, ChapterCharacter, ChapterStatus, Scenario } from '@/lib/scenarios'
-import { canGenerateNextChapter, canRegenerateChapter, useScenarios } from '@/lib/scenarios'
+import {
+  canGenerateNextChapter,
+  canRegenerateChapter,
+  useScenarioMutations,
+  useSuspenseResolvedScenarios
+} from '@/lib/scenarios'
 import { cn } from '@/lib/utils'
 import { createScenarioVdsExport, createScenarioVdsJsonExport } from '@/lib/vds'
 import type { ChapterGenerateMode } from '@/schemas/chapter-generate-request.dto'
@@ -154,13 +160,15 @@ const getChapterRegenHint = ({ chapter, scenario }: { chapter: Chapter; scenario
 const ChapterCard = ({
   chapter,
   scenario,
-  isLast,
-  isPlotsRoute
+  isPlotsRoute,
+  isEpisodeCreating,
+  onCreateEpisode
 }: {
   chapter: Chapter
   scenario: Scenario
-  isLast: boolean
   isPlotsRoute: boolean
+  isEpisodeCreating: boolean
+  onCreateEpisode: (chapterId: string) => Promise<void>
 }) => {
   const isDraft = chapter.status === 'draft'
   const isCompleted = chapter.status === 'completed'
@@ -169,7 +177,7 @@ const ChapterCard = ({
   const chapterDetailLink = isPlotsRoute ? '/plots/$id/chapters/$chapterId' : '/scenarios/$id/chapters/$chapterId'
 
   return (
-    <div className={`relative flex gap-3 sm:gap-5 ${isLast ? 'pb-2' : 'pb-8'}`}>
+    <div className="relative flex gap-3 sm:gap-5">
       <div className="flex w-4 shrink-0 flex-col items-center sm:w-8">
         <div
           className={cn(
@@ -182,12 +190,12 @@ const ChapterCard = ({
         <div
           className={`mt-5 hidden size-4 shrink-0 rounded-full border-2 sm:block ${timelineNodeCls(chapter.status)}`}
         />
-        {!isLast && <div className="w-px flex-1 bg-border" />}
+        <div className="w-px flex-1 bg-border" />
       </div>
-      <div className={`flex-1 border-b pb-6 ${chapterRowCls(chapter.status)} ${isLast ? 'border-b-0 pb-0' : ''}`}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="mb-1.5 flex items-center gap-2">
+      <div className={`flex-1 ${chapterRowCls(chapter.status)}`}>
+        <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-muted-foreground">第{chapter.number}章</span>
               {isCompleted ? (
                 <Link
@@ -204,26 +212,71 @@ const ChapterCard = ({
               )}
               {chapterStatusBadge({ status: chapter.status })}
             </div>
-            <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>{chapter.cueCount} cues</span>
               <span>·</span>
               <span>約{chapter.durationMinutes}分</span>
             </div>
-            <p className={`mb-3 text-sm ${isDraft ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
+            <p className={`text-sm ${isDraft ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
               {chapter.synopsis}
             </p>
-            <div className="flex flex-wrap items-center gap-1.5">
+          </div>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
               {chapter.characters.map((character) => (
                 <span key={character.speakerId ?? character.name}>
                   {characterAvatar({ character, dimmed: isDraft })}
                 </span>
               ))}
-              {isCompleted && !isPlotsRoute && (
+            </div>
+            <div className="relative z-20 flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
+              {chapter.status === 'completed' &&
+                (isRegenDisabled ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                          aria-label="再生成不可"
+                          disabled
+                        >
+                          <RefreshCw className="size-3.5" />
+                          再生成
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{regenHint}</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                    aria-label="再生成"
+                    onClick={() => void onCreateEpisode(chapter.id)}
+                    disabled={isEpisodeCreating}
+                  >
+                    {isEpisodeCreating ? (
+                      <>
+                        <Loader2 className="size-3.5 animate-spin" />
+                        再生成中...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="size-3.5" />
+                        再生成
+                      </>
+                    )}
+                  </Button>
+                ))}
+              {chapter.status === 'completed' && (
                 <Button
                   asChild
-                  variant="ghost"
+                  variant={isPlotsRoute ? 'outline' : 'ghost'}
                   size="sm"
-                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  className={cn('gap-1.5 text-xs text-muted-foreground', isPlotsRoute ? 'h-8 px-2.5' : 'h-7 px-2')}
                   aria-label="詳細"
                 >
                   <Link to={chapterDetailLink} params={{ id: scenario.id, chapterId: chapter.id }}>
@@ -231,64 +284,33 @@ const ChapterCard = ({
                   </Link>
                 </Button>
               )}
-            </div>
-          </div>
-          <div className="relative z-20 flex items-center gap-1.5 self-end sm:shrink-0">
-            {chapter.status === 'completed' &&
-              (isRegenDisabled ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground"
-                        aria-label="再生成不可"
-                        disabled
-                      >
-                        <RefreshCw className="size-3.5" />
-                        再生成
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>{regenHint}</TooltipContent>
-                </Tooltip>
-              ) : (
+              {chapter.status === 'generating' && (
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-600 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-400">
+                  <Loader2 className="size-3 animate-spin" />
+                  処理中...
+                </span>
+              )}
+              {chapter.status === 'draft' && (
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground"
-                  aria-label="再生成"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => void onCreateEpisode(chapter.id)}
+                  disabled={isEpisodeCreating}
                 >
-                  <RefreshCw className="size-3.5" />
-                  再生成
+                  {isEpisodeCreating ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      作成中...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="size-3" />
+                      この章から作成
+                    </>
+                  )}
                 </Button>
-              ))}
-            {chapter.status === 'completed' && isPlotsRoute && (
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground"
-                aria-label="詳細"
-              >
-                <Link to={chapterDetailLink} params={{ id: scenario.id, chapterId: chapter.id }}>
-                  詳細
-                </Link>
-              </Button>
-            )}
-            {chapter.status === 'generating' && (
-              <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-600 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-400">
-                <Loader2 className="size-3 animate-spin" />
-                処理中...
-              </span>
-            )}
-            {chapter.status === 'draft' && (
-              <Button size="sm" className="h-8 gap-1.5 text-xs">
-                <Play className="size-3" />
-                この章から生成
-              </Button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -296,16 +318,19 @@ const ChapterCard = ({
   )
 }
 
-export const ScenarioDetailPage = () => {
+const ScenarioDetailPageContent = () => {
   const { id } = useParams({ strict: false })
   const { pathname } = useLocation()
-  const { appendNextChapter, getScenario, isLoading, errorMessage } = useScenarios()
-  const { characters } = useCharacters()
+  const navigate = useNavigate()
+  const { characters } = useSuspenseCharacters()
+  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
+  const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
   const { llmSettings } = useLlmSettings()
   const scenario = getScenario(id)
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
   const [isChapterPlanning, setIsChapterPlanning] = useState(false)
   const [isChapterCreating, setIsChapterCreating] = useState(false)
+  const [creatingChapterId, setCreatingChapterId] = useState<string | null>(null)
   const [chapterPlanError, setChapterPlanError] = useState<string | null>(null)
   const matches = useMatches()
   const isPlotsRoute = pathname.startsWith('/plots')
@@ -337,22 +362,6 @@ export const ScenarioDetailPage = () => {
 
   if (hasChildRoute) {
     return <Outlet />
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">シナリオを読み込み中です</p>
-      </div>
-    )
-  }
-
-  if (errorMessage) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-destructive">{errorMessage}</p>
-      </div>
-    )
   }
 
   if (!scenario) {
@@ -389,6 +398,32 @@ export const ScenarioDetailPage = () => {
   const chapterTitle = watch('title')
   const promptNote = watch('promptNote')
   const canCreateChapter = chapterTitle.trim().length > 0 && promptNote.trim().length > 0
+
+  const handleCreateEpisode = async (chapterId: string) => {
+    setCreatingChapterId(chapterId)
+    setChapterPlanError(null)
+
+    try {
+      const nextScenario = await createEpisodeFromChapter(scenario.id, chapterId)
+      const nextChapter = nextScenario.chapters.find((chapter) => chapter.id === chapterId)
+
+      if (!nextChapter) {
+        throw new Error('Created episode was not found')
+      }
+
+      await navigate({
+        to: isPlotsRoute ? '/plots/$id/chapters/$chapterId' : '/scenarios/$id/chapters/$chapterId',
+        params: {
+          id: scenario.id,
+          chapterId: nextChapter.id
+        }
+      })
+    } catch (error) {
+      setChapterPlanError(error instanceof Error ? error.message : 'Failed to create episode')
+    } finally {
+      setCreatingChapterId(null)
+    }
+  }
 
   // ダイアログ入力から章計画用の送信 JSON を組み立てる
   const buildPreviewChapterPlanRequest = ({
@@ -465,13 +500,80 @@ export const ScenarioDetailPage = () => {
             {isPlotsRoute ? 'プロット管理に戻る' : 'シナリオ管理に戻る'}
           </Link>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight">{scenario.title}</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {isPlotsRoute ? '章ごとの進行と出力準備を確認できます' : '章ごとの生成状況と内容を確認できます'}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold tracking-tight">{scenario.title}</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {isPlotsRoute ? '章ごとの進行と出力準備を確認できます' : '章ごとの生成状況と内容を確認できます'}
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0 md:pt-0.5">
+                <Button asChild variant="outline" className="w-full gap-2 sm:w-auto">
+                  <Link to={isPlotsRoute ? '/plots/$id/edit' : '/scenarios/$id/edit'} params={{ id: scenario.id }}>
+                    <Pencil className="size-3.5" />
+                    プロットを編集
+                  </Link>
+                </Button>
+                {canAppendChapter && hasCharacterChoices ? (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 sm:w-auto"
+                    onClick={() => setIsChapterDialogOpen(true)}
+                  >
+                    <Play className="size-3.5" />
+                    {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
+                  </Button>
+                ) : !hasCharacterChoices ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
+                          <Play className="size-3.5" />
+                          {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>登場人物が未設定のため、この操作は使えません</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
+                          <Play className="size-3.5" />
+                          {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{nextChapterHint}</TooltipContent>
+                  </Tooltip>
+                )}
+                {scenarioVdsPreviewReason === null ? (
+                  <VdsPreviewDialog
+                    title="シナリオのVDS出力を確認"
+                    description="シナリオ全体の VDS / VDS JSON を確認してから出力できます。"
+                    vdsExport={scenarioVdsExport}
+                    vdsJsonExport={scenarioVdsJsonExport}
+                    triggerClassName="w-full gap-2 sm:w-auto"
+                    triggerLabel="VDSビュー"
+                  />
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button className="w-full gap-2 sm:w-auto" disabled>
+                          VDSビュー
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{scenarioVdsPreviewReason}</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 {scenario.genres.map((genre) => (
                   <span
                     key={genre}
@@ -481,7 +583,7 @@ export const ScenarioDetailPage = () => {
                   </span>
                 ))}
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                 <span>
                   トーン: <span className="italic text-foreground">{scenario.tone}</span>
                 </span>
@@ -501,89 +603,27 @@ export const ScenarioDetailPage = () => {
                 </span>
               </div>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0 md:pt-0.5">
-              <Button asChild variant="outline" className="w-full gap-2 sm:w-auto">
-                <Link to={isPlotsRoute ? '/plots/$id/edit' : '/scenarios/$id/edit'} params={{ id: scenario.id }}>
-                  <Pencil className="size-3.5" />
-                  プロットを編集
-                </Link>
-              </Button>
-              {canAppendChapter && hasCharacterChoices ? (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 sm:w-auto"
-                  onClick={() => setIsChapterDialogOpen(true)}
-                >
-                  <Play className="size-3.5" />
-                  {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
-                </Button>
-              ) : !hasCharacterChoices ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
-                        <Play className="size-3.5" />
-                        {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>登場人物が未設定のため、この操作は使えません</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
-                        <Play className="size-3.5" />
-                        {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>{nextChapterHint}</TooltipContent>
-                </Tooltip>
-              )}
-              {scenarioVdsPreviewReason === null ? (
-                <VdsPreviewDialog
-                  title="シナリオのVDS出力を確認"
-                  description="シナリオ全体の VDS / VDS JSON を確認してから出力できます。"
-                  vdsExport={scenarioVdsExport}
-                  vdsJsonExport={scenarioVdsJsonExport}
-                  triggerClassName="w-full gap-2 sm:w-auto"
-                  triggerLabel="VDSビュー"
-                />
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button className="w-full gap-2 sm:w-auto" disabled>
-                        VDSビュー
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>{scenarioVdsPreviewReason}</TooltipContent>
-                </Tooltip>
-              )}
-            </div>
           </div>
           <div className="mt-5 border-b border-border" />
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl">
-        <div className="relative">
-          {scenario.chapters.map((chapter, index) => (
+      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+        <div className="relative flex flex-col gap-8">
+          {scenario.chapters.map((chapter) => (
             <ChapterCard
               key={chapter.id}
               chapter={chapter}
               scenario={scenario}
-              isLast={index === scenario.chapters.length - 1}
               isPlotsRoute={isPlotsRoute}
+              isEpisodeCreating={creatingChapterId === chapter.id}
+              onCreateEpisode={handleCreateEpisode}
             />
           ))}
         </div>
 
         {createdChapterCount > 0 && (
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-5 py-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-5 py-3 text-xs text-muted-foreground">
             <span>
               作成済み <strong className="font-semibold text-foreground">{createdChapterCount}</strong> 章
             </span>
@@ -731,6 +771,12 @@ export const ScenarioDetailPage = () => {
     </div>
   )
 }
+
+export const ScenarioDetailPage = () => (
+  <PageSuspense label="シナリオを読み込み中です">
+    <ScenarioDetailPageContent />
+  </PageSuspense>
+)
 
 export const Route = createFileRoute('/scenarios/$id')({
   component: ScenarioDetailPage

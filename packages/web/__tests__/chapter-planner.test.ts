@@ -32,6 +32,7 @@ const requestFixture = {
       honorific: 'san',
       attributeTags: [],
       backgroundTags: [],
+      sampleQuotes: ['きっと大丈夫'],
       memo: '明るく真っ直ぐ。',
       speakerId: null
     }

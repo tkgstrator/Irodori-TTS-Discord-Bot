@@ -63,7 +63,7 @@ const scenarioFixture = {
       cues: [
         {
           kind: 'speech',
-          speaker: 'yuki',
+          speaker: '33333333-3333-4333-8333-333333333333',
           text: '放課後の図書室で、二人は出会った。'
         },
         {
@@ -72,7 +72,7 @@ const scenarioFixture = {
         },
         {
           kind: 'speech',
-          speaker: 'ema',
+          speaker: '11111111-1111-4111-8111-111111111111',
           text: 'こんにちは、そこで何を読んでいるの？'
         }
       ]
@@ -162,7 +162,9 @@ describe('createScenarioVdsExport', () => {
     expect(result.ok).toBe(false)
 
     if (!result.ok) {
-      expect(result.reason).toBe('話者エイリアス「ema」に speakerId がないため VDS を出力できません')
+      expect(result.reason).toBe(
+        '話者UUID「11111111-1111-4111-8111-111111111111」が見つからないため VDS を出力できません'
+      )
     }
   })
 })
