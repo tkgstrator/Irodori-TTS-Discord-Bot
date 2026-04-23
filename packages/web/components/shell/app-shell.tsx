@@ -1,5 +1,3 @@
-'use client'
-
 import type { CSSProperties, ReactNode } from 'react'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar, MobileTabs } from './nav-bar'
@@ -28,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           id="main-content"
           className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background pb-[var(--mobile-nav-h)] sm:min-w-0 sm:pb-0 sm:pr-4"
         >
-          {children}
+          <div className="flex min-h-0 flex-1 flex-col px-6 pb-8 sm:px-0 sm:pb-0">{children}</div>
         </SidebarInset>
       </div>
       <MobileTabs />

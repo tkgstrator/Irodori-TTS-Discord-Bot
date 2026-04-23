@@ -6,10 +6,8 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "next": ["./node_modules/vinext/dist/index.d.ts"],
-      "next/*": ["./node_modules/vinext/dist/shims/*"]
+      "@/*": ["./*"]
     }
   },
-  "include": ["app", "**/*.ts", "**/*.tsx"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

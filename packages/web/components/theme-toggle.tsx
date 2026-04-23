@@ -1,27 +1,33 @@
-'use client'
-
-import { Monitor, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { getNextTheme, themeIcons, themeLabels } from '@/lib/theme'
 
-const CYCLE: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system']
-const ICONS = { light: Sun, dark: Moon, system: Monitor } as const
-const LABELS = { light: 'ライトモード', dark: 'ダークモード', system: 'システム設定' } as const
+// トップバーのクイック切り替え文言を組み立てる。
+const getToggleLabel = (currentTheme: keyof typeof themeIcons, nextTheme: keyof typeof themeIcons) =>
+  `現在: ${themeLabels[currentTheme]}。クリックで${themeLabels[nextTheme]}に切り替え`
 
-export function ThemeToggle() {
+// トップバーからテーマを順送りで切り替える。
+export const ThemeToggle = () => {
   const { theme, setTheme } = useTheme()
-  const Icon = ICONS[theme]
-  const next = CYCLE[(CYCLE.indexOf(theme) + 1) % CYCLE.length] ?? 'system'
+  const Icon = themeIcons[theme]
+  const nextTheme = getNextTheme(theme)
+  const toggleLabel = getToggleLabel(theme, nextTheme)
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-10" onClick={() => setTheme(next)} aria-label={LABELS[theme]}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-10"
+          onClick={() => setTheme(nextTheme)}
+          aria-label={toggleLabel}
+        >
           <Icon className="size-6" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{LABELS[theme]}</TooltipContent>
+      <TooltipContent>{toggleLabel}</TooltipContent>
     </Tooltip>
   )
 }
