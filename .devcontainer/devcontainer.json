@@ -33,6 +33,7 @@
     "ghcr.io/devcontainers-extra/features/fzf:1": {},
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/stu-bell/devcontainer-features/claude-code:0": {},
+    "ghcr.io/devcontainers/features/copilot-cli:1": {},
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false,
       "dockerDashComposeVersion": "v2"
@@ -50,6 +51,7 @@
         "Intlayer.intlayer-vs-code-extension",
         "Lokalise.i18n-ally",
         "PKief.material-icon-theme",
+        "Prisma.prisma",
         "antfu.file-nesting",
         "bierner.markdown-mermaid",
         "bierner.markdown-preview-github-styles",
