@@ -1,3 +1,12 @@
+import {
+  AgeGroupSchema,
+  FirstPersonSchema,
+  GenderSchema,
+  HonorificSchema,
+  OccupationSchema,
+  SecondPersonSchema,
+  SpeechStyleSchema
+} from '@irodori-tts/shared/enums'
 import { z } from 'zod'
 
 // 連携済み話者の参照情報を定義する
@@ -10,14 +19,14 @@ export const SpeakerLinkSchema = z.object({
 const CharacterBaseSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
   imageUrl: z.string().nullable(),
-  ageGroup: z.string(),
-  gender: z.string(),
-  occupation: z.string(),
+  ageGroup: AgeGroupSchema,
+  gender: GenderSchema,
+  occupation: OccupationSchema,
   personalityTags: z.array(z.string()),
-  speechStyle: z.string(),
-  firstPerson: z.string(),
-  secondPerson: z.string(),
-  honorific: z.string(),
+  speechStyle: SpeechStyleSchema,
+  firstPerson: FirstPersonSchema,
+  secondPerson: z.union([SecondPersonSchema, z.literal('')]),
+  honorific: HonorificSchema,
   attributeTags: z.array(z.string()),
   backgroundTags: z.array(z.string()),
   memo: z.string(),

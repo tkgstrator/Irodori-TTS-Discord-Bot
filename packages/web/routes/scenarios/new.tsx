@@ -1,22 +1,25 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { Check, ChevronLeft, Loader2, Sparkles, Users } from 'lucide-react'
+import { Check, ChevronLeft, Loader2, Users } from 'lucide-react'
 import { useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { useLlmSettings } from '@/components/llm-settings-provider'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { getAgeGroupLabel, getGenderLabel, getOccupationLabel } from '@/lib/character-options'
 import { useCharacters } from '@/lib/characters'
 import { useScenarios } from '@/lib/scenarios'
 import { cn } from '@/lib/utils'
+import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
 import {
   ScenarioCreateFormSchema,
   type ScenarioCreateFormValues,
   ScenarioGenreValues,
-  ScenarioToneValues
+  ScenarioToneValues,
+  scenarioCharacterLimit
 } from '@/schemas/scenario.dto'
 
 const defaultValues: ScenarioCreateFormValues = {
@@ -52,6 +55,53 @@ const FieldHint = ({ error, hint }: { error?: string; hint?: string }) => {
   return <p className={cn('text-xs', error ? 'text-destructive' : 'text-muted-foreground')}>{error ?? hint}</p>
 }
 
+// キャラクターの基本設定を一覧向けの文言へ整える
+const characterBaseSummary = ({
+  ageGroup,
+  gender,
+  occupation
+}: {
+  ageGroup: string
+  gender: string
+  occupation: string
+}) => [getAgeGroupLabel(ageGroup), getGenderLabel(gender), getOccupationLabel(occupation)].join(' ・ ')
+
+// モデル名から表示ラベルを引く
+const getGeminiModelLabel = (model: GeminiModel) => {
+  return geminiModelCatalog.find((item) => item.value === model)?.label ?? model
+}
+
+// キャラクターアイコンを画像またはイニシャルで表示する
+const CharacterAvatar = ({
+  imageUrl,
+  name,
+  className,
+  textClassName
+}: {
+  imageUrl: string | null
+  name: string
+  className: string
+  textClassName: string
+}) => {
+  if (imageUrl) {
+    return (
+      <img src={imageUrl} alt="" className={cn('shrink-0 rounded-full border border-border object-cover', className)} />
+    )
+  }
+
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-full border border-border bg-secondary font-semibold text-secondary-foreground',
+        className,
+        textClassName
+      )}
+    >
+      {name.slice(0, 1)}
+    </span>
+  )
+}
+
 // ジャンル選択用のチップボタンを描画する
 const GenreChip = ({
   active,
@@ -70,7 +120,7 @@ const GenreChip = ({
     disabled={disabled}
     aria-pressed={active}
     className={cn(
-      'inline-flex min-h-11 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors',
+      'inline-flex items-center justify-center rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
       active && 'border-primary bg-primary text-primary-foreground',
       !active && 'border-border bg-background text-foreground hover:bg-muted',
       disabled && !active && 'cursor-not-allowed opacity-50'
@@ -80,18 +130,22 @@ const GenreChip = ({
   </button>
 )
 
-// キャラクター選択カードを描画する
+// キャラクター選択グリッド項目を描画する
 const CharacterCard = ({
   active,
+  summary,
+  imageUrl,
   disabled,
-  hint,
+  note,
   name,
   tags,
   onClick
 }: {
   active: boolean
+  summary: string
+  imageUrl: string | null
   disabled: boolean
-  hint: string
+  note?: string
   name: string
   tags: readonly string[]
   onClick: () => void
@@ -102,30 +156,32 @@ const CharacterCard = ({
     disabled={disabled}
     aria-pressed={active}
     className={cn(
-      'flex min-h-28 w-full flex-col items-start gap-3 rounded-xl border p-4 text-left transition-colors',
-      active && 'border-primary bg-primary/5 ring-2 ring-primary/20',
-      !active && 'border-border bg-card hover:bg-muted/60',
+      'flex h-full w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
+      active && 'border-primary bg-primary/5',
+      !active && 'border-border hover:bg-muted/40',
       disabled && !active && 'cursor-not-allowed opacity-50'
     )}
   >
-    <div className="flex w-full items-start gap-3">
-      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-        {name.slice(0, 1)}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <span className="line-clamp-1 text-sm font-semibold text-foreground">{name}</span>
-          {active && <Check className="size-4 text-primary" aria-hidden="true" />}
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    <CharacterAvatar imageUrl={imageUrl} name={name} className="size-10" textClassName="text-sm" />
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center justify-between gap-3">
+        <span className="line-clamp-1 text-sm font-semibold text-foreground">{name}</span>
+        {active && <Check className="size-4 text-primary" aria-hidden="true" />}
       </div>
-    </div>
-    <div className="flex flex-wrap gap-1.5">
-      {tags.slice(0, 3).map((tag) => (
-        <span key={tag} className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
-          {tag}
-        </span>
-      ))}
+      <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
+      {note && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/80">{note}</p>}
+      {tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {tags.slice(0, 3).map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   </button>
 )
@@ -134,6 +190,8 @@ export const ScenarioNewPage = () => {
   const navigate = useNavigate()
   const { addScenario } = useScenarios()
   const { characters, isLoading, errorMessage } = useCharacters()
+  const { llmSettings, setEditorModel, setWriterModel } = useLlmSettings()
+  const pagePaddingCls = 'sm:px-6 sm:pb-8'
 
   const {
     control,
@@ -183,36 +241,37 @@ export const ScenarioNewPage = () => {
   })
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-6 flex flex-col gap-4 sm:mb-8">
-        <Button asChild variant="ghost" className="w-fit px-0 text-muted-foreground hover:text-foreground">
-          <Link to="/plots">
-            <ChevronLeft data-icon="inline-start" />
+    <div className={pagePaddingCls}>
+      <div className="sticky top-0 z-10 -mx-6 bg-background/95 px-6 pb-5 backdrop-blur-sm">
+        <div className="w-full">
+          <Link
+            to="/plots"
+            className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronLeft className="size-3.5" />
             プロット管理に戻る
           </Link>
-        </Button>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">新規プロット作成</h1>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              タイトル、ジャンル、登場キャラクターを整理して、生成前の下書きを作成します。
-            </p>
-          </div>
-          <div className="inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-border bg-card px-4 text-sm text-muted-foreground">
-            <Sparkles className="size-4 text-primary" aria-hidden="true" />
-            モバイル優先の入力フロー
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight">新規プロット作成</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                タイトル、ジャンル、登場キャラクターを整理して、生成前の下書きを作成します。
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <form className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]" onSubmit={onSubmit}>
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>基本設定</CardTitle>
-              <CardDescription>一覧で識別しやすいタイトルと生成の方向性を決めます。</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-5">
+      <form className="space-y-8 pt-4" onSubmit={onSubmit}>
+        <div className="grid gap-x-10 gap-y-8 xl:grid-cols-2">
+          <section className="space-y-5 border-b border-border pb-8 xl:row-span-2">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">基本設定</h2>
+              <p className="text-sm text-muted-foreground">一覧で識別しやすいタイトルと生成の方向性を決めます。</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(12rem,0.8fr)]">
               <div className="space-y-2">
                 <Label htmlFor="title">タイトル</Label>
                 <Input
@@ -232,7 +291,11 @@ export const ScenarioNewPage = () => {
                   name="tone"
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="tone" className="h-11 w-full" aria-invalid={errors.tone ? 'true' : 'false'}>
+                      <SelectTrigger
+                        id="tone"
+                        className="!h-11 w-full !py-1 !text-base md:!text-sm"
+                        aria-invalid={errors.tone ? 'true' : 'false'}
+                      >
                         <SelectValue placeholder="トーンを選択" />
                       </SelectTrigger>
                       <SelectContent>
@@ -247,197 +310,268 @@ export const ScenarioNewPage = () => {
                 />
                 <FieldHint error={errors.tone?.message} />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="promptNote">補足メモ</Label>
+              <Textarea
+                id="promptNote"
+                rows={5}
+                placeholder="季節や舞台、入れたい雰囲気などを自由にメモできます"
+                className="min-h-32"
+                aria-invalid={errors.promptNote ? 'true' : 'false'}
+                {...register('promptNote')}
+              />
+              <div className="flex items-center justify-between gap-3">
+                <FieldHint error={errors.promptNote?.message} hint="任意入力です。未入力でも下書き作成できます。" />
+                <span className="shrink-0 text-xs text-muted-foreground">{promptNote.length}/400</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-5 border-b border-border pb-8">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">ジャンル</h2>
+              <p className="text-sm text-muted-foreground">
+                1〜3個まで選択できます。複数選択で世界観の方向性を絞れます。
+              </p>
+            </div>
+
+            <Controller
+              control={control}
+              name="genres"
+              render={({ field }) => (
+                <div className="flex flex-wrap gap-2.5">
+                  {ScenarioGenreValues.map((item) => {
+                    const active = field.value.includes(item)
+                    const disabled = !active && field.value.length >= 3
+
+                    return (
+                      <GenreChip
+                        key={item}
+                        active={active}
+                        disabled={disabled}
+                        label={item}
+                        onClick={() => field.onChange(toggleValue(field.value, item, 3))}
+                      />
+                    )
+                  })}
+                </div>
+              )}
+            />
+
+            <div className="flex items-center justify-between gap-3">
+              <FieldHint error={errors.genres?.message} hint="選択したジャンルは一覧カードにバッジ表示されます。" />
+              <span className="shrink-0 text-xs text-muted-foreground">{selectedGenres.length}/3</span>
+            </div>
+          </section>
+
+          <section className="space-y-5 border-b border-border pb-8">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">生成モデル</h2>
+              <p className="text-sm text-muted-foreground">
+                Editor と Writer のモデルをここで指定できます。初期値には保存済みの設定を反映します。
+              </p>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="editorModel">Editor</Label>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.editorModel)}</span>
+                </div>
+                <Select value={llmSettings.editorModel} onValueChange={setEditorModel}>
+                  <SelectTrigger id="editorModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {geminiModelCatalog.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">構成整理や整合性確認に使うモデルです。</p>
+              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="promptNote">補足メモ</Label>
-                <Textarea
-                  id="promptNote"
-                  rows={5}
-                  placeholder="季節や舞台、入れたい雰囲気などを自由にメモできます"
-                  className="min-h-32"
-                  aria-invalid={errors.promptNote ? 'true' : 'false'}
-                  {...register('promptNote')}
-                />
                 <div className="flex items-center justify-between gap-3">
-                  <FieldHint error={errors.promptNote?.message} hint="任意入力です。未入力でも下書き作成できます。" />
-                  <span className="shrink-0 text-xs text-muted-foreground">{promptNote.length}/400</span>
+                  <Label htmlFor="writerModel">Writer</Label>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.writerModel)}</span>
                 </div>
+                <Select value={llmSettings.writerModel} onValueChange={setWriterModel}>
+                  <SelectTrigger id="writerModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {geminiModelCatalog.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">本文やセリフ生成に使うモデルです。</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>ジャンル</CardTitle>
-              <CardDescription>1〜3個まで選択できます。複数選択で世界観の方向性を絞れます。</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-5">
+          <section className="space-y-5 border-b border-border pb-8 xl:col-span-2">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">登場キャラクター</h2>
+              <p className="text-sm text-muted-foreground">
+                最大{scenarioCharacterLimit}人まで選択できます。未選択でも下書きだけ先に作成できます。
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>選択すると一覧カードの「プロット元」と話者数に反映されます。</span>
+              <span>
+                {selectedCharacterIds.length}/{scenarioCharacterLimit}
+              </span>
+            </div>
+
+            {isLoading ? (
+              <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                Loading characters...
+              </div>
+            ) : errorMessage ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                {errorMessage}
+              </div>
+            ) : characters.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5">
+                <p className="text-sm text-muted-foreground">
+                  キャラクターが未登録のため、先にキャラクター作成が必要です。
+                </p>
+                <Button asChild variant="outline" size="lg" className="mt-4 h-11">
+                  <Link to="/characters/new">キャラクターを追加</Link>
+                </Button>
+              </div>
+            ) : (
               <Controller
                 control={control}
-                name="genres"
+                name="plotCharacterIds"
                 render={({ field }) => (
-                  <div className="flex flex-wrap gap-2.5">
-                    {ScenarioGenreValues.map((item) => {
-                      const active = field.value.includes(item)
-                      const disabled = !active && field.value.length >= 3
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {characters.map((character) => {
+                      const active = field.value.includes(character.id)
+                      const disabled = !active && field.value.length >= scenarioCharacterLimit
+                      const note = character.memo.trim()
+                      const summary = characterBaseSummary(character)
 
                       return (
-                        <GenreChip
-                          key={item}
+                        <CharacterCard
+                          key={character.id}
                           active={active}
+                          summary={summary}
+                          imageUrl={character.imageUrl}
                           disabled={disabled}
-                          label={item}
-                          onClick={() => field.onChange(toggleValue(field.value, item, 3))}
+                          note={note || undefined}
+                          name={character.name}
+                          tags={character.personalityTags}
+                          onClick={() => field.onChange(toggleValue(field.value, character.id, scenarioCharacterLimit))}
                         />
                       )
                     })}
                   </div>
                 )}
               />
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <FieldHint error={errors.genres?.message} hint="選択したジャンルは一覧カードにバッジ表示されます。" />
-                <span className="shrink-0 text-xs text-muted-foreground">{selectedGenres.length}/3</span>
-              </div>
-            </CardContent>
-          </Card>
+            )}
 
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>登場キャラクター</CardTitle>
-              <CardDescription>最大3人まで選択できます。未選択でも下書きだけ先に作成できます。</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-5">
-              <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                <span>選択すると一覧カードの「プロット元」と話者数に反映されます。</span>
-                <span>{selectedCharacterIds.length}/3</span>
-              </div>
+            <FieldHint error={errors.plotCharacterIds?.message} />
+          </section>
 
-              {isLoading ? (
-                <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                  Loading characters...
-                </div>
-              ) : errorMessage ? (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-                  {errorMessage}
-                </div>
-              ) : characters.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5">
-                  <p className="text-sm text-muted-foreground">
-                    キャラクターが未登録のため、先にキャラクター作成が必要です。
-                  </p>
-                  <Button asChild variant="outline" size="lg" className="mt-4 h-11">
-                    <Link to="/characters/new">キャラクターを追加</Link>
-                  </Button>
+          <section className="space-y-5 border-b border-border pb-8">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">作成内容の確認</h2>
+              <p className="text-sm text-muted-foreground">保存前に一覧へ反映される要約を確認できます。</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">タイトル</p>
+              <p className="text-sm font-semibold text-foreground">{title.trim() || '未入力'}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">ジャンル</p>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedGenres.length > 0 ? (
+                  selectedGenres.map((item) => (
+                    <span
+                      key={item}
+                      className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+                    >
+                      {item}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">未選択</span>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">トーン</p>
+              <p className="text-sm text-foreground">{tone}</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground">Editor</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.editorModel)}</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground">Writer</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.writerModel)}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground">
+                <Users className="size-3.5" aria-hidden="true" />
+                選択中のキャラクター
+              </div>
+              {selectedCharacters.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedCharacters.map((character) => (
+                    <span
+                      key={character.id}
+                      className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm"
+                    >
+                      <CharacterAvatar
+                        imageUrl={character.imageUrl}
+                        name={character.name}
+                        className="size-8"
+                        textClassName="text-xs"
+                      />
+                      <span className="line-clamp-1 text-foreground">{character.name}</span>
+                    </span>
+                  ))}
                 </div>
               ) : (
-                <Controller
-                  control={control}
-                  name="plotCharacterIds"
-                  render={({ field }) => (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {characters.map((character) => {
-                        const active = field.value.includes(character.id)
-                        const disabled = !active && field.value.length >= 3
-                        const hint = character.memo.trim() || 'キャラクター詳細メモは未設定です'
-
-                        return (
-                          <CharacterCard
-                            key={character.id}
-                            active={active}
-                            disabled={disabled}
-                            hint={hint}
-                            name={character.name}
-                            tags={character.personalityTags}
-                            onClick={() => field.onChange(toggleValue(field.value, character.id, 3))}
-                          />
-                        )
-                      })}
-                    </div>
-                  )}
-                />
+                <p className="text-sm text-muted-foreground">未選択</p>
               )}
-
-              <FieldHint error={errors.plotCharacterIds?.message} />
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
 
-        <div className="lg:sticky lg:top-20 lg:self-start">
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>作成内容の確認</CardTitle>
-              <CardDescription>保存前に一覧へ反映される要約を確認できます。</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-5">
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground">タイトル</p>
-                <p className="text-sm font-semibold text-foreground">{title.trim() || '未入力'}</p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground">ジャンル</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedGenres.length > 0 ? (
-                    selectedGenres.map((item) => (
-                      <span
-                        key={item}
-                        className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-                      >
-                        {item}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">未選択</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground">トーン</p>
-                <p className="text-sm text-foreground">{tone}</p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground">
-                  <Users className="size-3.5" aria-hidden="true" />
-                  選択中のキャラクター
-                </div>
-                {selectedCharacters.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedCharacters.map((character) => (
-                      <div
-                        key={character.id}
-                        className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2 text-sm"
-                      >
-                        <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                          {character.name.slice(0, 1)}
-                        </span>
-                        <span className="line-clamp-1 text-foreground">{character.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">未選択</p>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" size="lg" className="h-11 w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    Saving draft...
-                  </>
-                ) : (
-                  'プロットを作成'
-                )}
-              </Button>
-              <Button type="button" asChild variant="outline" size="lg" className="h-11 w-full">
-                <Link to="/plots">キャンセル</Link>
-              </Button>
-            </CardFooter>
-          </Card>
+        <div className="flex flex-col gap-3 pb-2 sm:flex-row">
+          <Button type="submit" size="lg" className="h-11 sm:min-w-48" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Saving draft...
+              </>
+            ) : (
+              'プロットを作成'
+            )}
+          </Button>
+          <Button type="button" asChild variant="outline" size="lg" className="h-11 sm:min-w-40">
+            <Link to="/plots">キャンセル</Link>
+          </Button>
         </div>
       </form>
     </div>

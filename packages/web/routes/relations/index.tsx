@@ -20,7 +20,7 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import { createFileRoute } from '@tanstack/react-router'
-import { Pencil, Plus, Trash2, UserPlus } from 'lucide-react'
+import { AlertTriangle, Pencil, Plus, Trash2, UserPlus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
@@ -71,12 +71,31 @@ interface RelationTypeConfig {
 
 const RELATION_TYPE_CONFIG: Record<RelationType, RelationTypeConfig> = {
   family: { lightColor: '#22c55e', darkColor: '#4ade80', label: '家族', dashed: false },
+  sibling: { lightColor: '#16a34a', darkColor: '#86efac', label: '姉妹/兄弟', dashed: false },
+  parent: { lightColor: '#15803d', darkColor: '#a7f3d0', label: '親子', dashed: false },
   friend: { lightColor: '#3b82f6', darkColor: '#60a5fa', label: '友人', dashed: false },
-  rival: { lightColor: '#ef4444', darkColor: '#f87171', label: 'ライバル', dashed: true },
-  love: { lightColor: '#ec4899', darkColor: '#f472b6', label: '恋愛', dashed: false }
+  bestFriend: { lightColor: '#2563eb', darkColor: '#93c5fd', label: '親友', dashed: false },
+  childhood: { lightColor: '#6366f1', darkColor: '#a5b4fc', label: '幼馴染', dashed: false },
+  love: { lightColor: '#ec4899', darkColor: '#f472b6', label: '恋人', dashed: false },
+  crush: { lightColor: '#f472b6', darkColor: '#fbcfe8', label: '片想い', dashed: true },
+  exLover: { lightColor: '#a855f7', darkColor: '#d8b4fe', label: '元恋人', dashed: true },
+  master: { lightColor: '#f59e0b', darkColor: '#fcd34d', label: '師弟', dashed: false },
+  colleague: { lightColor: '#64748b', darkColor: '#94a3b8', label: '同僚', dashed: false }
 }
 
-const RELATION_TYPES: readonly RelationType[] = ['family', 'friend', 'rival', 'love']
+const RELATION_TYPES: readonly RelationType[] = [
+  'family',
+  'sibling',
+  'parent',
+  'friend',
+  'bestFriend',
+  'childhood',
+  'love',
+  'crush',
+  'exLover',
+  'master',
+  'colleague'
+]
 
 function isDarkMode(theme: string): boolean {
   if (theme === 'dark') return true
@@ -123,7 +142,6 @@ function CharacterNodeComponent({ data }: NodeProps<CharacterNode>) {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold leading-tight">{character.name}</p>
-          <p className="truncate text-[0.625rem] text-muted-foreground leading-tight">{character.role}</p>
         </div>
       </div>
     </div>
@@ -200,33 +218,12 @@ function RelationEdgeComponent({
 
 const EDGE_TYPES = { relation: RelationEdgeComponent }
 
-function RelationTypeDot({ type }: { type: RelationType }) {
-  const cfg = RELATION_TYPE_CONFIG[type]
-  return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex items-center w-8">
-        <div className="h-px w-full" style={{ backgroundColor: cfg.lightColor, opacity: 0.8 }} />
-        {cfg.dashed && (
-          <div
-            className="absolute inset-0 h-px w-full"
-            style={{
-              backgroundImage: `repeating-linear-gradient(to right, ${cfg.lightColor} 0, ${cfg.lightColor} 4px, transparent 4px, transparent 7px)`
-            }}
-          />
-        )}
-      </div>
-      <span className="text-xs text-muted-foreground">{cfg.label}</span>
-    </div>
-  )
-}
-
 interface RelationDialogState {
   readonly open: boolean
   readonly editingId: string | null
   readonly sourceId: string
   readonly targetId: string
   readonly type: RelationType
-  readonly label: string
 }
 
 const EMPTY_RELATION_DIALOG: RelationDialogState = {
@@ -234,8 +231,7 @@ const EMPTY_RELATION_DIALOG: RelationDialogState = {
   editingId: null,
   sourceId: '',
   targetId: '',
-  type: 'friend',
-  label: ''
+  type: 'friend'
 }
 
 interface CharacterDialogState {
@@ -515,8 +511,7 @@ function RelationsPage() {
         editingId: rel.id,
         sourceId: rel.sourceId,
         targetId: rel.targetId,
-        type: rel.type,
-        label: rel.label
+        type: rel.type
       })
     },
     [relations]
@@ -547,18 +542,30 @@ function RelationsPage() {
       editingId: rel.id,
       sourceId: rel.sourceId,
       targetId: rel.targetId,
-      type: rel.type,
-      label: rel.label
+      type: rel.type
     })
   }, [])
 
+  const duplicateRelation = useMemo(() => {
+    if (!relationDialog.sourceId || !relationDialog.targetId) return undefined
+    return relations.find(
+      (r) =>
+        r.id !== relationDialog.editingId &&
+        r.sourceId === relationDialog.sourceId &&
+        r.targetId === relationDialog.targetId
+    )
+  }, [relations, relationDialog.sourceId, relationDialog.targetId, relationDialog.editingId])
+
   const handleRelationSave = useCallback(() => {
-    if (!relationDialog.sourceId || !relationDialog.targetId || !relationDialog.label.trim()) return
+    if (!relationDialog.sourceId || !relationDialog.targetId) return
     const input = {
       sourceId: relationDialog.sourceId,
       targetId: relationDialog.targetId,
       type: relationDialog.type,
-      label: relationDialog.label.trim()
+      label: RELATION_TYPE_CONFIG[relationDialog.type].label
+    }
+    if (duplicateRelation) {
+      deleteRelation(duplicateRelation.id)
     }
     if (relationDialog.editingId) {
       updateRelation(relationDialog.editingId, input)
@@ -566,7 +573,7 @@ function RelationsPage() {
       addRelation(input)
     }
     setRelationDialog(EMPTY_RELATION_DIALOG)
-  }, [relationDialog, addRelation, updateRelation])
+  }, [relationDialog, duplicateRelation, addRelation, updateRelation, deleteRelation])
 
   const handleDeleteRelation = useCallback(
     (id: string) => {
@@ -600,7 +607,7 @@ function RelationsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="shrink-0 px-4 pt-4 pb-4 sm:px-6 sm:pt-6">
+      <div className="shrink-0 pt-4 pb-4 sm:px-6 sm:pt-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">キャラクター関係図</h1>
@@ -625,7 +632,7 @@ function RelationsPage() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-4 sm:px-6 sm:pb-6 md:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 pb-4 sm:px-6 sm:pb-6 md:flex-row">
         <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:min-h-[28rem] md:flex-1 md:min-h-0">
           <div className="border-b border-border px-4 py-3">
             <p className="text-sm font-medium">相関図キャンバス</p>
@@ -766,15 +773,15 @@ function RelationsPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label>ラベル</Label>
-              <Input
-                value={relationDialog.label}
-                onChange={(e) => setRelationDialog((prev) => ({ ...prev, label: e.target.value }))}
-                placeholder="例: 姉妹、恋人、ライバル"
-                aria-label="関係ラベル"
-              />
-            </div>
+            {duplicateRelation && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-300">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  同じソース・ターゲット間に既存の関係（{RELATION_TYPE_CONFIG[duplicateRelation.type].label}
+                  ）があります。保存すると上書きされます。
+                </span>
+              </div>
+            )}
           </div>
 
           <DialogFooter className={relationDialog.editingId ? 'sm:justify-between' : ''}>
@@ -794,10 +801,7 @@ function RelationsPage() {
               <Button variant="outline" onClick={() => setRelationDialog(EMPTY_RELATION_DIALOG)}>
                 キャンセル
               </Button>
-              <Button
-                onClick={handleRelationSave}
-                disabled={!relationDialog.sourceId || !relationDialog.targetId || !relationDialog.label.trim()}
-              >
+              <Button onClick={handleRelationSave} disabled={!relationDialog.sourceId || !relationDialog.targetId}>
                 {relationDialog.editingId ? '更新' : '追加'}
               </Button>
             </div>

@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { GENDERS } from '@/components/character-wizard'
 import { PageContainer } from '@/components/page-container'
 import {
   AlertDialog,
@@ -16,92 +15,24 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  getAgeGroupLabel,
+  getFirstPersonLabel,
+  getGenderLabel,
+  getHonorificLabel,
+  getOccupationLabel,
+  getSecondPersonLabel,
+  getSpeechStyleLabel
+} from '@/lib/character-options'
 import type { Character } from '@/lib/characters'
 import { useCharacters } from '@/lib/characters'
 
-const AGE_GROUPS = [
-  { value: 'infant', label: '乳幼児' },
-  { value: 'child', label: '子供' },
-  { value: 'preteen', label: '小学生' },
-  { value: 'teen', label: '10代' },
-  { value: 'young_adult', label: '青年' },
-  { value: 'adult', label: '成人' },
-  { value: 'middle_aged', label: '中年' },
-  { value: 'elderly', label: '高齢' },
-  { value: 'ageless', label: '不老' }
-] as const
-
-const OCCUPATIONS = [
-  { value: 'student_high', label: '高校生' },
-  { value: 'student_college', label: '大学生' },
-  { value: 'teacher', label: '教師' },
-  { value: 'engineer', label: 'エンジニア' },
-  { value: 'adventurer', label: '冒険者' },
-  { value: 'knight', label: '騎士' },
-  { value: 'mage', label: '魔法使い' },
-  { value: 'detective', label: '探偵' },
-  { value: 'doctor', label: '医師' },
-  { value: 'merchant', label: '商人' },
-  { value: 'other', label: 'その他' }
-] as const
-
-const SPEECH_STYLES = [
-  { value: 'polite_formal', label: '丁寧語' },
-  { value: 'polite_casual', label: 'やや丁寧' },
-  { value: 'neutral', label: '標準' },
-  { value: 'casual_youthful', label: 'カジュアル' },
-  { value: 'rough_masculine', label: '荒い' },
-  { value: 'refined_feminine', label: '上品' },
-  { value: 'archaic_samurai', label: '武士風' },
-  { value: 'archaic_court', label: '宮廷風' },
-  { value: 'dialect_regional', label: '方言' },
-  { value: 'childlike', label: '子供っぽい' },
-  { value: 'eccentric', label: '独特' }
-] as const
-
-const FIRST_PERSONS = [
-  { value: 'watashi', label: '私' },
-  { value: 'watakushi', label: 'わたくし' },
-  { value: 'atashi', label: 'あたし' },
-  { value: 'boku', label: '僕' },
-  { value: 'ore', label: '俺' },
-  { value: 'uchi', label: 'うち' },
-  { value: 'washi', label: 'ワシ' },
-  { value: 'name', label: '自分の名前' },
-  { value: 'other', label: 'その他' }
-] as const
-
-const HONORIFICS = [
-  { value: 'none', label: '呼び捨て' },
-  { value: 'san', label: '〜さん' },
-  { value: 'chan', label: '〜ちゃん' },
-  { value: 'kun', label: '〜君' },
-  { value: 'sama', label: '〜様' },
-  { value: 'senpai', label: '〜先輩' },
-  { value: 'sensei', label: '〜先生' }
-] as const
-
-const genderLabel = (value: string): string => GENDERS.find((g) => g.value === value)?.label ?? value
-
-const optionLabel = (options: readonly { value: string; label: string }[], value: string): string =>
-  options.find((option) => option.value === value)?.label ?? value
-
-const ageGroupLabel = (value: string): string => optionLabel(AGE_GROUPS, value)
-
-const occupationLabel = (value: string): string => optionLabel(OCCUPATIONS, value)
-
-const speechStyleLabel = (value: string): string => optionLabel(SPEECH_STYLES, value)
-
-const firstPersonLabel = (value: string): string => optionLabel(FIRST_PERSONS, value)
-
-const honorificLabel = (value: string): string => optionLabel(HONORIFICS, value)
-
 const metadataSummary = (character: Character): readonly string[] =>
   [
-    speechStyleLabel(character.speechStyle),
-    firstPersonLabel(character.firstPerson),
-    character.honorific !== 'none' ? honorificLabel(character.honorific) : null,
-    character.secondPerson || null
+    getSpeechStyleLabel(character.speechStyle),
+    getFirstPersonLabel(character.firstPerson),
+    character.honorific !== 'none' ? getHonorificLabel(character.honorific) : null,
+    character.secondPerson ? getSecondPersonLabel(character.secondPerson) : null
   ].filter((value): value is string => value !== null && value.length > 0)
 
 const CharacterAvatar = ({ character, firstChar }: { character: Character; firstChar: string }) => {
@@ -138,8 +69,8 @@ const CharacterCard = ({ character, onDelete }: { character: Character; onDelete
               <div className="min-w-0">
                 <h2 className="truncate text-base font-semibold tracking-tight">{character.name}</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {ageGroupLabel(character.ageGroup)} ・ {genderLabel(character.gender)} ・{' '}
-                  {occupationLabel(character.occupation)}
+                  {getAgeGroupLabel(character.ageGroup)} ・ {getGenderLabel(character.gender)} ・{' '}
+                  {getOccupationLabel(character.occupation)}
                 </p>
               </div>
 
@@ -165,23 +96,6 @@ const CharacterCard = ({ character, onDelete }: { character: Character; onDelete
             </div>
           </div>
         </div>
-
-        {character.memo ? (
-          <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{character.memo}</p>
-        ) : null}
-
-        {character.personalityTags.length > 0 && (
-          <section>
-            <p className="mb-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">性格</p>
-            <div className="flex flex-wrap gap-1.5">
-              {character.personalityTags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </section>
-        )}
 
         {hasDetailTags && (
           <section>

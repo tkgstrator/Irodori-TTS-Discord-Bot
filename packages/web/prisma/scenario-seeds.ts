@@ -1,41 +1,26 @@
 import type { PrismaClient } from '../generated/prisma/client'
-import type { ScenarioSeedCast, ScenarioSeedCharacter, ScenarioSeedScenario } from '../schemas/scenario-seed.dto'
+import { plotSeedIds, plotSpeakerSeedIds } from '../lib/plot-seed-ids'
+import type {
+  ScenarioSeedCast,
+  ScenarioSeedChapter,
+  ScenarioSeedCue,
+  ScenarioSeedScenario
+} from '../schemas/scenario-seed.dto'
 import {
-  ScenarioSeedCharacterSchema,
+  ScenarioSeedChapterSchema,
   ScenarioSeedScenarioSchema,
   ScenarioSeedSetSchema
 } from '../schemas/scenario-seed.dto'
 
-type SeedDbClient = Pick<PrismaClient, 'character' | 'scenario' | 'scenarioCast' | '$transaction'>
-type SeedDbDelegate = Pick<PrismaClient, 'character' | 'scenario' | 'scenarioCast'>
-
-// シナリオ管理ページで使う安定 ID を定義する
-const seedIds = {
-  renka: '57fd1aa6-2c64-4f9a-ae14-1b55f4c79701',
-  shota: '33571849-554a-4dbc-8221-0cb2c48961ce',
-  narrator: 'bc37c5e6-c81a-41af-ae22-c88d40d7a26e',
-  sakurako: '2f60e8f8-bc2f-4d96-ae9f-d497c3b46cd2',
-  mizuki: '349f86b1-eddf-4627-934d-4626a65386a4',
-  hayato: '531c08e2-acde-47ac-bafc-036981902f1a',
-  kazuki: 'c02d9b85-5b0d-4e48-8b06-5ea638142e9f',
-  tokinari: '5fd8e31e-6900-40d1-a532-06d56d17f0d1',
-  natsu: '1b8a6435-6806-4eb0-8b6f-9e205f13f6f7',
-  fuyu: '00be5a25-dab0-4ed3-8cb8-725dd4f9e261',
-  hoshi: '76150d2f-f27b-48d7-9550-893d76f66726',
-  kurenai: '632712b7-75b7-46c4-b22a-f4f27440b1c8',
-  souten: '8b46d99c-a4dc-454d-ab66-4e0c6d57e00a'
-} as const
-
-// キャラクター seed を検証付きで組み立てる
-const createCharacterSeed = (seed: ScenarioSeedCharacter) => {
-  const seedResult = ScenarioSeedCharacterSchema.safeParse(seed)
-
-  if (!seedResult.success) {
-    throw new Error(`Invalid scenario seed character: ${seedResult.error.message}`)
-  }
-
-  return seedResult.data
-}
+type SeedDbClient = Pick<
+  PrismaClient,
+  'character' | 'scenario' | 'scenarioCast' | 'scenarioChapter' | 'scenarioChapterCharacter' | 'scenarioCue' | '$transaction'
+>
+type SeedDbDelegate = Pick<
+  PrismaClient,
+  'character' | 'scenario' | 'scenarioCast' | 'scenarioChapter' | 'scenarioChapterCharacter' | 'scenarioCue'
+>
+const scenarioSeedCharacterMemo = 'seed:scenario-management'
 
 // シナリオ seed を検証付きで組み立てる
 const createScenarioSeed = (seed: ScenarioSeedScenario) => {
@@ -48,244 +33,194 @@ const createScenarioSeed = (seed: ScenarioSeedScenario) => {
   return seedResult.data
 }
 
-// シナリオ管理ページ向けのキャラクター seed を定義する
-const scenarioSeedCharacters = [
-  createCharacterSeed({
-    id: seedIds.renka,
-    data: {
-      name: '蓮花',
-      imageUrl: null,
-      ageGroup: 'teen',
-      gender: 'female',
-      occupation: 'student_high',
-      personalityTags: ['明るい', '一途'],
-      speechStyle: 'neutral',
-      firstPerson: 'watashi',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: ['優等生'],
-      backgroundTags: ['転校生'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.shota,
-    data: {
-      name: '翔太',
-      imageUrl: null,
-      ageGroup: 'teen',
-      gender: 'male',
-      occupation: 'student_high',
-      personalityTags: ['無口', '不器用'],
-      speechStyle: 'neutral',
-      firstPerson: 'ore',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: ['読書家'],
-      backgroundTags: ['秀才'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.narrator,
-    data: {
-      name: 'ナレーション',
-      imageUrl: null,
-      ageGroup: 'adult',
-      gender: 'unknown',
-      occupation: 'writer',
-      personalityTags: ['中立'],
-      speechStyle: 'neutral',
-      firstPerson: 'watashi',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: [],
-      backgroundTags: [],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.sakurako,
-    data: {
-      name: '桜子',
-      imageUrl: null,
-      ageGroup: 'young_adult',
-      gender: 'female',
-      occupation: 'student_college',
-      personalityTags: ['繊細', '好奇心旺盛'],
-      speechStyle: 'neutral',
-      firstPerson: 'watashi',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: ['神秘的'],
-      backgroundTags: ['帰国子女'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.mizuki,
-    data: {
-      name: '美月',
-      imageUrl: null,
-      ageGroup: 'young_adult',
-      gender: 'female',
-      occupation: 'student_college',
-      personalityTags: ['冷静', '知的'],
-      speechStyle: 'neutral',
-      firstPerson: 'watashi',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: ['メガネ'],
-      backgroundTags: ['研究者志望'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.hayato,
-    data: {
-      name: '隼人',
-      imageUrl: null,
-      ageGroup: 'young_adult',
-      gender: 'male',
-      occupation: 'student_college',
-      personalityTags: ['行動派', '誠実'],
-      speechStyle: 'neutral',
-      firstPerson: 'boku',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: ['世話焼き'],
-      backgroundTags: ['スポーツ推薦'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.kazuki,
-    data: {
-      name: '和樹',
-      imageUrl: null,
-      ageGroup: 'young_adult',
-      gender: 'male',
-      occupation: 'programmer',
-      personalityTags: ['内向的', '優しい'],
-      speechStyle: 'neutral',
-      firstPerson: 'boku',
-      secondPerson: '',
-      honorific: 'san',
-      attributeTags: ['夜型'],
-      backgroundTags: ['幼なじみ'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  }),
-  createCharacterSeed({
-    id: seedIds.tokinari,
-    data: {
-      name: '時成',
-      imageUrl: null,
-      ageGroup: 'adult',
-      gender: 'male',
-      occupation: 'samurai',
-      personalityTags: ['厳格', '忠義'],
-      speechStyle: 'neutral',
-      firstPerson: 'soregashi',
-      secondPerson: '',
-      honorific: 'dono',
-      attributeTags: ['寡黙'],
-      backgroundTags: ['名家出身'],
-      memo: 'seed:scenario-management',
-      speakerId: null
-    }
-  })
-] as const
+// 章 seed を検証付きで組み立てる
+const createChapterSeed = (seed: ScenarioSeedChapter) => {
+  const seedResult = ScenarioSeedChapterSchema.safeParse(seed)
+
+  if (!seedResult.success) {
+    throw new Error(`Invalid scenario seed chapter: ${seedResult.error.message}`)
+  }
+
+  return seedResult.data
+}
+
+// 既存話者連携キャラクターを使うため、追加キャラクター seed は作らない
+const scenarioSeedCharacters = [] as const
 
 // シナリオ cast を簡潔に組み立てる
-const createCast = (alias: string, characterId: string, role: string, relationship: string): ScenarioSeedCast => ({
+const createCast = (alias: string, speakerId: string, role: string, relationship: string): ScenarioSeedCast => ({
   alias,
-  characterId,
+  speakerId,
   role,
   relationship
+})
+
+// speech cue を簡潔に組み立てる
+const createSpeechCue = (speaker: string, text: string): ScenarioSeedCue => ({
+  kind: 'speech',
+  speaker,
+  text
+})
+
+// pause cue を簡潔に組み立てる
+const createPauseCue = (duration: number): ScenarioSeedCue => ({
+  kind: 'pause',
+  duration
 })
 
 // シナリオ管理ページ向けのシナリオ seed を定義する
 const scenarioSeeds = [
   createScenarioSeed({
-    id: seedIds.natsu,
+    id: plotSeedIds.natsu,
     title: '夏の約束',
     genres: ['学園', '恋愛'],
     tone: 'ほろ苦い',
     ending: 'closed',
     status: 'completed',
-    narratorId: seedIds.narrator,
+    narratorSpeakerId: plotSpeakerSeedIds.yuki,
     vdsJson: null,
     cast: [
-      createCast('renka', seedIds.renka, 'protagonist', 'crush'),
-      createCast('shota', seedIds.shota, 'love_interest', 'classmate'),
-      createCast('narrator', seedIds.narrator, 'narrator', 'other')
+      createCast('ema', plotSpeakerSeedIds.ema, 'protagonist', 'crush'),
+      createCast('hiro', plotSpeakerSeedIds.hiro, 'love_interest', 'classmate'),
+      createCast('yuki', plotSpeakerSeedIds.yuki, 'narrator', 'other')
+    ],
+    chapters: [
+      createChapterSeed({
+        id: 'ch1',
+        number: 1,
+        title: '出会い',
+        status: 'completed',
+        durationMinutes: 1.5,
+        synopsis:
+          '桜羽エマが転校初日に二階堂ヒロと校門前で偶然ぶつかり、散らばったノートを拾い集めるところから物語が始まる。',
+        characters: ['ema', 'hiro', 'yuki'],
+        cues: [
+          createSpeechCue(
+            'yuki',
+            '夏の終わり、蝉の声が遠くなった放課後。図書室の窓から差し込む夕日が、古びた机の上の埃を金色に輝かせていた。'
+          ),
+          createPauseCue(0.8),
+          createSpeechCue('ema', 'また来てたんだ。この本、気に入ってるの？'),
+          createSpeechCue('hiro', '……べつに。どこにいても同じだから。'),
+          createPauseCue(1.5),
+          createSpeechCue('ema', 'そんなこと言わないで。……ねえ、名前、教えてくれる？'),
+          createPauseCue(0.5),
+          createSpeechCue('hiro', '……ヒロ。'),
+          createSpeechCue('ema', 'ヒロくん。私はエマ。よろしくね。')
+        ]
+      }),
+      createChapterSeed({
+        id: 'ch2',
+        number: 2,
+        title: '秘密の場所',
+        status: 'completed',
+        durationMinutes: 2,
+        synopsis: '二階堂ヒロが屋上への秘密の抜け道を桜羽エマだけに教え、二人は放課後の秘密の時間を過ごすようになる。',
+        characters: ['ema', 'hiro'],
+        cues: [
+          createSpeechCue('hiro', '……ここ、誰も来ない。'),
+          createSpeechCue('ema', 'わあ、屋上って初めて。空が近いね！'),
+          createPauseCue(1),
+          createSpeechCue('hiro', '騒ぐなよ。見つかったら面倒だ。'),
+          createSpeechCue('ema', 'ふふ、秘密基地みたい。ヒロくんの秘密の場所なんだ。'),
+          createPauseCue(0.5),
+          createSpeechCue('hiro', '……お前だけだからな。教えたの。'),
+          createSpeechCue('ema', 'えっ……うん。約束する、誰にも言わない。'),
+          createSpeechCue('hiro', '……勝手にしろ。'),
+          createSpeechCue('ema', 'じゃあ明日も来るね、ヒロくん。')
+        ]
+      }),
+      createChapterSeed({
+        id: 'ch3',
+        number: 3,
+        title: 'すれ違い',
+        status: 'completed',
+        durationMinutes: 1,
+        synopsis: '文化祭の準備で忙しくなり、桜羽エマと二階堂ヒロの間に小さな誤解が生まれてしまう。',
+        characters: ['ema', 'hiro', 'yuki'],
+        cues: [
+          createSpeechCue('yuki', '文化祭まであと三日。教室は準備の熱気に包まれていた。'),
+          createSpeechCue('ema', 'ヒロくん、今日も屋上——'),
+          createSpeechCue('hiro', '……今日は無理。'),
+          createPauseCue(1),
+          createSpeechCue('ema', 'そう……。最近ずっとそうだよね。'),
+          createSpeechCue('hiro', '……悪い。'),
+          createSpeechCue('yuki', 'エマは小さく笑って背を向けた。その肩が少しだけ震えているのを、ヒロは気づかなかった。')
+        ]
+      }),
+      createChapterSeed({
+        id: 'ch4',
+        number: 4,
+        title: '告白',
+        status: 'generating',
+        durationMinutes: 1.5,
+        synopsis: '夏祭りの夜、花火の光に照らされながら二階堂ヒロが桜羽エマに想いを伝える。',
+        characters: ['ema', 'hiro'],
+        cues: []
+      })
     ]
   }),
   createScenarioSeed({
-    id: seedIds.fuyu,
+    id: plotSeedIds.fuyu,
     title: '冬の幻想曲',
     genres: ['ファンタジー', 'ミステリー'],
     tone: '幻想的',
     ending: 'closed',
     status: 'completed',
-    narratorId: seedIds.narrator,
+    narratorSpeakerId: plotSpeakerSeedIds.yuki,
     vdsJson: null,
     cast: [
-      createCast('sakurako', seedIds.sakurako, 'protagonist', 'other'),
-      createCast('mizuki', seedIds.mizuki, 'companion', 'close_friend'),
-      createCast('hayato', seedIds.hayato, 'mentor', 'acquaintance'),
-      createCast('narrator', seedIds.narrator, 'narrator', 'other')
-    ]
+      createCast('sherry', plotSpeakerSeedIds.sherry, 'protagonist', 'other'),
+      createCast('meruru', plotSpeakerSeedIds.meruru, 'companion', 'close_friend'),
+      createCast('coco', plotSpeakerSeedIds.coco, 'mentor', 'acquaintance'),
+      createCast('yuki', plotSpeakerSeedIds.yuki, 'narrator', 'other')
+    ],
+    chapters: []
   }),
   createScenarioSeed({
-    id: seedIds.hoshi,
+    id: plotSeedIds.hoshi,
     title: '星降る夜に',
     genres: ['恋愛', '日常'],
     tone: 'メランコリック',
     ending: 'closed',
     status: 'generating',
-    narratorId: null,
+    narratorSpeakerId: null,
     vdsJson: null,
     cast: [
-      createCast('renka', seedIds.renka, 'protagonist', 'other'),
-      createCast('kazuki', seedIds.kazuki, 'love_interest', 'childhood_friend')
-    ]
+      createCast('chieri', plotSpeakerSeedIds.chieri, 'protagonist', 'other'),
+      createCast('leia', plotSpeakerSeedIds.leia, 'love_interest', 'childhood_friend')
+    ],
+    chapters: []
   }),
   createScenarioSeed({
-    id: seedIds.kurenai,
+    id: plotSeedIds.kurenai,
     title: '紅の記憶',
     genres: ['歴史', 'サスペンス'],
     tone: 'シリアス',
     ending: 'closed',
     status: 'completed',
-    narratorId: seedIds.narrator,
+    narratorSpeakerId: plotSpeakerSeedIds.yuki,
     vdsJson: null,
     cast: [
-      createCast('shota', seedIds.shota, 'protagonist', 'other'),
-      createCast('hayato', seedIds.hayato, 'rival', 'enemy'),
-      createCast('sakurako', seedIds.sakurako, 'deuteragonist', 'ally'),
-      createCast('tokinari', seedIds.tokinari, 'authority', 'mentor'),
-      createCast('narrator', seedIds.narrator, 'narrator', 'other')
-    ]
+      createCast('hiro', plotSpeakerSeedIds.hiro, 'protagonist', 'other'),
+      createCast('margo', plotSpeakerSeedIds.margo, 'rival', 'enemy'),
+      createCast('hanna', plotSpeakerSeedIds.hanna, 'deuteragonist', 'ally'),
+      createCast('nanoka', plotSpeakerSeedIds.nanoka, 'authority', 'mentor'),
+      createCast('yuki', plotSpeakerSeedIds.yuki, 'narrator', 'other')
+    ],
+    chapters: []
   }),
   createScenarioSeed({
-    id: seedIds.souten,
+    id: plotSeedIds.souten,
     title: '蒼天の彼方',
     genres: ['SF'],
     tone: '緊迫',
     ending: 'closed',
     status: 'draft',
-    narratorId: null,
+    narratorSpeakerId: null,
     vdsJson: null,
-    cast: []
+    cast: [],
+    chapters: []
   })
 ] as const
 
@@ -301,21 +236,70 @@ if (!scenarioSeedSetResult.success) {
 export const scenarioSeedSet = scenarioSeedSetResult.data
 
 // シード対象のキャラクターを upsert する
-const upsertScenarioCharacter = async (client: SeedDbDelegate, character: ScenarioSeedCharacter) => {
-  await client.character.upsert({
+// cast で使う話者連携キャラクターを解決する
+const resolveScenarioCharacterIds = async (client: SeedDbDelegate, scenarios: readonly ScenarioSeedScenario[]) => {
+  const speakerIds = Array.from(
+    new Set(
+      scenarios.flatMap((scenario) => [
+        ...scenario.cast.map((cast) => cast.speakerId),
+        ...(scenario.narratorSpeakerId ? [scenario.narratorSpeakerId] : [])
+      ])
+    )
+  )
+
+  if (speakerIds.length === 0) {
+    return new Map<string, string>()
+  }
+
+  const characters = await client.character.findMany({
     where: {
-      id: character.id
+      speakerId: {
+        in: speakerIds
+      }
     },
-    create: {
-      id: character.id,
-      ...character.data
-    },
-    update: character.data
+    select: {
+      id: true,
+      name: true,
+      speakerId: true
+    }
   })
+
+  const characterMap = new Map(
+    characters.flatMap((character) => (character.speakerId ? [[character.speakerId, character.id] as const] : []))
+  )
+
+  speakerIds.forEach((speakerId) => {
+    if (!characterMap.has(speakerId)) {
+      throw new Error(`Linked character not found for speaker: ${speakerId}`)
+    }
+  })
+
+  return characterMap
 }
 
+// alias ごとに永続化済みキャラクター ID を解決する
+const resolveScenarioAliasMap = (
+  scenario: ScenarioSeedScenario,
+  characterMap: ReadonlyMap<string, string>
+) =>
+  new Map(
+    scenario.cast.map((cast) => {
+      const characterId = characterMap.get(cast.speakerId)
+
+      if (!characterId) {
+        throw new Error(`Linked character not found for speaker: ${cast.speakerId}`)
+      }
+
+      return [cast.alias, characterId] as const
+    })
+  )
+
 // シード対象のシナリオを upsert する
-const upsertScenario = async (client: SeedDbDelegate, scenario: ScenarioSeedScenario) => {
+const upsertScenario = async (
+  client: SeedDbDelegate,
+  scenario: ScenarioSeedScenario,
+  characterMap: ReadonlyMap<string, string>
+) => {
   await client.scenario.upsert({
     where: {
       id: scenario.id
@@ -327,7 +311,7 @@ const upsertScenario = async (client: SeedDbDelegate, scenario: ScenarioSeedScen
       tone: scenario.tone,
       ending: scenario.ending,
       status: scenario.status,
-      narratorId: scenario.narratorId,
+      narratorId: scenario.narratorSpeakerId ? (characterMap.get(scenario.narratorSpeakerId) ?? null) : null,
       vdsJson: scenario.vdsJson
     },
     update: {
@@ -336,14 +320,114 @@ const upsertScenario = async (client: SeedDbDelegate, scenario: ScenarioSeedScen
       tone: scenario.tone,
       ending: scenario.ending,
       status: scenario.status,
-      narratorId: scenario.narratorId,
+      narratorId: scenario.narratorSpeakerId ? (characterMap.get(scenario.narratorSpeakerId) ?? null) : null,
       vdsJson: scenario.vdsJson
     }
   })
 }
 
+// シード対象の章を upsert する
+const upsertScenarioChapter = async (client: SeedDbDelegate, scenarioId: string, chapter: ScenarioSeedChapter) =>
+  client.scenarioChapter.upsert({
+    where: {
+      scenarioId_number: {
+        scenarioId,
+        number: chapter.number
+      }
+    },
+    create: {
+      id: chapter.id,
+      scenarioId,
+      number: chapter.number,
+      title: chapter.title,
+      status: chapter.status,
+      cueCount: chapter.cues.length,
+      durationMinutes: chapter.durationMinutes,
+      synopsis: chapter.synopsis
+    },
+    update: {
+      title: chapter.title,
+      status: chapter.status,
+      cueCount: chapter.cues.length,
+      durationMinutes: chapter.durationMinutes,
+      synopsis: chapter.synopsis
+    },
+    select: {
+      id: true
+    }
+  })
+
+// シード対象の章内登場人物を同期する
+const syncScenarioChapterCharacters = async (
+  client: SeedDbDelegate,
+  chapterId: string,
+  chapter: ScenarioSeedChapter,
+  aliasMap: ReadonlyMap<string, string>
+) => {
+  await client.scenarioChapterCharacter.deleteMany({
+    where: {
+      chapterId
+    }
+  })
+
+  if (chapter.characters.length === 0) {
+    return
+  }
+
+  await client.scenarioChapterCharacter.createMany({
+    data: chapter.characters.map((alias) => {
+      const characterId = aliasMap.get(alias)
+
+      if (!characterId) {
+        throw new Error(`Linked character not found for alias: ${alias}`)
+      }
+
+      return {
+        chapterId,
+        characterId
+      }
+    })
+  })
+}
+
+// シード対象の cue を同期する
+const syncScenarioChapterCues = async (client: SeedDbDelegate, chapterId: string, chapter: ScenarioSeedChapter) => {
+  await client.scenarioCue.deleteMany({
+    where: {
+      chapterId
+    }
+  })
+
+  if (chapter.cues.length === 0) {
+    return
+  }
+
+  await client.scenarioCue.createMany({
+    data: chapter.cues.map((cue, index) => ({
+      chapterId,
+      order: index + 1,
+      kind: cue.kind,
+      speakerAlias: cue.kind === 'speech' ? cue.speaker : null,
+      text: cue.kind === 'speech' ? cue.text : null,
+      pauseDuration: cue.kind === 'pause' ? cue.duration : null,
+      synthOptions: null
+    }))
+  })
+}
+
 // シード対象の cast を upsert する
-const upsertScenarioCast = async (client: SeedDbDelegate, scenarioId: string, cast: ScenarioSeedCast) => {
+const upsertScenarioCast = async (
+  client: SeedDbDelegate,
+  scenarioId: string,
+  cast: ScenarioSeedCast,
+  characterMap: ReadonlyMap<string, string>
+) => {
+  const characterId = characterMap.get(cast.speakerId)
+
+  if (!characterId) {
+    throw new Error(`Linked character not found for speaker: ${cast.speakerId}`)
+  }
+
   await client.scenarioCast.upsert({
     where: {
       scenarioId_alias: {
@@ -353,15 +437,29 @@ const upsertScenarioCast = async (client: SeedDbDelegate, scenarioId: string, ca
     },
     create: {
       scenarioId,
-      characterId: cast.characterId,
+      characterId,
       role: cast.role,
       relationship: cast.relationship,
       alias: cast.alias
     },
     update: {
-      characterId: cast.characterId,
+      characterId,
       role: cast.role,
       relationship: cast.relationship
+    }
+  })
+}
+
+// シードから外れた章を対象シナリオ内だけ整理する
+const pruneScenarioChapters = async (client: SeedDbDelegate, scenario: ScenarioSeedScenario) => {
+  const numbers = scenario.chapters.map((chapter) => chapter.number)
+
+  await client.scenarioChapter.deleteMany({
+    where: {
+      scenarioId: scenario.id,
+      number: {
+        notIn: numbers
+      }
     }
   })
 }
@@ -380,17 +478,42 @@ const pruneScenarioCast = async (client: SeedDbDelegate, scenario: ScenarioSeedS
   })
 }
 
+// 旧プロット seed が作った未連携キャラクターだけを整理する
+const pruneLegacyScenarioCharacters = async (client: SeedDbDelegate) => {
+  await client.character.deleteMany({
+    where: {
+      memo: scenarioSeedCharacterMemo,
+      speakerId: null
+    }
+  })
+}
+
 // シナリオ管理ページ向けの seed 全体を同期する
 export const syncScenarioSeeds = async (client: SeedDbClient) => {
   await client.$transaction(async (tx) => {
-    await Promise.all(scenarioSeedSet.characters.map((character) => upsertScenarioCharacter(tx, character)))
-    await Promise.all(scenarioSeedSet.scenarios.map((scenario) => upsertScenario(tx, scenario)))
+    const characterMap = await resolveScenarioCharacterIds(tx, scenarioSeedSet.scenarios)
+
+    await Promise.all(scenarioSeedSet.scenarios.map((scenario) => upsertScenario(tx, scenario, characterMap)))
+    await Promise.all(scenarioSeedSet.scenarios.map((scenario) => pruneScenarioChapters(tx, scenario)))
     await Promise.all(scenarioSeedSet.scenarios.map((scenario) => pruneScenarioCast(tx, scenario)))
     await Promise.all(
       scenarioSeedSet.scenarios.flatMap((scenario) =>
-        scenario.cast.map((cast) => upsertScenarioCast(tx, scenario.id, cast))
+        scenario.cast.map((cast) => upsertScenarioCast(tx, scenario.id, cast, characterMap))
       )
     )
+    await Promise.all(
+      scenarioSeedSet.scenarios.flatMap((scenario) => {
+        const aliasMap = resolveScenarioAliasMap(scenario, characterMap)
+
+        return scenario.chapters.map(async (chapter) => {
+          const chapterRow = await upsertScenarioChapter(tx, scenario.id, chapter)
+
+          await syncScenarioChapterCharacters(tx, chapterRow.id, chapter, aliasMap)
+          await syncScenarioChapterCues(tx, chapterRow.id, chapter)
+        })
+      })
+    )
+    await pruneLegacyScenarioCharacters(tx)
   })
 
   console.log(`Seed completed with ${scenarioSeedSet.scenarios.length} scenarios.`)

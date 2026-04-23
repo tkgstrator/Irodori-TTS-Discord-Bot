@@ -21,6 +21,17 @@ enum ScenarioStatus {
   failed
 }
 
+enum ChapterStatus {
+  draft
+  generating
+  completed
+}
+
+enum CueKind {
+  speech
+  pause
+}
+
 model Character {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @map("created_at")
@@ -43,10 +54,11 @@ model Character {
 
   speaker Speaker? @relation(fields: [speakerId], references: [id], onDelete: SetNull)
 
-  relationsFrom CharacterRelation[] @relation("RelationFrom")
-  relationsTo   CharacterRelation[] @relation("RelationTo")
-  narratorOf    Scenario[]          @relation("Narrator")
+  relationsFrom CharacterRelation[]        @relation("RelationFrom")
+  relationsTo   CharacterRelation[]        @relation("RelationTo")
+  narratorOf    Scenario[]                 @relation("Narrator")
   scenarioCasts ScenarioCast[]
+  chapterLinks  ScenarioChapterCharacter[]
 
   @@index([speakerId])
   @@map("characters")
@@ -95,7 +107,8 @@ model Scenario {
   narratorId String?    @map("narrator_id")
   narrator   Character? @relation("Narrator", fields: [narratorId], references: [id], onDelete: SetNull)
 
-  cast ScenarioCast[]
+  cast     ScenarioCast[]
+  chapters ScenarioChapter[]
 
   @@map("scenarios")
 }
@@ -116,4 +129,59 @@ model ScenarioCast {
   @@unique([scenarioId, characterId])
   @@unique([scenarioId, alias])
   @@map("scenario_casts")
+}
+
+model ScenarioChapter {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  scenarioId      String        @map("scenario_id")
+  number          Int
+  title           String
+  status          ChapterStatus @default(draft)
+  cueCount        Int           @default(0) @map("cue_count")
+  durationMinutes Float         @default(0) @map("duration_minutes")
+  synopsis        String        @default("")
+
+  scenario   Scenario                   @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  cues       ScenarioCue[]
+  characters ScenarioChapterCharacter[]
+
+  @@unique([scenarioId, number])
+  @@map("scenario_chapters")
+}
+
+model ScenarioChapterCharacter {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chapterId   String @map("chapter_id")
+  characterId String @map("character_id")
+
+  chapter   ScenarioChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  character Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, characterId])
+  @@map("scenario_chapter_characters")
+}
+
+model ScenarioCue {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  chapterId     String  @map("chapter_id")
+  order         Int     @map("cue_order")
+  kind          CueKind
+  speakerAlias  String? @map("speaker_alias")
+  text          String?
+  pauseDuration Float?  @map("pause_duration")
+  synthOptions  Json?   @map("synth_options")
+
+  chapter ScenarioChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, order])
+  @@index([chapterId])
+  @@map("scenario_cues")
 }
