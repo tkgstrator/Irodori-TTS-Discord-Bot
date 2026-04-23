@@ -61,8 +61,7 @@ const SettingsPage = () => {
       <header className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">設定</h1>
         <p className="text-sm text-muted-foreground">
-          表示テーマと Editor / Writer の既定 LLM
-          をまとめて管理できます。現在値を見ながら、その場で切り替えられる構成に整理しました。
+          表示や作業環境に関する設定をまとめて管理できます。現在の設定を確認しながら、その場で切り替えられます。
         </p>
       </header>
 
@@ -268,14 +267,11 @@ const SettingsPage = () => {
                         <div className="flex flex-wrap items-start gap-2 sm:items-center">
                           <p className="text-sm font-semibold">{item.label}</p>
                           <Badge variant={item.release === 'GA' ? 'secondary' : 'outline'}>{item.release}</Badge>
-                          <code className="max-w-full break-all rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                            {item.value}
-                          </code>
                         </div>
 
                         <p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
 
-                        <dl className="grid gap-2 sm:grid-cols-3">
+                        <dl className="grid max-w-sm grid-cols-3 gap-2">
                           <div className="space-y-1">
                             <dt className="text-xs font-medium tracking-wide text-muted-foreground">速度</dt>
                             <dd className="text-sm font-medium">
