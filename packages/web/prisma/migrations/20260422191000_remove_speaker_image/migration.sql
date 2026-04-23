@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "speakers" DROP COLUMN "image_url";
+ALTER TABLE IF EXISTS "speakers" DROP COLUMN IF EXISTS "image_url";

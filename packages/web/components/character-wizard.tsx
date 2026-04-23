@@ -8,6 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  AGE_GROUPS,
+  FIRST_PERSONS,
+  GENDERS,
+  HONORIFICS,
+  OCCUPATIONS,
+  SECOND_PERSONS,
+  SPEECH_STYLES
+} from '@/lib/character-options'
 import { mergeImportedValues } from '@/lib/speaker-import'
 import { cn } from '@/lib/utils'
 import type { CharacterFormValues, SpeakerLink } from '@/schemas/character.dto'
@@ -25,40 +34,6 @@ const STEP_FIELDS: readonly (readonly string[])[] = [
   ['personalityTags', 'speechStyle', 'firstPerson', 'secondPerson', 'honorific'],
   ['attributeTags', 'backgroundTags', 'memo']
 ]
-
-const AGE_GROUPS = [
-  { value: 'infant', label: '乳幼児' },
-  { value: 'child', label: '子供' },
-  { value: 'preteen', label: '小学生' },
-  { value: 'teen', label: '10代' },
-  { value: 'young_adult', label: '青年' },
-  { value: 'adult', label: '成人' },
-  { value: 'middle_aged', label: '中年' },
-  { value: 'elderly', label: '高齢' },
-  { value: 'ageless', label: '不老' }
-] as const
-
-export const GENDERS = [
-  { value: 'male', label: '男性' },
-  { value: 'female', label: '女性' },
-  { value: 'nonbinary', label: 'ノンバイナリー' },
-  { value: 'unknown', label: '不明' },
-  { value: 'other', label: 'その他' }
-] as const
-
-const OCCUPATIONS = [
-  { value: 'student_high', label: '高校生' },
-  { value: 'student_college', label: '大学生' },
-  { value: 'teacher', label: '教師' },
-  { value: 'engineer', label: 'エンジニア' },
-  { value: 'adventurer', label: '冒険者' },
-  { value: 'knight', label: '騎士' },
-  { value: 'mage', label: '魔法使い' },
-  { value: 'detective', label: '探偵' },
-  { value: 'doctor', label: '医師' },
-  { value: 'merchant', label: '商人' },
-  { value: 'other', label: 'その他' }
-] as const
 
 const PERSONALITY_TAGS = [
   '明るい',
@@ -79,51 +54,7 @@ const PERSONALITY_TAGS = [
   '義理堅い'
 ] as const
 
-const SPEECH_STYLES = [
-  { value: 'polite_formal', label: '丁寧語' },
-  { value: 'polite_casual', label: 'やや丁寧' },
-  { value: 'neutral', label: '標準' },
-  { value: 'casual_youthful', label: 'カジュアル' },
-  { value: 'rough_masculine', label: '荒い' },
-  { value: 'refined_feminine', label: '上品' },
-  { value: 'archaic_samurai', label: '武士風' },
-  { value: 'archaic_court', label: '宮廷風' },
-  { value: 'dialect_regional', label: '方言' },
-  { value: 'childlike', label: '子供っぽい' },
-  { value: 'eccentric', label: '独特' }
-] as const
-
-const FIRST_PERSON = [
-  { value: 'watashi', label: '私' },
-  { value: 'watakushi', label: 'わたくし' },
-  { value: 'atashi', label: 'あたし' },
-  { value: 'boku', label: '僕' },
-  { value: 'ore', label: '俺' },
-  { value: 'uchi', label: 'うち' },
-  { value: 'washi', label: 'ワシ' },
-  { value: 'name', label: '自分の名前' },
-  { value: 'other', label: 'その他' }
-] as const
-
-const SECOND_PERSON = [
-  { value: '_none', label: '(なし)' },
-  { value: 'kimi', label: '君' },
-  { value: 'omae', label: 'お前' },
-  { value: 'anata', label: 'あなた' },
-  { value: 'kisama', label: '貴様' },
-  { value: 'onushi', label: 'お主' },
-  { value: 'other', label: 'その他' }
-] as const
-
-const HONORIFICS = [
-  { value: 'none', label: '呼び捨て' },
-  { value: 'san', label: '〜さん' },
-  { value: 'chan', label: '〜ちゃん' },
-  { value: 'kun', label: '〜君' },
-  { value: 'sama', label: '〜様' },
-  { value: 'senpai', label: '〜先輩' },
-  { value: 'sensei', label: '〜先生' }
-] as const
+const SECOND_PERSON_OPTIONS = [{ value: '_none', label: '(なし)' }, ...SECOND_PERSONS] as const
 
 const ATTRIBUTE_TAGS = [
   '眼鏡',
@@ -439,7 +370,7 @@ function Step2({
           name="firstPerson"
           control={control}
           render={({ field }) => (
-            <ControlledSelect label="一人称" options={FIRST_PERSON} value={field.value} onChange={field.onChange} />
+            <ControlledSelect label="一人称" options={FIRST_PERSONS} value={field.value} onChange={field.onChange} />
           )}
         />
       </div>
@@ -451,7 +382,7 @@ function Step2({
             <ControlledSelect
               label="二人称"
               hint="任意"
-              options={SECOND_PERSON}
+              options={SECOND_PERSON_OPTIONS}
               value={field.value || '_none'}
               onChange={(v) => field.onChange(v === '_none' ? '' : v)}
             />
@@ -643,7 +574,7 @@ export function CharacterWizard({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-24">
+      <div className="flex-1 overflow-y-auto pt-4 pb-24 sm:pb-24">
         <button
           type="button"
           onClick={onCancel}
@@ -689,7 +620,7 @@ export function CharacterWizard({
       </div>
 
       <footer className="sticky bottom-0 z-10 border-t border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-xl items-center justify-between sm:px-6">
           <Button variant="outline" size="lg" onClick={handleBack} disabled={isSubmitting}>
             <ArrowLeft data-icon="inline-start" />
             {step === 0 ? 'キャンセル' : '前へ'}

@@ -90,19 +90,18 @@ const HomeActionRow = ({ action }: { action: HomeAction }) => (
   </li>
 )
 
-// ホームの主要 CTA でアイコン付きでも文言が視覚的に中央に来るようにする。
+// ホームの主要 CTA をアイコンと文言ぶんの自然な幅で表示する。
 const HomeCtaLabel = ({ icon: Icon, label }: { icon: LucideIcon; label: string }) => (
-  <span className="grid w-full grid-cols-[1rem_minmax(0,1fr)_1rem] items-center gap-2">
+  <span className="inline-flex items-center gap-2">
     <Icon className="size-4" aria-hidden="true" />
-    <span className="text-center">{label}</span>
-    <span aria-hidden="true" />
+    <span>{label}</span>
   </span>
 )
 
 // ホーム画面を描画する。
 const HomePage = () => {
   return (
-    <PageContainer className="flex flex-col gap-10">
+    <PageContainer className="flex flex-col gap-10 pt-0">
       <section aria-labelledby="home-hero-title" className="border-b border-border/80 pb-10">
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)] xl:gap-10">
           <div className="space-y-5">
@@ -119,13 +118,13 @@ const HomePage = () => {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button asChild className="h-11 rounded-xl px-4 sm:min-w-48">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap">
+              <Button asChild className="h-11 rounded-xl px-4">
                 <Link to="/characters/new">
                   <HomeCtaLabel icon={Sparkles} label="キャラクターを追加" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="h-11 rounded-xl px-4 sm:min-w-48">
+              <Button asChild variant="outline" className="h-11 rounded-xl px-4">
                 <Link to="/plots">
                   <HomeCtaLabel icon={BookOpen} label="プロット一覧へ" />
                 </Link>

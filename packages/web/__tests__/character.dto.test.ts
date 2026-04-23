@@ -26,10 +26,68 @@ describe('CharacterInputSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  test('shared enum に含まれる職業を受け入れる', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      occupation: 'student_middle'
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  test('新規追加したフルネーム呼びを受け入れる', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      honorific: 'full_name'
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  test('苗字呼びと名前呼びを受け入れる', () => {
+    const values = ['family_name', 'given_name'] as const
+
+    for (const honorific of values) {
+      const result = CharacterInputSchema.safeParse({
+        ...validCharacterInput,
+        honorific
+      })
+
+      expect(result.success).toBe(true)
+    }
+  })
+
+  test('新規追加したカタカナのボクを受け入れる', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      firstPerson: 'boku_katakana'
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  test('わがはいを受け入れる', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      firstPerson: 'wagahai'
+    })
+
+    expect(result.success).toBe(true)
+  })
+
   test('名前が空文字のとき失敗する', () => {
     const result = CharacterInputSchema.safeParse({
       ...validCharacterInput,
       name: ''
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  test('enum に無い一人称のとき失敗する', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      firstPerson: 'boku_katakana_x'
     })
 
     expect(result.success).toBe(false)

@@ -8,6 +8,21 @@ completed completed
 failed failed
         }
     
+
+
+        ChapterStatus {
+            draft draft
+generating generating
+completed completed
+        }
+    
+
+
+        CueKind {
+            speech speech
+pause pause
+        }
+    
   "characters" {
     String id "PK"
     DateTime created_at 
@@ -71,6 +86,42 @@ failed failed
     String alias 
     }
   
+
+  "scenario_chapters" {
+    String id "PK"
+    DateTime created_at 
+    DateTime updated_at 
+    String scenario_id 
+    Int number 
+    String title 
+    ChapterStatus status 
+    Int cue_count 
+    Float duration_minutes 
+    String synopsis 
+    }
+  
+
+  "scenario_chapter_characters" {
+    String id "PK"
+    DateTime created_at 
+    String chapter_id 
+    String character_id 
+    }
+  
+
+  "scenario_cues" {
+    String id "PK"
+    DateTime created_at 
+    DateTime updated_at 
+    String chapter_id 
+    Int cue_order 
+    CueKind kind 
+    String speaker_alias "nullable"
+    String text "nullable"
+    Float pause_duration "nullable"
+    Json synth_options "nullable"
+    }
+  
     "characters" }o--|o speakers : "speaker"
     "character_relations" }o--|| characters : "fromCharacter"
     "character_relations" }o--|| characters : "toCharacter"
@@ -78,4 +129,10 @@ failed failed
     "scenarios" }o--|o characters : "narrator"
     "scenario_casts" }o--|| scenarios : "scenario"
     "scenario_casts" }o--|| characters : "character"
+    "scenario_chapters" |o--|| "ChapterStatus" : "enum:status"
+    "scenario_chapters" }o--|| scenarios : "scenario"
+    "scenario_chapter_characters" }o--|| scenario_chapters : "chapter"
+    "scenario_chapter_characters" }o--|| characters : "character"
+    "scenario_cues" |o--|| "CueKind" : "enum:kind"
+    "scenario_cues" }o--|| scenario_chapters : "chapter"
 ```

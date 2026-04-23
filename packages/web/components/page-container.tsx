@@ -11,5 +11,5 @@ export const PageContainer = ({
 }) => {
   const widthClass = maxWidth === '6xl' ? 'mx-auto max-w-6xl' : 'w-full'
 
-  return <div className={cn('pt-4 sm:p-6', widthClass, className)} {...props} />
+  return <div className={cn('pt-4 sm:px-6', widthClass, className)} {...props} />
 }

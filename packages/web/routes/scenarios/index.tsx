@@ -106,7 +106,9 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
       <div className="flex flex-1 flex-col p-3.5">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className={`line-clamp-1 text-sm font-semibold ${scenario.status === 'draft' ? 'text-muted-foreground' : ''}`}>
+            <p
+              className={`line-clamp-1 text-sm font-semibold ${scenario.status === 'draft' ? 'text-muted-foreground' : ''}`}
+            >
               {scenario.title}
             </p>
             <p className="mt-0.5 text-[0.625rem] text-muted-foreground">更新: {scenario.updatedAt}</p>
@@ -118,23 +120,6 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
           {scenario.genres.map((genre) => (
             <GenreBadge key={genre} genre={genre} />
           ))}
-        </div>
-
-        <div className="mb-3 rounded-lg border border-border/70 bg-secondary/30 px-3 py-2.5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[0.625rem] font-medium tracking-wide text-muted-foreground">章進捗</p>
-              <p className="mt-0.5 text-sm font-semibold">
-                {chapterMeta.latestNumber > 0 ? `第${chapterMeta.latestNumber}章まで作成` : 'まだ章は未作成'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-base font-semibold leading-none">
-                {chapterMeta.createdCount}
-              </p>
-              <p className="mt-1 text-[0.625rem] text-muted-foreground">作成済み章数</p>
-            </div>
-          </div>
         </div>
 
         <p className="mb-2 text-xs text-muted-foreground">
@@ -151,7 +136,9 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
         <div className={`mt-auto grid grid-cols-3 gap-2 ${scenario.status === 'draft' ? 'opacity-50' : ''}`}>
           <div className="flex flex-col items-center rounded-lg bg-secondary/50 px-2 py-1.5">
             <ListTree className="size-3.5 text-muted-foreground" aria-hidden="true" />
-            <span className="mt-1 text-sm font-semibold">{chapterMeta.latestNumber > 0 ? `第${chapterMeta.latestNumber}` : '—'}</span>
+            <span className="mt-1 text-sm font-semibold">
+              {chapterMeta.latestNumber > 0 ? `第${chapterMeta.latestNumber}` : '—'}
+            </span>
             <span className="text-[0.625rem] text-muted-foreground">最新章</span>
           </div>
           <div className="flex flex-col items-center rounded-lg bg-secondary/50 px-2 py-1.5">
@@ -190,7 +177,7 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
 
 // プロット管理ページを表示する
 const ScenariosPage = () => {
-  const { scenarios } = useScenarios()
+  const { scenarios, isLoading, errorMessage } = useScenarios()
   const completedCount = scenarios.filter((scenario) => scenario.status === 'completed').length
   const generatingCount = scenarios.filter((scenario) => scenario.status === 'generating').length
   const draftCount = scenarios.filter((scenario) => scenario.status === 'draft').length
@@ -209,12 +196,20 @@ const ScenariosPage = () => {
         <strong className="text-muted-foreground">{draftCount}</strong>
       </div>
 
-      {scenarios.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
+          <p className="text-sm text-muted-foreground">プロットを読み込み中です</p>
+        </div>
+      ) : errorMessage ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/40 py-16 text-center">
+          <p className="text-sm text-destructive">{errorMessage}</p>
+        </div>
+      ) : scenarios.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
           <p className="text-sm text-muted-foreground">プロットがまだ作成されていません</p>
         </div>
       ) : (
-        <div className="grid justify-items-center gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid justify-items-center gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {scenarios.map((scenario) => (
             <PlotCard key={scenario.id} scenario={scenario} />
           ))}

@@ -1,6 +1,17 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 
-export type RelationType = 'family' | 'friend' | 'rival' | 'love'
+export type RelationType =
+  | 'family'
+  | 'sibling'
+  | 'parent'
+  | 'friend'
+  | 'bestFriend'
+  | 'childhood'
+  | 'love'
+  | 'crush'
+  | 'exLover'
+  | 'master'
+  | 'colleague'
 
 export interface RelationCharacter {
   readonly id: string
@@ -45,14 +56,12 @@ const INITIAL_CHARACTERS: readonly RelationCharacter[] = [
 ]
 
 const INITIAL_RELATIONS: readonly Relation[] = [
-  { id: 'r1', sourceId: 'renka', targetId: 'sakurako', type: 'family', label: '姉妹' },
+  { id: 'r1', sourceId: 'renka', targetId: 'sakurako', type: 'sibling', label: '姉妹/兄弟' },
   { id: 'r2', sourceId: 'renka', targetId: 'shota', type: 'love', label: '恋人' },
-  { id: 'r3', sourceId: 'renka', targetId: 'kazuki', type: 'friend', label: '幼馴染' },
-  { id: 'r4', sourceId: 'sakurako', targetId: 'mizuki', type: 'friend', label: '親友' },
-  { id: 'r5', sourceId: 'shota', targetId: 'hayato', type: 'rival', label: 'ライバル' },
-  { id: 'r6', sourceId: 'mizuki', targetId: 'hayato', type: 'love', label: '片想い' },
-  { id: 'r7', sourceId: 'kazuki', targetId: 'shota', type: 'friend', label: '友人' },
-  { id: 'r8', sourceId: 'sakurako', targetId: 'shota', type: 'family', label: '義理の関係' }
+  { id: 'r3', sourceId: 'renka', targetId: 'kazuki', type: 'childhood', label: '幼馴染' },
+  { id: 'r4', sourceId: 'sakurako', targetId: 'mizuki', type: 'bestFriend', label: '親友' },
+  { id: 'r5', sourceId: 'mizuki', targetId: 'hayato', type: 'crush', label: '片想い' },
+  { id: 'r6', sourceId: 'kazuki', targetId: 'shota', type: 'friend', label: '友人' }
 ]
 
 export function RelationsProvider({ children }: { children: React.ReactNode }) {

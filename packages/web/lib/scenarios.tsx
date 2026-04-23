@@ -1,5 +1,9 @@
-import { createContext, useContext, useMemo, useState } from 'react'
-import { plotSeedIds } from './plot-seed-ids'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { z } from 'zod'
+import type { ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
+import type { Character } from '@/schemas/character.dto'
+import { ScenarioApiListSchema } from '@/schemas/scenario-api.dto'
+import { useCharacters } from './characters'
 
 export type ScenarioStatus = 'draft' | 'generating' | 'completed'
 export type ChapterStatus = 'draft' | 'generating' | 'completed'
@@ -20,11 +24,14 @@ export type Cue = SpeechCue | PauseCue
 export interface Speaker {
   readonly alias: string
   readonly name: string
+  readonly speakerId: string | null
   readonly initial: string
   readonly imageUrl?: string | null
   readonly colorClass: string
   readonly nameColor: string
 }
+
+export type ChapterCharacter = Pick<Character, 'name' | 'imageUrl' | 'speakerId'>
 
 export interface Chapter {
   readonly id: string
@@ -34,7 +41,7 @@ export interface Chapter {
   readonly cueCount: number
   readonly durationMinutes: number
   readonly synopsis: string
-  readonly speakers: readonly string[]
+  readonly characters: readonly ChapterCharacter[]
   readonly cues: readonly Cue[]
 }
 
@@ -56,6 +63,12 @@ export interface Scenario {
 
 export type ScenarioInput = Omit<Scenario, 'id'>
 
+// 一覧表示用の日付文字列を生成する。
+const formatScenarioDate = (): string =>
+  new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'UTC'
+  }).format(Date.now())
+
 // 後続章がある章は時系列整合のため再生成不可とする。
 export const canRegenerateChapter = (chapters: readonly Chapter[], chapterId: string): boolean => {
   const chapterIndex = chapters.findIndex((chapter) => chapter.id === chapterId)
@@ -67,209 +80,231 @@ export const canRegenerateChapter = (chapters: readonly Chapter[], chapterId: st
   return chapterIndex === chapters.length - 1
 }
 
+// 生成中の章が存在しないときだけ次章生成を許可する。
+export const canGenerateNextChapter = (chapters: readonly Chapter[]): boolean =>
+  chapters[chapters.length - 1]?.status !== 'generating'
+
+// シナリオに紐づく登場人物から章表示用のキャラクター配列を組み立てる。
+const buildChapterCharacters = ({
+  names,
+  characters
+}: {
+  names: readonly string[]
+  characters: readonly Character[]
+}): readonly ChapterCharacter[] => {
+  const characterByName = new Map(characters.map((character) => [character.name, character] as const))
+
+  return names.map((name) => {
+    const matched = characterByName.get(name)
+
+    return matched
+      ? {
+          name: matched.name,
+          imageUrl: matched.imageUrl,
+          speakerId: matched.speakerId
+        }
+      : {
+          name,
+          imageUrl: null,
+          speakerId: null
+        }
+  })
+}
+
+// 次章生成時に追加する生成中章を組み立てる。
+export const createNextChapter = ({
+  scenario,
+  characters,
+  input
+}: {
+  scenario: Scenario
+  characters: readonly Character[]
+  input?: ChapterGenerateFormValues
+}): Chapter => {
+  const latestNumber =
+    scenario.chapters.length > 0 ? Math.max(...scenario.chapters.map((chapter) => chapter.number)) : 0
+  const nextNumber = latestNumber + 1
+  const selectedNames = input && input.characterNames.length > 0 ? input.characterNames : scenario.plotCharacters
+  const chapterTitle = input?.title.trim() || `第${nextNumber}章`
+  const promptNote = input?.promptNote.trim() ?? ''
+  const synopsis =
+    promptNote.length > 0
+      ? promptNote
+      : selectedNames.length > 0
+        ? `${selectedNames.join('・')}を中心に第${nextNumber}章を生成しています。`
+        : `第${nextNumber}章を生成しています。`
+
+  return {
+    id: crypto.randomUUID(),
+    number: nextNumber,
+    title: chapterTitle,
+    status: 'generating',
+    cueCount: 0,
+    durationMinutes: 0,
+    synopsis,
+    characters: buildChapterCharacters({ names: selectedNames, characters }),
+    cues: []
+  }
+}
+
 interface ScenariosContextValue {
   readonly scenarios: readonly Scenario[]
+  readonly isLoading: boolean
+  readonly errorMessage: string | null
   readonly getScenario: (id: string) => Scenario | undefined
+  readonly refreshScenarios: () => Promise<void>
   readonly addScenario: (input: ScenarioInput) => Scenario
   readonly updateScenario: (id: string, input: ScenarioInput) => void
+  readonly appendNextChapter: (id: string, input?: ChapterGenerateFormValues) => void
   readonly deleteScenario: (id: string) => void
 }
 
 const ScenariosContext = createContext<ScenariosContextValue | null>(null)
 
-const SPEAKERS_NATSU: readonly Speaker[] = [
-  {
-    alias: 'renka',
-    name: '桜羽エマ',
-    initial: '桜',
-    colorClass: 'bg-pink-300 text-pink-800',
-    nameColor: 'text-pink-700 dark:text-pink-400'
-  },
-  {
-    alias: 'shota',
-    name: '二階堂ヒロ',
-    initial: '二',
-    colorClass: 'bg-blue-300 text-blue-800',
-    nameColor: 'text-blue-700 dark:text-blue-400'
-  },
-  {
-    alias: 'narrator',
-    name: '月代ユキ',
-    initial: '月',
-    colorClass: 'bg-purple-300 text-purple-800',
-    nameColor: 'text-purple-700 dark:text-purple-400'
-  }
-]
+const ErrorResponseSchema = z.object({
+  error: z.string()
+})
 
-const CHAPTERS_NATSU: readonly Chapter[] = [
-  {
-    id: 'ch1',
-    number: 1,
-    title: '出会い',
-    status: 'completed',
-    cueCount: 8,
-    durationMinutes: 1.5,
-    synopsis: '桜羽エマが転校初日に二階堂ヒロと校門前で偶然ぶつかり、散らばったノートを拾い集めるところから物語が始まる。',
-    speakers: ['renka', 'shota', 'narrator'],
-    cues: [
-      {
-        kind: 'speech',
-        speaker: 'narrator',
-        text: '夏の終わり、蝉の声が遠くなった放課後。図書室の窓から差し込む夕日が、古びた机の上の埃を金色に輝かせていた。'
-      },
-      { kind: 'pause', duration: 0.8 },
-      { kind: 'speech', speaker: 'renka', text: 'また来てたんだ。この本、気に入ってるの？' },
-      { kind: 'speech', speaker: 'shota', text: '……べつに。どこにいても同じだから。' },
-      { kind: 'pause', duration: 1.5 },
-      { kind: 'speech', speaker: 'renka', text: 'そんなこと言わないで。……ねえ、名前、教えてくれる？' },
-      { kind: 'pause', duration: 0.5 },
-      { kind: 'speech', speaker: 'shota', text: '……ヒロ。' },
-      { kind: 'speech', speaker: 'renka', text: 'ヒロくん。私はエマ。よろしくね。' }
-    ]
-  },
-  {
-    id: 'ch2',
-    number: 2,
-    title: '秘密の場所',
-    status: 'completed',
-    cueCount: 10,
-    durationMinutes: 2,
-    synopsis: '二階堂ヒロが屋上への秘密の抜け道を桜羽エマだけに教え、二人は放課後の秘密の時間を過ごすようになる。',
-    speakers: ['renka', 'shota'],
-    cues: [
-      { kind: 'speech', speaker: 'shota', text: '……ここ、誰も来ない。' },
-      { kind: 'speech', speaker: 'renka', text: 'わあ、屋上って初めて。空が近いね！' },
-      { kind: 'pause', duration: 1.0 },
-      { kind: 'speech', speaker: 'shota', text: '騒ぐなよ。見つかったら面倒だ。' },
-      { kind: 'speech', speaker: 'renka', text: 'ふふ、秘密基地みたい。ヒロくんの秘密の場所なんだ。' },
-      { kind: 'pause', duration: 0.5 },
-      { kind: 'speech', speaker: 'shota', text: '……お前だけだからな。教えたの。' },
-      { kind: 'speech', speaker: 'renka', text: 'えっ……うん。約束する、誰にも言わない。' },
-      { kind: 'speech', speaker: 'shota', text: '……勝手にしろ。' },
-      { kind: 'speech', speaker: 'renka', text: 'じゃあ明日も来るね、ヒロくん。' }
-    ]
-  },
-  {
-    id: 'ch3',
-    number: 3,
-    title: 'すれ違い',
-    status: 'completed',
-    cueCount: 7,
-    durationMinutes: 1,
-    synopsis: '文化祭の準備で忙しくなり、桜羽エマと二階堂ヒロの間に小さな誤解が生まれてしまう。',
-    speakers: ['renka', 'shota', 'narrator'],
-    cues: [
-      { kind: 'speech', speaker: 'narrator', text: '文化祭まであと三日。教室は準備の熱気に包まれていた。' },
-      { kind: 'speech', speaker: 'renka', text: 'ヒロくん、今日も屋上——' },
-      { kind: 'speech', speaker: 'shota', text: '……今日は無理。' },
-      { kind: 'pause', duration: 1.0 },
-      { kind: 'speech', speaker: 'renka', text: 'そう……。最近ずっとそうだよね。' },
-      { kind: 'speech', speaker: 'shota', text: '……悪い。' },
-      {
-        kind: 'speech',
-        speaker: 'narrator',
-        text: 'エマは小さく笑って背を向けた。その肩が少しだけ震えているのを、ヒロは気づかなかった。'
-      }
-    ]
-  },
-  {
-    id: 'ch4',
-    number: 4,
-    title: '告白',
-    status: 'generating',
-    cueCount: 9,
-    durationMinutes: 1.5,
-    synopsis: '夏祭りの夜、花火の光に照らされながら二階堂ヒロが桜羽エマに想いを伝える。',
-    speakers: ['renka', 'shota'],
-    cues: []
-  }
-]
+// API エラーの本文から表示用メッセージを取り出す
+const readErrorMessage = async (response: Response): Promise<string> => {
+  const text = await response.text()
 
-const INITIAL_SCENARIOS: readonly Scenario[] = [
-  {
-    id: plotSeedIds.natsu,
-    title: '夏の約束',
-    status: 'generating',
-    genres: ['学園', '恋愛'],
-    tone: 'ほろ苦い',
-    plotCharacters: ['桜羽エマ', '二階堂ヒロ', '月代ユキ'],
-    cueCount: 34,
-    speakerCount: 3,
-    durationMinutes: 6,
-    isAiGenerated: true,
-    updatedAt: '2026-04-20',
-    speakers: SPEAKERS_NATSU,
-    chapters: CHAPTERS_NATSU
-  },
-  {
-    id: plotSeedIds.fuyu,
-    title: '冬の幻想曲',
-    status: 'completed',
-    genres: ['ファンタジー', 'ミステリー'],
-    tone: '幻想的',
-    plotCharacters: ['橘シェリー', '氷上メルル', '沢渡ココ', '月代ユキ'],
-    cueCount: 36,
-    speakerCount: 4,
-    durationMinutes: 6,
-    isAiGenerated: true,
-    updatedAt: '2026-04-21',
-    speakers: [],
-    chapters: []
-  },
-  {
-    id: plotSeedIds.hoshi,
-    title: '星降る夜に',
-    status: 'generating',
-    genres: ['恋愛', '日常'],
-    tone: 'メランコリック',
-    plotCharacters: ['花京院ちえり', '蓮見レイア'],
-    cueCount: 24,
-    speakerCount: 2,
-    durationMinutes: 4,
-    isAiGenerated: true,
-    updatedAt: '2026-04-19',
-    speakers: [],
-    chapters: []
-  },
-  {
-    id: plotSeedIds.kurenai,
-    title: '紅の記憶',
-    status: 'completed',
-    genres: ['歴史', 'サスペンス'],
-    tone: 'シリアス',
-    plotCharacters: ['二階堂ヒロ', '宝生マーゴ', '遠野ハンナ', '黒部ナノカ', '月代ユキ'],
-    cueCount: 15,
-    speakerCount: 5,
-    durationMinutes: 3,
-    isAiGenerated: true,
-    updatedAt: '2026-04-18',
-    speakers: [],
-    chapters: []
-  },
-  {
-    id: plotSeedIds.souten,
-    title: '蒼天の彼方',
-    status: 'draft',
-    genres: ['SF'],
-    tone: '緊迫',
-    plotCharacters: [],
-    cueCount: 0,
-    speakerCount: 0,
-    durationMinutes: null,
-    isAiGenerated: false,
-    updatedAt: '2026-04-22',
-    speakers: [],
-    chapters: []
+  if (!text) {
+    return `Request failed with status ${response.status}`
   }
-]
+
+  try {
+    const result = ErrorResponseSchema.safeParse(JSON.parse(text))
+
+    if (result.success) {
+      return result.data.error
+    }
+  } catch {
+    return text
+  }
+
+  return `Request failed with status ${response.status}`
+}
+
+// JSON API を呼び出してレスポンスを検証する
+const requestJson = async <TSchema extends z.ZodTypeAny>(
+  path: string,
+  schema: TSchema,
+  init?: RequestInit
+): Promise<z.infer<TSchema>> => {
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      'content-type': 'application/json',
+      ...init?.headers
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+
+  const body = await response.json()
+  const result = schema.safeParse(body)
+
+  if (!result.success) {
+    throw new Error('Invalid API response')
+  }
+
+  return result.data
+}
+
+// speakerId 経由で chapter.characters に最新の character 情報を反映する。
+const resolveChapterCharacters = (
+  chapters: readonly Chapter[],
+  characters: readonly Character[]
+): readonly Chapter[] => {
+  const characterBySpeakerId = new Map(
+    characters.flatMap((character) => (character.speakerId ? [[character.speakerId, character] as const] : []))
+  )
+
+  return chapters.map((chapter) => ({
+    ...chapter,
+    characters: chapter.characters.map((character) =>
+      character.speakerId ? (characterBySpeakerId.get(character.speakerId) ?? character) : character
+    )
+  }))
+}
+
+// 章配列から表示用のステータスを再計算する。
+const resolveScenarioStatus = (chapters: readonly Chapter[]): ScenarioStatus => {
+  if (chapters.length === 0) {
+    return 'draft'
+  }
+
+  if (chapters.some((chapter) => chapter.status === 'generating')) {
+    return 'generating'
+  }
+
+  return 'completed'
+}
+
+// 章配列から表示用のセリフ数を再計算する。
+const resolveScenarioCueCount = (chapters: readonly Chapter[]): number =>
+  chapters.reduce((total, chapter) => total + chapter.cueCount, 0)
+
+// 章配列から表示用の再生時間を再計算する。
+const resolveScenarioDuration = (chapters: readonly Chapter[]): number | null => {
+  if (chapters.length === 0) {
+    return null
+  }
+
+  return chapters.reduce((total, chapter) => total + chapter.durationMinutes, 0)
+}
+
+// 一覧・詳細で使う表示用シナリオを実データから再構築する。
+export const resolveScenarioState = ({
+  scenario,
+  characters
+}: {
+  scenario: Scenario
+  characters: readonly Character[]
+}): Scenario => {
+  const chapters = resolveChapterCharacters(scenario.chapters, characters)
+
+  return {
+    ...scenario,
+    status: resolveScenarioStatus(chapters),
+    cueCount: resolveScenarioCueCount(chapters),
+    durationMinutes: resolveScenarioDuration(chapters),
+    chapters
+  }
+}
 
 const generateId = (): string => crypto.randomUUID()
 
 export function ScenariosProvider({ children }: { children: React.ReactNode }) {
-  const [scenarios, setScenarios] = useState<Scenario[]>([...INITIAL_SCENARIOS])
+  const { characters } = useCharacters()
+  const [scenarios, setScenarios] = useState<Scenario[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const refreshScenarios = useCallback(async () => {
+    setIsLoading(true)
+    setErrorMessage(null)
+
+    try {
+      const rows = await requestJson('/api/scenarios', ScenarioApiListSchema)
+      setScenarios(rows)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to load scenarios')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void refreshScenarios()
+  }, [refreshScenarios])
 
   const value = useMemo((): ScenariosContextValue => {
-    const getScenario = (id: string) => scenarios.find((scenario) => scenario.id === id)
+    const resolvedScenarios = scenarios.map((scenario) => resolveScenarioState({ scenario, characters }))
+    const getScenario = (id: string) => resolvedScenarios.find((scenario) => scenario.id === id)
 
     const addScenario = (input: ScenarioInput): Scenario => {
       const scenario: Scenario = { ...input, id: generateId() }
@@ -281,12 +316,41 @@ export function ScenariosProvider({ children }: { children: React.ReactNode }) {
       setScenarios((prev) => prev.map((s) => (s.id === id ? { ...input, id } : s)))
     }
 
+    const appendNextChapter = (id: string, input?: ChapterGenerateFormValues) => {
+      setScenarios((prev) =>
+        prev.map((scenario) => {
+          if (scenario.id !== id || !canGenerateNextChapter(scenario.chapters)) {
+            return scenario
+          }
+
+          const nextChapter = createNextChapter({ scenario, characters, input })
+
+          return {
+            ...scenario,
+            status: 'generating',
+            updatedAt: formatScenarioDate(),
+            chapters: [...scenario.chapters, nextChapter]
+          }
+        })
+      )
+    }
+
     const deleteScenario = (id: string) => {
       setScenarios((prev) => prev.filter((s) => s.id !== id))
     }
 
-    return { scenarios, getScenario, addScenario, updateScenario, deleteScenario }
-  }, [scenarios])
+    return {
+      scenarios: resolvedScenarios,
+      isLoading,
+      errorMessage,
+      getScenario,
+      refreshScenarios,
+      addScenario,
+      updateScenario,
+      appendNextChapter,
+      deleteScenario
+    }
+  }, [characters, errorMessage, isLoading, refreshScenarios, scenarios])
 
   return <ScenariosContext.Provider value={value}>{children}</ScenariosContext.Provider>
 }
