@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
-import { ArrowRight, BookOpen, Network, Settings, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, BookOpen, Settings, Sparkles, Users } from 'lucide-react'
 import { PageContainer } from '@/components/page-container'
 import { Button } from '@/components/ui/button'
 
@@ -8,7 +8,7 @@ type HomeAction = {
   readonly title: string
   readonly description: string
   readonly detail: string
-  readonly to: '/characters' | '/plots' | '/relations' | '/settings'
+  readonly to: '/characters' | '/plots' | '/settings'
   readonly cta: string
   readonly Icon: LucideIcon
 }
@@ -35,14 +35,6 @@ const homeActions: ReadonlyArray<HomeAction> = [
     to: '/plots',
     cta: 'プロットを見る',
     Icon: BookOpen
-  },
-  {
-    title: '相関図',
-    description: 'キャラクター同士の関係を俯瞰して確認します。',
-    detail: '物語全体の距離感や関係性の抜け漏れを早い段階で見つけられます。',
-    to: '/relations',
-    cta: '相関図を見る',
-    Icon: Network
   },
   {
     title: '設定',
