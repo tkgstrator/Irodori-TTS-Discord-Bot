@@ -15,8 +15,8 @@ describe('LlmSettingsSchema', () => {
 
   test('Editor と Writer で別モデルを受け入れる', () => {
     const result = LlmSettingsSchema.safeParse({
-      editorModel: 'gemini-3.1-pro-preview',
-      writerModel: 'gemini-3-flash-preview'
+      editor: 'gemini-3.1-pro-preview',
+      writer: 'gemini-3-flash-preview'
     })
 
     expect(result.success).toBe(true)

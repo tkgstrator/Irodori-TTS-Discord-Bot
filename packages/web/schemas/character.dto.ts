@@ -12,7 +12,7 @@ import { z } from 'zod'
 // 連携済み話者の参照情報を定義する
 export const SpeakerLinkSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().min(1)
+  name: z.string().nonempty()
 })
 
 // キャラクター入力の共通項目を定義する
@@ -44,8 +44,8 @@ export const CharacterInputSchema = CharacterBaseSchema
 // 永続化済みキャラクターのレスポンス形式を定義する
 export const CharacterSchema = CharacterBaseSchema.extend({
   id: z.string().uuid(),
-  createdAt: z.string().min(1),
-  updatedAt: z.string().min(1),
+  createdAt: z.string().nonempty(),
+  updatedAt: z.string().nonempty(),
   speaker: SpeakerLinkSchema.nullable()
 })
 

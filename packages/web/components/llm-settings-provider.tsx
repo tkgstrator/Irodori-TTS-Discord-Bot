@@ -63,7 +63,7 @@ export const LlmSettingsProvider = ({ children }: { children: ReactNode }) => {
 
         setLlmSettings((currentSettings) => ({
           ...currentSettings,
-          editorModel: parsedResult.data
+          editor: parsedResult.data
         }))
       },
       setWriterModel: (model: GeminiModel) => {
@@ -75,7 +75,7 @@ export const LlmSettingsProvider = ({ children }: { children: ReactNode }) => {
 
         setLlmSettings((currentSettings) => ({
           ...currentSettings,
-          writerModel: parsedResult.data
+          writer: parsedResult.data
         }))
       }
     }),

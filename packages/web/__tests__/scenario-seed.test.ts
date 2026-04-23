@@ -11,8 +11,10 @@ describe('Scenario seed data', () => {
   })
 
   test('シナリオ一覧向けの代表データが揃っている', () => {
-    expect(scenarioSeedSet.characters).toHaveLength(0)
     expect(scenarioSeedSet.scenarios).toHaveLength(5)
+    expect(new Set(scenarioSeedSet.characters.map((character) => character.id)).size).toBe(
+      scenarioSeedSet.characters.length
+    )
 
     const natsu = scenarioSeedSet.scenarios.find((scenario) => scenario.title === '夏の約束')
     const souten = scenarioSeedSet.scenarios.find((scenario) => scenario.title === '蒼天の彼方')

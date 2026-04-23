@@ -14,7 +14,7 @@ describe('ChapterGenerateFormSchema', () => {
 
   test('流れメモが400文字を超えると失敗する', () => {
     const result = ChapterGenerateFormSchema.safeParse({
-      title: '',
+      title: '出会い',
       promptNote: 'a'.repeat(401),
       characterNames: ['桜羽エマ']
     })
@@ -25,7 +25,27 @@ describe('ChapterGenerateFormSchema', () => {
   test('章タイトルが60文字を超えると失敗する', () => {
     const result = ChapterGenerateFormSchema.safeParse({
       title: 'a'.repeat(61),
-      promptNote: '',
+      promptNote: '冒頭の流れメモ',
+      characterNames: ['桜羽エマ']
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  test('章タイトルが空だと失敗する', () => {
+    const result = ChapterGenerateFormSchema.safeParse({
+      title: '   ',
+      promptNote: '冒頭の流れメモ',
+      characterNames: ['桜羽エマ']
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  test('流れメモが空だと失敗する', () => {
+    const result = ChapterGenerateFormSchema.safeParse({
+      title: '出会い',
+      promptNote: '   ',
       characterNames: ['桜羽エマ']
     })
 

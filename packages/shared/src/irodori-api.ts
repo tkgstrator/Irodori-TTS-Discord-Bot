@@ -14,7 +14,7 @@ const SpeakersResponse = z.object({ speakers: z.array(SpeakerInfo) }).passthroug
 const SynthRequest = z
   .object({
     speaker_id: z.string(),
-    text: z.string().min(1),
+    text: z.string().nonempty(),
     seed: z.union([z.number(), z.null()]).optional(),
     num_steps: z.union([z.number(), z.null()]).optional(),
     cfg_scale_text: z.union([z.number(), z.null()]).optional(),

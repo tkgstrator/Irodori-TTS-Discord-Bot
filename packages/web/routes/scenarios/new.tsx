@@ -1,10 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { Check, ChevronLeft, Loader2, Users } from 'lucide-react'
-import { useMemo } from 'react'
+import { Check, ChevronLeft, Eye, Loader2, Users } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useLlmSettings } from '@/components/llm-settings-provider'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -21,8 +29,9 @@ import {
   ScenarioToneValues,
   scenarioCharacterLimit
 } from '@/schemas/scenario.dto'
+import { type ScenarioGenerateRequest, ScenarioGenerateRequestSchema } from '@/schemas/scenario-generate-request.dto'
 
-const defaultValues: ScenarioCreateFormValues = {
+export const defaultValues: ScenarioCreateFormValues = {
   title: '',
   genres: [],
   tone: 'ほろ苦い',
@@ -30,11 +39,8 @@ const defaultValues: ScenarioCreateFormValues = {
   promptNote: ''
 }
 
-// 現在日付を一覧表示用の形式へ整える
-const formatScenarioDate = () => new Date().toISOString().slice(0, 10)
-
 // 配列の選択状態を切り替える
-const toggleValue = (values: readonly string[], value: string, max: number) => {
+export const toggleValue = (values: readonly string[], value: string, max: number) => {
   if (values.includes(value)) {
     return values.filter((item) => item !== value)
   }
@@ -47,7 +53,7 @@ const toggleValue = (values: readonly string[], value: string, max: number) => {
 }
 
 // 補助文とエラー文をまとめて表示する
-const FieldHint = ({ error, hint }: { error?: string; hint?: string }) => {
+export const FieldHint = ({ error, hint }: { error?: string; hint?: string }) => {
   if (!error && !hint) {
     return null
   }
@@ -56,7 +62,7 @@ const FieldHint = ({ error, hint }: { error?: string; hint?: string }) => {
 }
 
 // キャラクターの基本設定を一覧向けの文言へ整える
-const characterBaseSummary = ({
+export const characterBaseSummary = ({
   ageGroup,
   gender,
   occupation
@@ -72,7 +78,7 @@ const getGeminiModelLabel = (model: GeminiModel) => {
 }
 
 // キャラクターアイコンを画像またはイニシャルで表示する
-const CharacterAvatar = ({
+export const CharacterAvatar = ({
   imageUrl,
   name,
   className,
@@ -103,7 +109,7 @@ const CharacterAvatar = ({
 }
 
 // ジャンル選択用のチップボタンを描画する
-const GenreChip = ({
+export const GenreChip = ({
   active,
   disabled,
   label,
@@ -131,23 +137,19 @@ const GenreChip = ({
 )
 
 // キャラクター選択グリッド項目を描画する
-const CharacterCard = ({
+export const CharacterCard = ({
   active,
   summary,
   imageUrl,
   disabled,
-  note,
   name,
-  tags,
   onClick
 }: {
   active: boolean
   summary: string
   imageUrl: string | null
   disabled: boolean
-  note?: string
   name: string
-  tags: readonly string[]
   onClick: () => void
 }) => (
   <button
@@ -169,19 +171,6 @@ const CharacterCard = ({
         {active && <Check className="size-4 text-primary" aria-hidden="true" />}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
-      {note && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/80">{note}</p>}
-      {tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   </button>
 )
@@ -192,6 +181,9 @@ export const ScenarioNewPage = () => {
   const { characters, isLoading, errorMessage } = useCharacters()
   const { llmSettings, setEditorModel, setWriterModel } = useLlmSettings()
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [previewRequest, setPreviewRequest] = useState<ScenarioGenerateRequest | null>(null)
 
   const {
     control,
@@ -214,34 +206,124 @@ export const ScenarioNewPage = () => {
     () => characters.filter((character) => selectedCharacterIds.includes(character.id)),
     [characters, selectedCharacterIds]
   )
+  const previewJson = useMemo(
+    () => (previewRequest ? `${JSON.stringify(previewRequest, null, 2)}\n` : ''),
+    [previewRequest]
+  )
 
-  const onSubmit = handleSubmit(async (values) => {
+  // 現在のフォーム入力から LLM 送信用 JSON を組み立てる
+  const buildPreviewRequest = (values: ScenarioCreateFormValues) => {
+    const requestResult = ScenarioGenerateRequestSchema.safeParse({
+      model: {
+        editor: llmSettings.editor,
+        writer: llmSettings.writer
+      },
+      plot: {
+        title: values.title.trim(),
+        genres: values.genres,
+        tone: values.tone,
+        promptNote: values.promptNote
+      },
+      characters: characters
+        .filter((character) => values.plotCharacterIds.includes(character.id))
+        .map((character) => ({
+          id: character.id,
+          name: character.name,
+          ageGroup: character.ageGroup,
+          gender: character.gender,
+          occupation: character.occupation,
+          personalityTags: character.personalityTags,
+          speechStyle: character.speechStyle,
+          firstPerson: character.firstPerson,
+          secondPerson: character.secondPerson,
+          honorific: character.honorific,
+          attributeTags: character.attributeTags,
+          backgroundTags: character.backgroundTags,
+          memo: character.memo,
+          speakerId: character.speakerId
+        }))
+    })
+
+    if (!requestResult.success) {
+      throw new Error('Invalid scenario generate request')
+    }
+
+    return requestResult.data
+  }
+
+  // フォーム入力を検証したうえで JSON プレビューを表示する
+  const handleOpenPreview = handleSubmit((values) => {
     const result = ScenarioCreateFormSchema.safeParse(values)
 
     if (!result.success) {
       throw new Error('Invalid scenario form data')
     }
 
-    addScenario({
-      title: result.data.title.trim(),
-      status: 'draft',
-      genres: result.data.genres,
-      tone: result.data.tone,
-      plotCharacters: selectedCharacters.map((character) => character.name),
-      cueCount: 0,
-      speakerCount: selectedCharacters.length,
-      durationMinutes: null,
-      isAiGenerated: false,
-      updatedAt: formatScenarioDate(),
-      speakers: [],
-      chapters: []
-    })
-
-    await navigate({ to: '/plots' })
+    setPreviewRequest(buildPreviewRequest(result.data))
+    setIsPreviewOpen(true)
   })
+
+  // プレビュー済みの JSON を確認後に生成処理を進める
+  const handleGenerate = async () => {
+    if (!previewRequest) {
+      return
+    }
+
+    setIsGenerating(true)
+
+    try {
+      await addScenario({
+        title: previewRequest.plot.title,
+        genres: previewRequest.plot.genres,
+        tone: previewRequest.plot.tone,
+        characterIds: previewRequest.characters.map((character) => character.id)
+      })
+
+      setIsPreviewOpen(false)
+      await navigate({ to: '/plots' })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   return (
     <div className={pagePaddingCls}>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="gap-3 sm:max-w-4xl" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>LLM に送信する JSON を確認</DialogTitle>
+            <DialogDescription>
+              この内容を確認したあとでのみ生成を実行できます。フォームを修正したい場合は閉じて戻ってください。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-border bg-muted/30">
+            <pre className="max-h-[60vh] overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">
+              {previewJson}
+            </pre>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-between">
+            <p className="text-xs text-muted-foreground">選択中のモデル設定とキャラクター情報を含めた送信内容です。</p>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button type="button" variant="outline" onClick={() => setIsPreviewOpen(false)} disabled={isGenerating}>
+                閉じる
+              </Button>
+              <Button type="button" onClick={() => void handleGenerate()} disabled={isGenerating || !previewRequest}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  '生成する'
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="sticky top-0 z-10 -mx-6 bg-background/95 px-6 pb-5 backdrop-blur-sm">
         <div className="w-full">
           <Link
@@ -263,7 +345,7 @@ export const ScenarioNewPage = () => {
         </div>
       </div>
 
-      <form className="space-y-8 pt-4" onSubmit={onSubmit}>
+      <form className="space-y-8 pt-4">
         <div className="grid gap-x-10 gap-y-8 xl:grid-cols-2">
           <section className="space-y-5 border-b border-border pb-8 xl:row-span-2">
             <div className="space-y-1">
@@ -378,9 +460,9 @@ export const ScenarioNewPage = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="editorModel">Editor</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.editorModel)}</span>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.editor)}</span>
                 </div>
-                <Select value={llmSettings.editorModel} onValueChange={setEditorModel}>
+                <Select value={llmSettings.editor} onValueChange={setEditorModel}>
                   <SelectTrigger id="editorModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -398,9 +480,9 @@ export const ScenarioNewPage = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="writerModel">Writer</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.writerModel)}</span>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.writer)}</span>
                 </div>
-                <Select value={llmSettings.writerModel} onValueChange={setWriterModel}>
+                <Select value={llmSettings.writer} onValueChange={setWriterModel}>
                   <SelectTrigger id="writerModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -459,7 +541,6 @@ export const ScenarioNewPage = () => {
                     {characters.map((character) => {
                       const active = field.value.includes(character.id)
                       const disabled = !active && field.value.length >= scenarioCharacterLimit
-                      const note = character.memo.trim()
                       const summary = characterBaseSummary(character)
 
                       return (
@@ -469,9 +550,7 @@ export const ScenarioNewPage = () => {
                           summary={summary}
                           imageUrl={character.imageUrl}
                           disabled={disabled}
-                          note={note || undefined}
                           name={character.name}
-                          tags={character.personalityTags}
                           onClick={() => field.onChange(toggleValue(field.value, character.id, scenarioCharacterLimit))}
                         />
                       )
@@ -521,11 +600,11 @@ export const ScenarioNewPage = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Editor</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.editorModel)}</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.editor)}</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Writer</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.writerModel)}</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.writer)}</p>
               </div>
             </div>
 
@@ -559,14 +638,23 @@ export const ScenarioNewPage = () => {
         </div>
 
         <div className="flex flex-col gap-3 pb-2 sm:flex-row">
-          <Button type="submit" size="lg" className="h-11 sm:min-w-48" disabled={isSubmitting}>
+          <Button
+            type="button"
+            size="lg"
+            className="h-11 sm:min-w-48"
+            disabled={isSubmitting || isGenerating}
+            onClick={() => void handleOpenPreview()}
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin" />
-                Saving draft...
+                Preparing JSON...
               </>
             ) : (
-              'プロットを作成'
+              <>
+                <Eye />
+                送信JSONを確認
+              </>
             )}
           </Button>
           <Button type="button" asChild variant="outline" size="lg" className="h-11 sm:min-w-40">
