@@ -1,4 +1,4 @@
-import type { LooseCue, LooseVdsJson } from '../schemas/voice-drama.dto'
+import type { LooseCue, LooseVdsJson } from '@irodori-tts/shared/voice-drama'
 
 /**
  * `LooseVdsJson` 内の speech cue のうち、`text` が上限を超えるものを
