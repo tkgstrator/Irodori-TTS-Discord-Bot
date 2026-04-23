@@ -24,7 +24,7 @@ const SpeakerSourceDefaultsSchema = z.object({
 
 const SpeakerSourceSchema = z.object({
   uuid: SpeakerIdSchema,
-  name: z.string().min(1),
+  name: z.string().nonempty(),
   defaults: SpeakerSourceDefaultsSchema
 })
 

@@ -4,7 +4,7 @@ import { PrismaClient } from '../generated/prisma/client'
 
 // PostgreSQL 接続文字列の必須チェックを行う
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1)
+  DATABASE_URL: z.string().nonempty()
 })
 
 const envResult = envSchema.safeParse(process.env)

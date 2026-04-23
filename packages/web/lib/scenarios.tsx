@@ -2,7 +2,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { z } from 'zod'
 import type { ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
 import type { Character } from '@/schemas/character.dto'
-import { ScenarioApiListSchema } from '@/schemas/scenario-api.dto'
+import { ScenarioApiListSchema, ScenarioApiSchema } from '@/schemas/scenario-api.dto'
+import {
+  ScenarioAppendChapterApiSchema,
+  type ScenarioCreateApiInput,
+  type ScenarioUpdateApiInput
+} from '@/schemas/scenario-write.dto'
 import { useCharacters } from './characters'
 
 export type ScenarioStatus = 'draft' | 'generating' | 'completed'
@@ -62,12 +67,6 @@ export interface Scenario {
 }
 
 export type ScenarioInput = Omit<Scenario, 'id'>
-
-// 一覧表示用の日付文字列を生成する。
-const formatScenarioDate = (): string =>
-  new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'UTC'
-  }).format(Date.now())
 
 // 後続章がある章は時系列整合のため再生成不可とする。
 export const canRegenerateChapter = (chapters: readonly Chapter[], chapterId: string): boolean => {
@@ -153,9 +152,9 @@ interface ScenariosContextValue {
   readonly errorMessage: string | null
   readonly getScenario: (id: string) => Scenario | undefined
   readonly refreshScenarios: () => Promise<void>
-  readonly addScenario: (input: ScenarioInput) => Scenario
-  readonly updateScenario: (id: string, input: ScenarioInput) => void
-  readonly appendNextChapter: (id: string, input?: ChapterGenerateFormValues) => void
+  readonly addScenario: (input: ScenarioCreateApiInput) => Promise<Scenario>
+  readonly updateScenario: (id: string, input: ScenarioUpdateApiInput) => Promise<Scenario>
+  readonly appendNextChapter: (id: string, input?: ChapterGenerateFormValues) => Promise<Scenario | undefined>
   readonly deleteScenario: (id: string) => void
 }
 
@@ -276,8 +275,6 @@ export const resolveScenarioState = ({
   }
 }
 
-const generateId = (): string => crypto.randomUUID()
-
 export function ScenariosProvider({ children }: { children: React.ReactNode }) {
   const { characters } = useCharacters()
   const [scenarios, setScenarios] = useState<Scenario[]>([])
@@ -306,33 +303,61 @@ export function ScenariosProvider({ children }: { children: React.ReactNode }) {
     const resolvedScenarios = scenarios.map((scenario) => resolveScenarioState({ scenario, characters }))
     const getScenario = (id: string) => resolvedScenarios.find((scenario) => scenario.id === id)
 
-    const addScenario = (input: ScenarioInput): Scenario => {
-      const scenario: Scenario = { ...input, id: generateId() }
-      setScenarios((prev) => [...prev, scenario])
-      return scenario
+    const addScenario = async (input: ScenarioCreateApiInput): Promise<Scenario> => {
+      const row = await requestJson('/api/scenarios', ScenarioApiSchema, {
+        method: 'POST',
+        body: JSON.stringify(input)
+      })
+
+      setScenarios((prev) => [row, ...prev])
+      return row
     }
 
-    const updateScenario = (id: string, input: ScenarioInput) => {
-      setScenarios((prev) => prev.map((s) => (s.id === id ? { ...input, id } : s)))
+    const updateScenario = async (id: string, input: ScenarioUpdateApiInput): Promise<Scenario> => {
+      const row = await requestJson(`/api/scenarios/${id}`, ScenarioApiSchema, {
+        method: 'PUT',
+        body: JSON.stringify(input)
+      })
+
+      setScenarios((prev) => prev.map((item) => (item.id === id ? row : item)))
+      return row
     }
 
-    const appendNextChapter = (id: string, input?: ChapterGenerateFormValues) => {
-      setScenarios((prev) =>
-        prev.map((scenario) => {
-          if (scenario.id !== id || !canGenerateNextChapter(scenario.chapters)) {
-            return scenario
-          }
+    const appendNextChapter = async (id: string, input?: ChapterGenerateFormValues) => {
+      const scenario = resolvedScenarios.find((item) => item.id === id)
 
-          const nextChapter = createNextChapter({ scenario, characters, input })
+      if (!scenario || !canGenerateNextChapter(scenario.chapters)) {
+        return undefined
+      }
 
-          return {
-            ...scenario,
-            status: 'generating',
-            updatedAt: formatScenarioDate(),
-            chapters: [...scenario.chapters, nextChapter]
-          }
-        })
-      )
+      const characterByName = new Map(characters.map((character) => [character.name, character.id] as const))
+      const selectedCharacterIds =
+        input && input.characterNames.length > 0
+          ? input.characterNames.flatMap((name) => {
+              const matchedCharacterId = characterByName.get(name)
+              return matchedCharacterId ? [matchedCharacterId] : []
+            })
+          : scenario.plotCharacters.flatMap((name) => {
+              const matchedCharacterId = characterByName.get(name)
+              return matchedCharacterId ? [matchedCharacterId] : []
+            })
+      const bodyResult = ScenarioAppendChapterApiSchema.safeParse({
+        title: input?.title.trim() ?? '',
+        synopsis: input?.promptNote.trim() ?? '',
+        characterIds: selectedCharacterIds
+      })
+
+      if (!bodyResult.success) {
+        throw new Error('Invalid chapter append request')
+      }
+
+      const row = await requestJson(`/api/scenarios/${id}/chapters`, ScenarioApiSchema, {
+        method: 'POST',
+        body: JSON.stringify(bodyResult.data)
+      })
+
+      setScenarios((prev) => prev.map((item) => (item.id === id ? row : item)))
+      return row
     }
 
     const deleteScenario = (id: string) => {

@@ -2,13 +2,15 @@
 
 > 本書は [`README.md`](./README.md) の §4 に相当する。enum の値定義は [`enums.md`](./enums.md) 参照。
 
-6 種類のメッセージで全ての受け渡しが完結する。全メッセージは `schemaVersion: 1` を持ち、破壊的変更時に版を上げる。
+8 種類のメッセージで全ての受け渡しが完結する。全メッセージは `schemaVersion: 1` を持ち、破壊的変更時に版を上げる。
 
 | # | 型 | 送信元 → 送信先 |
 |---|---|---|
 | 4.1 | [`DramaBrief`](#41-dramabriefuser--editor) | User → Editor |
 | 4.2 | [`DramaBible`](#42-dramabibleeditor-が-redis-に保持) | Editor ↔ Redis |
 | 4.3 | [`DramaState`](#43-dramastateeditor-が-redis-に保持) | Editor ↔ Redis |
+| 4.3.1 | [`ChapterPlanRequest`](#431-chapterplanrequestwebui--editor) | WebUI → Editor |
+| 4.3.2 | [`ChapterPlan`](#432-chapterplaneditor--webui--editor-内部) | Editor → WebUI / Editor 内部 |
 | 4.4 | [`BeatSheet`](#44-beatsheeteditor--writer) | Editor → Writer |
 | 4.5 | [`VdsJson`](#45-vdsjsonwriter--runner) | Writer → Runner |
 | 4.6 | [`SceneReport`](#46-scenereportrunner--editor) | Runner → Editor |
@@ -343,6 +345,104 @@ stateDiagram-v2
       過去の awake を描ける。
     end note
 ```
+
+---
+
+## 4.3.1 `ChapterPlanRequest`（WebUI → Editor）
+
+WebUI から Editor へ送る**章単位の継続生成要求**。`DramaBrief` が「作品の初期投入」なのに対し、こちらは**既存作品の次章をどう進めるか**を依頼するためのメッセージである。
+
+`DramaBible` / `DramaState` を Redis に保持している Editor は、それらを主ソースとして参照してよい。  
+一方で WebUI からの stateless 呼び出しや再同期に備え、**章ダイジェストをこのメッセージに含める**。
+
+```ts
+type ChapterPlanRequest = {
+  schemaVersion: 1
+  dramaId: string
+
+  request: {
+    mode: 'auto' | 'manual'
+    nextChapterNumber: number
+    requestedTitle?: string              // 空なら Editor が補完
+    promptNote?: string                  // ユーザーの自由メモ
+    focusAliases?: string[]              // この章で優先したい登場人物
+  }
+
+  // Editor が章設計に必要とする最小限の継続文脈。
+  // raw cue や VDS 本文は含めず、各章の要約のみを渡す。
+  completedChapters: ChapterDigest[]     // 古い章→新しい章の時系列順
+}
+
+type ChapterDigest = {
+  chapterId: string
+  number: number
+  title: string
+  summary: string                        // 章全体の要約。ネタバレ込みで保持してよい
+  presentAliases: string[]               // 章の主な登場話者
+}
+```
+
+**運用規約:**
+
+- `completedChapters` は**全件 summary のみ**を持つ。Editor には各章の要約だけ返す方針とし、過去章の raw cue や `VdsJson` は直接渡さない。
+- `completedChapters` は必ず **古い章 → 新しい章** の時系列順で送る。
+- `summary` は Writer 向けの散文ではなく、**Editor が因果・感情線・未回収要素を追える密度**で書く。
+- 章再生成時は、対象章以降の `completedChapters` を捨ててから再要求する。
+
+**役割分担:**
+
+- WebUI / API: `Scenario` / `ScenarioChapter` から `completedChapters` を組み立てる
+- Editor: `DramaBible` / `DramaState` と `completedChapters` を突き合わせて章設計を行う
+
+---
+
+## 4.3.2 `ChapterPlan`（Editor → WebUI / Editor 内部）
+
+Editor が返す**章全体の設計結果**。WebUI ではプレビューや承認に使え、Editor 内部ではこれを 1 Beat ずつ `BeatSheet` に分解して Writer へ流す。
+
+```ts
+type ChapterPlan = {
+  schemaVersion: 1
+  dramaId: string
+
+  chapter: {
+    number: number
+    title: string
+    summary: string                      // この章で何が起きるかの全体要約
+    goal: string                         // 章としての主目的
+    emotionalArc: string                 // 感情線の設計
+  }
+
+  continuity: {
+    mustKeep: string[]                   // 既存章との整合で必ず守ること
+    reveals: string[]                    // この章で新たに明かしてよい事実
+    unresolvedThreads: string[]          // 次章以降へ持ち越す要素
+  }
+
+  beatOutline: ChapterBeatOutline[]
+}
+
+type ChapterBeatOutline = {
+  order: number
+  sceneKind: SceneKind
+  summary: string                        // Beat の要約
+  goal: string                           // Beat 単位の達成目標
+  tension: 'low' | 'medium' | 'high'
+  presentAliases: string[]
+}
+```
+
+**運用規約:**
+
+- `chapter.summary` は、章保存時に `ChapterDigest.summary` へ再利用できる粒度で書く。
+- `beatOutline` は Writer へそのまま渡すメッセージではなく、Editor が後続の `BeatSheet` 群を組み立てるための中間成果物である。
+- `continuity.mustKeep` には、呼称・関係性・世界状態・既知事実など**Writer に破ってほしくない前提**を列挙する。
+- `continuity.unresolvedThreads` は次章以降の `ChapterPlanRequest.completedChapters[*].summary` に反映される前提で管理する。
+
+**この型を入れる理由:**
+
+- `BeatSheet` だけでは WebUI の「章を生成する前におおよその進行を確認したい」という要件を満たしにくい
+- Editor の責務を「Beat を 1 個返す」だけでなく、「章全体の進行設計を返す」段階に分けることで、承認フローと再生成フローを安定させやすい
 
 ---
 

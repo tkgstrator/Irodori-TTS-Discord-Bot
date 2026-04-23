@@ -8,18 +8,18 @@ export const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'co
 
 // 章内の話者表示情報を定義する
 export const ScenarioApiSpeakerSchema = z.object({
-  alias: z.string().min(1),
-  name: z.string().min(1),
+  alias: z.string().nonempty(),
+  name: z.string().nonempty(),
   speakerId: z.string().uuid().nullable(),
-  initial: z.string().min(1),
+  initial: z.string().nonempty(),
   imageUrl: z.string().nullable().optional(),
-  colorClass: z.string().min(1),
-  nameColor: z.string().min(1)
+  colorClass: z.string().nonempty(),
+  nameColor: z.string().nonempty()
 })
 
 // 章で使うキャラクター参照情報を定義する
 export const ScenarioApiChapterCharacterSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().nonempty(),
   imageUrl: z.string().nullable(),
   speakerId: z.string().uuid().nullable()
 })
@@ -27,8 +27,8 @@ export const ScenarioApiChapterCharacterSchema = z.object({
 // 章内のセリフ cue を定義する
 export const ScenarioApiSpeechCueSchema = z.object({
   kind: z.literal('speech'),
-  speaker: z.string().min(1),
-  text: z.string().min(1)
+  speaker: z.string().nonempty(),
+  text: z.string().nonempty()
 })
 
 // 章内の pause cue を定義する
@@ -45,9 +45,9 @@ export const ScenarioApiCueSchema = z.discriminatedUnion('kind', [
 
 // 章レスポンスを定義する
 export const ScenarioApiChapterSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().nonempty(),
   number: z.number().int().positive(),
-  title: z.string().min(1),
+  title: z.string().nonempty(),
   status: ScenarioApiChapterStatusSchema,
   cueCount: z.number().int().nonnegative(),
   durationMinutes: z.number().nonnegative(),
@@ -59,16 +59,16 @@ export const ScenarioApiChapterSchema = z.object({
 // シナリオ一覧・詳細レスポンスを定義する
 export const ScenarioApiSchema = z.object({
   id: z.string().uuid(),
-  title: z.string().min(1),
+  title: z.string().nonempty(),
   status: ScenarioApiStatusSchema,
-  genres: z.array(z.string().min(1)),
-  tone: z.string().min(1),
-  plotCharacters: z.array(z.string().min(1)),
+  genres: z.array(z.string().nonempty()),
+  tone: z.string().nonempty(),
+  plotCharacters: z.array(z.string().nonempty()),
   cueCount: z.number().int().nonnegative(),
   speakerCount: z.number().int().nonnegative(),
   durationMinutes: z.number().nonnegative().nullable(),
   isAiGenerated: z.boolean(),
-  updatedAt: z.string().min(1),
+  updatedAt: z.string().nonempty(),
   speakers: z.array(ScenarioApiSpeakerSchema),
   chapters: z.array(ScenarioApiChapterSchema)
 })

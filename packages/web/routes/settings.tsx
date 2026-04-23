@@ -91,8 +91,9 @@ const SettingsPage = () => {
                     <Button
                       type="button"
                       variant={isActive ? 'default' : 'outline'}
+                      size="lg"
                       className={cn(
-                        'h-auto w-full justify-start rounded-xl px-4 py-3 text-left',
+                        'h-10 w-full justify-start rounded-lg px-3 text-left',
                         'hover:border-foreground/15 hover:bg-muted/70',
                         isActive &&
                           'border-primary bg-primary text-primary-foreground shadow-[0_0_0_1px_var(--color-primary)]'
@@ -100,28 +101,26 @@ const SettingsPage = () => {
                       aria-pressed={isActive}
                       onClick={() => setTheme(option.value)}
                     >
-                      <span className="flex w-full items-center justify-between gap-3">
-                        <span className={cn('flex min-w-0 items-center gap-2')}>
+                      <span className="flex w-full items-center justify-between gap-2.5">
+                        <span className={cn('flex min-w-0 items-center gap-1.5')}>
                           <span
                             className={cn(
-                              'flex size-5 shrink-0 items-center justify-center',
+                              'flex size-4 shrink-0 items-center justify-center',
                               isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                             )}
                           >
-                            <Icon className="size-4" aria-hidden="true" />
+                            <Icon className="size-3.5" aria-hidden="true" />
                           </span>
-                          <span className="min-w-0 text-sm font-semibold sm:text-base">
-                            {themeLabels[option.value]}
-                          </span>
+                          <span className="min-w-0 text-sm font-semibold">{themeLabels[option.value]}</span>
                           <span className="sr-only">{option.summary}</span>
                         </span>
                         <span
                           className={cn(
-                            'flex size-5 shrink-0 items-center justify-center',
+                            'flex size-4 shrink-0 items-center justify-center',
                             isActive ? 'text-primary-foreground' : 'text-muted-foreground/50'
                           )}
                         >
-                          {isActive ? <Check className="size-4" aria-hidden="true" /> : null}
+                          {isActive ? <Check className="size-3.5" aria-hidden="true" /> : null}
                         </span>
                       </span>
                     </Button>
@@ -146,54 +145,58 @@ const SettingsPage = () => {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <section className="space-y-4 rounded-xl border border-border/80 bg-card p-4">
+                <section className="flex h-full flex-col gap-4 rounded-xl border border-border/80 bg-card p-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">Editor</p>
-                      <Badge variant="secondary">{getGeminiModelLabel(llmSettings.editorModel)}</Badge>
+                      <Badge variant="secondary">{getGeminiModelLabel(llmSettings.editor)}</Badge>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
                       構成整理や吸収を担当する Editor の既定モデルです。長い文脈を扱うなら Pro が向いています。
                     </p>
                   </div>
 
-                  <Select value={llmSettings.editorModel} onValueChange={setEditorModel}>
-                    <SelectTrigger className="h-11 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {geminiModelCatalog.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-auto">
+                    <Select value={llmSettings.editor} onValueChange={setEditorModel}>
+                      <SelectTrigger className="h-11 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {geminiModelCatalog.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </section>
 
-                <section className="space-y-4 rounded-xl border border-border/80 bg-card p-4">
+                <section className="flex h-full flex-col gap-4 rounded-xl border border-border/80 bg-card p-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">Writer</p>
-                      <Badge variant="secondary">{getGeminiModelLabel(llmSettings.writerModel)}</Badge>
+                      <Badge variant="secondary">{getGeminiModelLabel(llmSettings.writer)}</Badge>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
                       台詞や地の文を生成する Writer の既定モデルです。速度重視なら Flash が扱いやすいです。
                     </p>
                   </div>
 
-                  <Select value={llmSettings.writerModel} onValueChange={setWriterModel}>
-                    <SelectTrigger className="h-11 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {geminiModelCatalog.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="mt-auto">
+                    <Select value={llmSettings.writer} onValueChange={setWriterModel}>
+                      <SelectTrigger className="h-11 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {geminiModelCatalog.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </section>
               </div>
             </section>

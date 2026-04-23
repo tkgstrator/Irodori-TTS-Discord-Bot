@@ -18,9 +18,9 @@ export const GeminiModelSchema = z.enum(GeminiModelValues)
 // Gemini モデルのメタデータ形式を定義する。
 const GeminiModelItemSchema = z.object({
   value: GeminiModelSchema,
-  label: z.string().min(1),
+  label: z.string().nonempty(),
   release: z.enum(['Preview', 'GA', 'Legacy']),
-  description: z.string().min(1),
+  description: z.string().nonempty(),
   speedStars: z.number().int().min(1).max(5),
   accuracyStars: z.number().int().min(1).max(5),
   costStars: z.number().int().min(1).max(5)
@@ -119,14 +119,20 @@ export const geminiModelCatalog = geminiModelCatalogResult.data
 
 // LLM 設定の保存形式を定義する。
 export const LlmSettingsSchema = z.object({
-  editorModel: GeminiModelSchema,
-  writerModel: GeminiModelSchema
+  editor: GeminiModelSchema,
+  writer: GeminiModelSchema
+})
+
+// LLM リクエストで使うモデル指定形式を定義する。
+export const LlmRequestModelSchema = z.object({
+  editor: GeminiModelSchema,
+  writer: GeminiModelSchema
 })
 
 // 設定未保存時の既定値を定義する。
 const defaultLlmSettingsResult = LlmSettingsSchema.safeParse({
-  editorModel: 'gemini-2.5-flash',
-  writerModel: 'gemini-2.5-flash'
+  editor: 'gemini-2.5-flash',
+  writer: 'gemini-2.5-flash'
 })
 
 if (!defaultLlmSettingsResult.success) {
@@ -136,4 +142,5 @@ if (!defaultLlmSettingsResult.success) {
 export const defaultLlmSettings = defaultLlmSettingsResult.data
 
 export type GeminiModel = z.infer<typeof GeminiModelSchema>
+export type LlmRequestModel = z.infer<typeof LlmRequestModelSchema>
 export type LlmSettings = z.infer<typeof LlmSettingsSchema>

@@ -5,17 +5,19 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "bun ./scripts/dev.ts",
-    "dev:server": "bun --watch server/index.ts",
+    "dev:server": "bun --env-file=.env --watch server/index.ts",
+    "db:export:characters": "bun ./prisma/export-character-seeds.ts",
     "db:push": "bunx --bun prisma db push",
     "db:seed": "bunx --bun prisma db seed",
     "db:erd": "bunx --bun prisma generate --generator erd",
     "build": "vite build",
-    "start": "bun server/index.ts"
+    "start": "bun --env-file=.env server/index.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource/fraunces": "^5.2.9",
+    "@google/genai": "^1.50.1",
     "@hono/node-server": "^2.0.0",
     "@hookform/resolvers": "^5.2.2",
     "@irodori-tts/shared": "workspace:*",

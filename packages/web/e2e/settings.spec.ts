@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Locator, type Page, test } from '@playwright/test'
 
 const SCREENSHOT_DIR = path.resolve(import.meta.dirname, '..', 'screenshots')
 
@@ -35,6 +35,16 @@ async function expectNoHorizontalOverflow(page: Page) {
   ).toBeLessThanOrEqual(metrics.innerWidth + 1)
 }
 
+const getLocatorBottom = async (locator: Locator) => {
+  const box = await locator.boundingBox()
+
+  if (!box) {
+    throw new Error('Locator bounding box is unavailable.')
+  }
+
+  return box.y + box.height
+}
+
 test.describe('settings route', () => {
   test.beforeEach(async ({ page }) => {
     await ensureScreenshotDir()
@@ -60,6 +70,13 @@ test.describe('settings route', () => {
     await expect(page.getByRole('combobox').first()).toBeVisible()
     await expect(page.getByRole('combobox').nth(1)).toBeVisible()
 
+    const editorModelSelect = page.getByRole('combobox').first()
+    const writerModelSelect = page.getByRole('combobox').nth(1)
+    const editorModelBottom = await getLocatorBottom(editorModelSelect)
+    const writerModelBottom = await getLocatorBottom(writerModelSelect)
+
+    expect(Math.abs(editorModelBottom - writerModelBottom)).toBeLessThanOrEqual(1)
+
     const themeToggle = page.getByRole('button', { name: /^現在:/ })
     await expect(themeToggle).toBeVisible()
     await themeToggle.hover()
@@ -68,7 +85,6 @@ test.describe('settings route', () => {
     await darkButton.click()
     await expect(darkButton).toHaveAttribute('aria-pressed', 'true')
 
-    const editorModelSelect = page.getByRole('combobox').first()
     await editorModelSelect.click()
     await page.getByRole('option', { name: 'Gemini 3.1 Pro' }).click()
     await expect(editorModelSelect).toContainText('Gemini 3.1 Pro')

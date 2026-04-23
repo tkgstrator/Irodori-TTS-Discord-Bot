@@ -10,10 +10,10 @@ export const ScenarioSeedChapterStatusSchema = z.enum(['draft', 'generating', 'c
 // シナリオ cast の seed 形式を定義する
 export const ScenarioSeedCastSchema = z
   .object({
-    alias: z.string().min(1),
+    alias: z.string().nonempty(),
     speakerId: z.uuid(),
-    role: z.string().min(1),
-    relationship: z.string().min(1)
+    role: z.string().nonempty(),
+    relationship: z.string().nonempty()
   })
   .strict()
 
@@ -21,8 +21,8 @@ export const ScenarioSeedCastSchema = z
 export const ScenarioSeedSpeechCueSchema = z
   .object({
     kind: z.literal('speech'),
-    speaker: z.string().min(1),
-    text: z.string().min(1)
+    speaker: z.string().nonempty(),
+    text: z.string().nonempty()
   })
   .strict()
 
@@ -43,13 +43,13 @@ export const ScenarioSeedCueSchema = z.discriminatedUnion('kind', [
 // シナリオ章 seed 形式を定義する
 export const ScenarioSeedChapterSchema = z
   .object({
-    id: z.string().min(1),
+    id: z.string().nonempty(),
     number: z.number().int().positive(),
-    title: z.string().min(1),
+    title: z.string().nonempty(),
     status: ScenarioSeedChapterStatusSchema,
     durationMinutes: z.number().nonnegative(),
     synopsis: z.string(),
-    characters: z.array(z.string().min(1)),
+    characters: z.array(z.string().nonempty()),
     cues: z.array(ScenarioSeedCueSchema)
   })
   .strict()
@@ -71,10 +71,10 @@ export const ScenarioSeedChapterSchema = z
 export const ScenarioSeedScenarioSchema = z
   .object({
     id: z.uuid(),
-    title: z.string().min(1),
-    genres: z.array(z.string().min(1)).min(1),
-    tone: z.string().min(1),
-    ending: z.string().min(1),
+    title: z.string().nonempty(),
+    genres: z.array(z.string().nonempty()).min(1),
+    tone: z.string().nonempty(),
+    ending: z.string().nonempty(),
     status: ScenarioSeedStatusSchema,
     narratorSpeakerId: z.uuid().nullable(),
     vdsJson: z.null(),

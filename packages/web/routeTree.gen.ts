@@ -21,6 +21,10 @@ import { Route as ScenariosIdRouteImport } from './routes/scenarios/$id'
 import { Route as PlotsNewRouteImport } from './routes/plots/new'
 import { Route as PlotsIdRouteImport } from './routes/plots/$id'
 import { Route as CharactersNewRouteImport } from './routes/characters/new'
+import { Route as ScenariosIdEditRouteImport } from './routes/scenarios/$id.edit'
+import { Route as ScenariosIdChapterPlanRouteImport } from './routes/scenarios/$id.chapter-plan'
+import { Route as PlotsIdEditRouteImport } from './routes/plots/$id.edit'
+import { Route as PlotsIdChapterPlanRouteImport } from './routes/plots/$id.chapter-plan'
 import { Route as CharactersIdEditRouteImport } from './routes/characters/$id.edit'
 import { Route as ScenariosIdChaptersChapterIdRouteImport } from './routes/scenarios/$id.chapters.$chapterId'
 import { Route as PlotsIdChaptersChapterIdRouteImport } from './routes/plots/$id.chapters.$chapterId'
@@ -85,6 +89,26 @@ const CharactersNewRoute = CharactersNewRouteImport.update({
   path: '/characters/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScenariosIdEditRoute = ScenariosIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => ScenariosIdRoute,
+} as any)
+const ScenariosIdChapterPlanRoute = ScenariosIdChapterPlanRouteImport.update({
+  id: '/chapter-plan',
+  path: '/chapter-plan',
+  getParentRoute: () => ScenariosIdRoute,
+} as any)
+const PlotsIdEditRoute = PlotsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => PlotsIdRoute,
+} as any)
+const PlotsIdChapterPlanRoute = PlotsIdChapterPlanRouteImport.update({
+  id: '/chapter-plan',
+  path: '/chapter-plan',
+  getParentRoute: () => PlotsIdRoute,
+} as any)
 const CharactersIdEditRoute = CharactersIdEditRouteImport.update({
   id: '/characters/$id/edit',
   path: '/characters/$id/edit',
@@ -117,6 +141,10 @@ export interface FileRoutesByFullPath {
   '/relations/': typeof RelationsIndexRoute
   '/scenarios/': typeof ScenariosIndexRoute
   '/characters/$id/edit': typeof CharactersIdEditRoute
+  '/plots/$id/chapter-plan': typeof PlotsIdChapterPlanRoute
+  '/plots/$id/edit': typeof PlotsIdEditRoute
+  '/scenarios/$id/chapter-plan': typeof ScenariosIdChapterPlanRoute
+  '/scenarios/$id/edit': typeof ScenariosIdEditRoute
   '/plots/$id/chapters/$chapterId': typeof PlotsIdChaptersChapterIdRoute
   '/scenarios/$id/chapters/$chapterId': typeof ScenariosIdChaptersChapterIdRoute
 }
@@ -134,6 +162,10 @@ export interface FileRoutesByTo {
   '/relations': typeof RelationsIndexRoute
   '/scenarios': typeof ScenariosIndexRoute
   '/characters/$id/edit': typeof CharactersIdEditRoute
+  '/plots/$id/chapter-plan': typeof PlotsIdChapterPlanRoute
+  '/plots/$id/edit': typeof PlotsIdEditRoute
+  '/scenarios/$id/chapter-plan': typeof ScenariosIdChapterPlanRoute
+  '/scenarios/$id/edit': typeof ScenariosIdEditRoute
   '/plots/$id/chapters/$chapterId': typeof PlotsIdChaptersChapterIdRoute
   '/scenarios/$id/chapters/$chapterId': typeof ScenariosIdChaptersChapterIdRoute
 }
@@ -152,6 +184,10 @@ export interface FileRoutesById {
   '/relations/': typeof RelationsIndexRoute
   '/scenarios/': typeof ScenariosIndexRoute
   '/characters/$id/edit': typeof CharactersIdEditRoute
+  '/plots/$id/chapter-plan': typeof PlotsIdChapterPlanRoute
+  '/plots/$id/edit': typeof PlotsIdEditRoute
+  '/scenarios/$id/chapter-plan': typeof ScenariosIdChapterPlanRoute
+  '/scenarios/$id/edit': typeof ScenariosIdEditRoute
   '/plots/$id/chapters/$chapterId': typeof PlotsIdChaptersChapterIdRoute
   '/scenarios/$id/chapters/$chapterId': typeof ScenariosIdChaptersChapterIdRoute
 }
@@ -171,6 +207,10 @@ export interface FileRouteTypes {
     | '/relations/'
     | '/scenarios/'
     | '/characters/$id/edit'
+    | '/plots/$id/chapter-plan'
+    | '/plots/$id/edit'
+    | '/scenarios/$id/chapter-plan'
+    | '/scenarios/$id/edit'
     | '/plots/$id/chapters/$chapterId'
     | '/scenarios/$id/chapters/$chapterId'
   fileRoutesByTo: FileRoutesByTo
@@ -188,6 +228,10 @@ export interface FileRouteTypes {
     | '/relations'
     | '/scenarios'
     | '/characters/$id/edit'
+    | '/plots/$id/chapter-plan'
+    | '/plots/$id/edit'
+    | '/scenarios/$id/chapter-plan'
+    | '/scenarios/$id/edit'
     | '/plots/$id/chapters/$chapterId'
     | '/scenarios/$id/chapters/$chapterId'
   id:
@@ -205,6 +249,10 @@ export interface FileRouteTypes {
     | '/relations/'
     | '/scenarios/'
     | '/characters/$id/edit'
+    | '/plots/$id/chapter-plan'
+    | '/plots/$id/edit'
+    | '/scenarios/$id/chapter-plan'
+    | '/scenarios/$id/edit'
     | '/plots/$id/chapters/$chapterId'
     | '/scenarios/$id/chapters/$chapterId'
   fileRoutesById: FileRoutesById
@@ -311,6 +359,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CharactersNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/scenarios/$id/edit': {
+      id: '/scenarios/$id/edit'
+      path: '/edit'
+      fullPath: '/scenarios/$id/edit'
+      preLoaderRoute: typeof ScenariosIdEditRouteImport
+      parentRoute: typeof ScenariosIdRoute
+    }
+    '/scenarios/$id/chapter-plan': {
+      id: '/scenarios/$id/chapter-plan'
+      path: '/chapter-plan'
+      fullPath: '/scenarios/$id/chapter-plan'
+      preLoaderRoute: typeof ScenariosIdChapterPlanRouteImport
+      parentRoute: typeof ScenariosIdRoute
+    }
+    '/plots/$id/edit': {
+      id: '/plots/$id/edit'
+      path: '/edit'
+      fullPath: '/plots/$id/edit'
+      preLoaderRoute: typeof PlotsIdEditRouteImport
+      parentRoute: typeof PlotsIdRoute
+    }
+    '/plots/$id/chapter-plan': {
+      id: '/plots/$id/chapter-plan'
+      path: '/chapter-plan'
+      fullPath: '/plots/$id/chapter-plan'
+      preLoaderRoute: typeof PlotsIdChapterPlanRouteImport
+      parentRoute: typeof PlotsIdRoute
+    }
     '/characters/$id/edit': {
       id: '/characters/$id/edit'
       path: '/characters/$id/edit'
@@ -336,10 +412,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface PlotsIdRouteChildren {
+  PlotsIdChapterPlanRoute: typeof PlotsIdChapterPlanRoute
+  PlotsIdEditRoute: typeof PlotsIdEditRoute
   PlotsIdChaptersChapterIdRoute: typeof PlotsIdChaptersChapterIdRoute
 }
 
 const PlotsIdRouteChildren: PlotsIdRouteChildren = {
+  PlotsIdChapterPlanRoute: PlotsIdChapterPlanRoute,
+  PlotsIdEditRoute: PlotsIdEditRoute,
   PlotsIdChaptersChapterIdRoute: PlotsIdChaptersChapterIdRoute,
 }
 
@@ -347,10 +427,14 @@ const PlotsIdRouteWithChildren =
   PlotsIdRoute._addFileChildren(PlotsIdRouteChildren)
 
 interface ScenariosIdRouteChildren {
+  ScenariosIdChapterPlanRoute: typeof ScenariosIdChapterPlanRoute
+  ScenariosIdEditRoute: typeof ScenariosIdEditRoute
   ScenariosIdChaptersChapterIdRoute: typeof ScenariosIdChaptersChapterIdRoute
 }
 
 const ScenariosIdRouteChildren: ScenariosIdRouteChildren = {
+  ScenariosIdChapterPlanRoute: ScenariosIdChapterPlanRoute,
+  ScenariosIdEditRoute: ScenariosIdEditRoute,
   ScenariosIdChaptersChapterIdRoute: ScenariosIdChaptersChapterIdRoute,
 }
 

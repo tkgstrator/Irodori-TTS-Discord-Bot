@@ -13,7 +13,7 @@ export const SpeakerImportValuesSchema = CharacterFormSchema.omit({
 // 話者一覧用のレスポンス要素を定義する
 export const SpeakerImportItemSchema = z.object({
   speakerId: SpeakerIdSchema,
-  name: z.string().min(1)
+  name: z.string().nonempty()
 })
 
 // 話者一覧レスポンスの形式を定義する

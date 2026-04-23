@@ -1,8 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, Outlet, useLocation, useMatches, useParams } from '@tanstack/react-router'
-import { Check, ChevronLeft, Clock, Loader2, MessageSquare, Play, RefreshCw, Sparkles, Users } from 'lucide-react'
+import {
+  Check,
+  ChevronLeft,
+  Clock,
+  Loader2,
+  MessageSquare,
+  Pencil,
+  Play,
+  RefreshCw,
+  Sparkles,
+  Users
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { useLlmSettings } from '@/components/llm-settings-provider'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,10 +30,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
+import { buildChapterPlanRequest, requestChapterPlan } from '@/lib/chapter-plan'
+import { useCharacters } from '@/lib/characters'
 import type { Chapter, ChapterCharacter, ChapterStatus, Scenario } from '@/lib/scenarios'
 import { canGenerateNextChapter, canRegenerateChapter, useScenarios } from '@/lib/scenarios'
 import { cn } from '@/lib/utils'
 import { createScenarioVdsExport, createScenarioVdsJsonExport } from '@/lib/vds'
+import type { ChapterGenerateMode } from '@/schemas/chapter-generate-request.dto'
 import { ChapterGenerateFormSchema, type ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
 
 const GENRE_COLORS: Record<string, string> = {
@@ -203,7 +218,7 @@ const ChapterCard = ({
                   {characterAvatar({ character, dimmed: isDraft })}
                 </span>
               ))}
-              {isCompleted && (
+              {isCompleted && !isPlotsRoute && (
                 <Button
                   asChild
                   variant="ghost"
@@ -249,6 +264,19 @@ const ChapterCard = ({
                   再生成
                 </Button>
               ))}
+            {chapter.status === 'completed' && isPlotsRoute && (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground"
+                aria-label="詳細"
+              >
+                <Link to={chapterDetailLink} params={{ id: scenario.id, chapterId: chapter.id }}>
+                  詳細
+                </Link>
+              </Button>
+            )}
             {chapter.status === 'generating' && (
               <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-600 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-400">
                 <Loader2 className="size-3 animate-spin" />
@@ -272,13 +300,21 @@ export const ScenarioDetailPage = () => {
   const { id } = useParams({ strict: false })
   const { pathname } = useLocation()
   const { appendNextChapter, getScenario, isLoading, errorMessage } = useScenarios()
+  const { characters } = useCharacters()
+  const { llmSettings } = useLlmSettings()
   const scenario = getScenario(id)
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
+  const [isChapterPlanning, setIsChapterPlanning] = useState(false)
+  const [isChapterCreating, setIsChapterCreating] = useState(false)
+  const [chapterPlanError, setChapterPlanError] = useState<string | null>(null)
   const matches = useMatches()
   const isPlotsRoute = pathname.startsWith('/plots')
   const hasChildRoute = matches.some(
     (match) =>
-      match.routeId === '/scenarios/$id/chapters/$chapterId' || match.routeId === '/plots/$id/chapters/$chapterId'
+      match.routeId === '/scenarios/$id/chapters/$chapterId' ||
+      match.routeId === '/plots/$id/chapters/$chapterId' ||
+      match.routeId === '/scenarios/$id/edit' ||
+      match.routeId === '/plots/$id/edit'
   )
   const plotCharacterNames = scenario?.plotCharacters ?? emptyCharacterNames
   const dialogDefaults = useMemo(() => createChapterGenerateDefaults(plotCharacterNames), [plotCharacterNames])
@@ -288,6 +324,7 @@ export const ScenarioDetailPage = () => {
     formState: { errors },
     register,
     reset,
+    setValue,
     watch
   } = useForm<ChapterGenerateFormValues>({
     resolver: zodResolver(ChapterGenerateFormSchema),
@@ -351,22 +388,70 @@ export const ScenarioDetailPage = () => {
   const selectedCharacterNames = watch('characterNames')
   const chapterTitle = watch('title')
   const promptNote = watch('promptNote')
+  const canCreateChapter = chapterTitle.trim().length > 0 && promptNote.trim().length > 0
 
-  const handleGenerateWithInput = handleSubmit((values) => {
-    const result = ChapterGenerateFormSchema.safeParse(values)
+  // ダイアログ入力から章計画用の送信 JSON を組み立てる
+  const buildPreviewChapterPlanRequest = ({
+    input,
+    mode
+  }: {
+    input: ChapterGenerateFormValues
+    mode: ChapterGenerateMode
+  }) =>
+    buildChapterPlanRequest({
+      input,
+      llmSettings,
+      mode,
+      scenario,
+      characters
+    })
 
-    if (!result.success) {
-      throw new Error('Invalid chapter generation input')
+  // おまかせで章タイトルと流れメモを自動入力する。
+  const handleAutoFill = async () => {
+    setIsChapterPlanning(true)
+    setChapterPlanError(null)
+
+    try {
+      const request = buildPreviewChapterPlanRequest({
+        input: {
+          title: '',
+          promptNote: '',
+          characterNames: selectedCharacterNames.length > 0 ? selectedCharacterNames : [...scenario.plotCharacters]
+        },
+        mode: 'auto'
+      })
+      const plan = await requestChapterPlan(request)
+
+      setValue('title', plan.chapter.title, {
+        shouldDirty: true,
+        shouldValidate: true
+      })
+      setValue('promptNote', plan.chapter.summary, {
+        shouldDirty: true,
+        shouldValidate: true
+      })
+    } catch (error) {
+      setChapterPlanError(error instanceof Error ? error.message : 'Failed to generate chapter plan')
+    } finally {
+      setIsChapterPlanning(false)
     }
-
-    appendNextChapter(scenario.id, result.data)
-    setIsChapterDialogOpen(false)
-    reset(createChapterGenerateDefaults(scenario.plotCharacters))
-  })
-
-  const handleGenerateAuto = () => {
-    appendNextChapter(scenario.id)
   }
+
+  // 入力済みの章タイトルと流れメモから下書き章を作成する。
+  const handleCreateChapter = handleSubmit(async (values) => {
+    setIsChapterCreating(true)
+    setChapterPlanError(null)
+
+    try {
+      await appendNextChapter(scenario.id, values)
+      setIsChapterDialogOpen(false)
+      reset(createChapterGenerateDefaults(scenario.plotCharacters))
+    } catch (error) {
+      setChapterPlanError(error instanceof Error ? error.message : 'Failed to create chapter plot')
+    } finally {
+      setIsChapterCreating(false)
+    }
+  })
 
   return (
     <div className={pagePaddingCls}>
@@ -417,6 +502,12 @@ export const ScenarioDetailPage = () => {
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:shrink-0 md:pt-0.5">
+              <Button asChild variant="outline" className="w-full gap-2 sm:w-auto">
+                <Link to={isPlotsRoute ? '/plots/$id/edit' : '/scenarios/$id/edit'} params={{ id: scenario.id }}>
+                  <Pencil className="size-3.5" />
+                  プロットを編集
+                </Link>
+              </Button>
               {canAppendChapter && hasCharacterChoices ? (
                 <Button
                   variant="outline"
@@ -424,7 +515,7 @@ export const ScenarioDetailPage = () => {
                   onClick={() => setIsChapterDialogOpen(true)}
                 >
                   <Play className="size-3.5" />
-                  {createdChapterCount === 0 ? '第1章を生成' : `第${nextChapterNumber}章を生成`}
+                  {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
                 </Button>
               ) : !hasCharacterChoices ? (
                 <Tooltip>
@@ -432,7 +523,7 @@ export const ScenarioDetailPage = () => {
                     <span>
                       <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
                         <Play className="size-3.5" />
-                        {createdChapterCount === 0 ? '第1章を生成' : `第${nextChapterNumber}章を生成`}
+                        {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -444,7 +535,7 @@ export const ScenarioDetailPage = () => {
                     <span>
                       <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
                         <Play className="size-3.5" />
-                        {createdChapterCount === 0 ? '第1章を生成' : `第${nextChapterNumber}章を生成`}
+                        {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -520,13 +611,18 @@ export const ScenarioDetailPage = () => {
       <Dialog open={isChapterDialogOpen} onOpenChange={setIsChapterDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{createdChapterCount === 0 ? '第1章を生成' : `第${nextChapterNumber}章を生成`}</DialogTitle>
+            <DialogTitle>{createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}</DialogTitle>
             <DialogDescription>
-              流れメモと登場人物を指定して章生成を開始します。細かい指定が不要なら「おまかせ」を使ってください。
+              流れメモと登場人物を指定して章プロットを作成します。細かい指定が不要なら「おまかせ」を使ってください。
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5">
+            {chapterPlanError && (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {chapterPlanError}
+              </p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="chapter-title">章タイトル</Label>
               <Input
@@ -538,7 +634,7 @@ export const ScenarioDetailPage = () => {
               />
               <div className="flex items-center justify-between gap-3">
                 <p className={cn('text-xs', errors.title ? 'text-destructive' : 'text-muted-foreground')}>
-                  {errors.title?.message ?? '任意入力です。未入力なら「第N章」を使います。'}
+                  {errors.title?.message ?? '必須入力です。章の見出しとして表示されます。'}
                 </p>
                 <span className="shrink-0 text-xs text-muted-foreground">{chapterTitle.length}/60</span>
               </div>
@@ -556,7 +652,7 @@ export const ScenarioDetailPage = () => {
               />
               <div className="flex items-center justify-between gap-3">
                 <p className={cn('text-xs', errors.promptNote ? 'text-destructive' : 'text-muted-foreground')}>
-                  {errors.promptNote?.message ?? '任意入力です。未入力なら全体の流れから補完します。'}
+                  {errors.promptNote?.message ?? '必須入力です。章プロットの概要として保存されます。'}
                 </p>
                 <span className="shrink-0 text-xs text-muted-foreground">{promptNote.length}/400</span>
               </div>
@@ -589,16 +685,45 @@ export const ScenarioDetailPage = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="secondary" onClick={handleGenerateAuto}>
-              <Sparkles className="size-3.5" />
-              おまかせ
+            <Button
+              variant="secondary"
+              onClick={() => void handleAutoFill()}
+              disabled={isChapterPlanning || isChapterCreating}
+            >
+              {isChapterPlanning ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  補完中...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="size-3.5" />
+                  おまかせ入力
+                </>
+              )}
             </Button>
-            <Button variant="outline" onClick={() => setIsChapterDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsChapterDialogOpen(false)}
+              disabled={isChapterPlanning || isChapterCreating}
+            >
               キャンセル
             </Button>
-            <Button onClick={() => void handleGenerateWithInput()}>
-              <Play className="size-3.5" />
-              生成を開始
+            <Button
+              onClick={() => void handleCreateChapter()}
+              disabled={!canCreateChapter || isChapterPlanning || isChapterCreating}
+            >
+              {isChapterCreating ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  作成中...
+                </>
+              ) : (
+                <>
+                  <Play className="size-3.5" />
+                  作成
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -11,10 +11,17 @@ import {
   ScenarioSeedScenarioSchema,
   ScenarioSeedSetSchema
 } from '../schemas/scenario-seed.dto'
+import { characterSeedRows } from './character-seeds'
 
 type SeedDbClient = Pick<
   PrismaClient,
-  'character' | 'scenario' | 'scenarioCast' | 'scenarioChapter' | 'scenarioChapterCharacter' | 'scenarioCue' | '$transaction'
+  | 'character'
+  | 'scenario'
+  | 'scenarioCast'
+  | 'scenarioChapter'
+  | 'scenarioChapterCharacter'
+  | 'scenarioCue'
+  | '$transaction'
 >
 type SeedDbDelegate = Pick<
   PrismaClient,
@@ -44,8 +51,8 @@ const createChapterSeed = (seed: ScenarioSeedChapter) => {
   return seedResult.data
 }
 
-// 既存話者連携キャラクターを使うため、追加キャラクター seed は作らない
-const scenarioSeedCharacters = [] as const
+// DB へ反映するキャラクター seed 一覧
+const scenarioSeedCharacters = characterSeedRows
 
 // シナリオ cast を簡潔に組み立てる
 const createCast = (alias: string, speakerId: string, role: string, relationship: string): ScenarioSeedCast => ({
@@ -145,7 +152,10 @@ const scenarioSeeds = [
           createPauseCue(1),
           createSpeechCue('ema', 'そう……。最近ずっとそうだよね。'),
           createSpeechCue('hiro', '……悪い。'),
-          createSpeechCue('yuki', 'エマは小さく笑って背を向けた。その肩が少しだけ震えているのを、ヒロは気づかなかった。')
+          createSpeechCue(
+            'yuki',
+            'エマは小さく笑って背を向けた。その肩が少しだけ震えているのを、ヒロは気づかなかった。'
+          )
         ]
       }),
       createChapterSeed({
@@ -236,6 +246,22 @@ if (!scenarioSeedSetResult.success) {
 export const scenarioSeedSet = scenarioSeedSetResult.data
 
 // シード対象のキャラクターを upsert する
+const upsertScenarioSeedCharacter = async (
+  client: SeedDbDelegate,
+  characterSeed: (typeof scenarioSeedSet.characters)[number]
+) => {
+  await client.character.upsert({
+    where: {
+      id: characterSeed.id
+    },
+    create: {
+      id: characterSeed.id,
+      ...characterSeed.data
+    },
+    update: characterSeed.data
+  })
+}
+
 // cast で使う話者連携キャラクターを解決する
 const resolveScenarioCharacterIds = async (client: SeedDbDelegate, scenarios: readonly ScenarioSeedScenario[]) => {
   const speakerIds = Array.from(
@@ -278,10 +304,7 @@ const resolveScenarioCharacterIds = async (client: SeedDbDelegate, scenarios: re
 }
 
 // alias ごとに永続化済みキャラクター ID を解決する
-const resolveScenarioAliasMap = (
-  scenario: ScenarioSeedScenario,
-  characterMap: ReadonlyMap<string, string>
-) =>
+const resolveScenarioAliasMap = (scenario: ScenarioSeedScenario, characterMap: ReadonlyMap<string, string>) =>
   new Map(
     scenario.cast.map((cast) => {
       const characterId = characterMap.get(cast.speakerId)
@@ -491,6 +514,8 @@ const pruneLegacyScenarioCharacters = async (client: SeedDbDelegate) => {
 // シナリオ管理ページ向けの seed 全体を同期する
 export const syncScenarioSeeds = async (client: SeedDbClient) => {
   await client.$transaction(async (tx) => {
+    await Promise.all(scenarioSeedSet.characters.map((characterSeed) => upsertScenarioSeedCharacter(tx, characterSeed)))
+
     const characterMap = await resolveScenarioCharacterIds(tx, scenarioSeedSet.scenarios)
 
     await Promise.all(scenarioSeedSet.scenarios.map((scenario) => upsertScenario(tx, scenario, characterMap)))
@@ -516,5 +541,7 @@ export const syncScenarioSeeds = async (client: SeedDbClient) => {
     await pruneLegacyScenarioCharacters(tx)
   })
 
-  console.log(`Seed completed with ${scenarioSeedSet.scenarios.length} scenarios.`)
+  console.log(
+    `Seed completed with ${scenarioSeedSet.characters.length} characters and ${scenarioSeedSet.scenarios.length} scenarios.`
+  )
 }

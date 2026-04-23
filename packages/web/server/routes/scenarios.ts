@@ -1,13 +1,23 @@
 import { Hono } from 'hono'
+import { z } from 'zod'
+import { ChapterPlanRequestSchema } from '../../schemas/chapter-plan-request.dto'
 import {
   type ScenarioApi,
   type ScenarioApiChapter,
   ScenarioApiListSchema,
+  ScenarioApiSchema,
   type ScenarioApiSpeaker
 } from '../../schemas/scenario-api.dto'
+import {
+  ScenarioAppendChapterApiSchema,
+  ScenarioCreateApiSchema,
+  ScenarioUpdateApiSchema
+} from '../../schemas/scenario-write.dto'
+import { planChapter } from '../chapter-planner'
 import { db } from '../db'
 
 export const scenarios = new Hono()
+const ScenarioIdSchema = z.string().uuid()
 
 const speakerStylePalette = [
   {
@@ -95,6 +105,73 @@ const buildChapterResponse = (
   cues: chapter.cues.map((cue) => buildCueResponse(cue))
 })
 
+const scenarioInclude = {
+  cast: {
+    include: {
+      character: true
+    },
+    orderBy: {
+      createdAt: 'asc'
+    }
+  },
+  chapters: {
+    include: {
+      characters: {
+        include: {
+          character: true
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      },
+      cues: {
+        orderBy: {
+          order: 'asc'
+        }
+      }
+    },
+    orderBy: {
+      number: 'asc'
+    }
+  }
+} as const
+
+// キャラクター数から簡易 alias を割り当てる。
+const createCastAlias = (index: number) => `char${index + 1}`
+
+// 指定 ID のキャラクターを作成順で取得する。
+const findCharactersByIds = async (characterIds: readonly string[]) => {
+  if (characterIds.length === 0) {
+    return []
+  }
+
+  return db.character.findMany({
+    where: {
+      id: {
+        in: characterIds
+      }
+    },
+    orderBy: {
+      createdAt: 'asc'
+    }
+  })
+}
+
+// シナリオ取得結果を API スキーマで検証して返す。
+const toScenarioApi = (row: Awaited<ReturnType<typeof db.scenario.findUnique>>): ScenarioApi => {
+  if (row === null) {
+    throw new Error('Scenario not found')
+  }
+
+  const responseResult = ScenarioApiSchema.safeParse(buildScenarioResponse(row))
+
+  if (!responseResult.success) {
+    throw new Error('Invalid scenario response')
+  }
+
+  return responseResult.data
+}
+
 // DB のシナリオ行を API レスポンスへ変換する
 const buildScenarioResponse = (row: Awaited<ReturnType<typeof db.scenario.findMany>>[number]): ScenarioApi => {
   const speakers: ScenarioApiSpeaker[] = row.cast.map((cast, index) => {
@@ -135,36 +212,7 @@ const buildScenarioResponse = (row: Awaited<ReturnType<typeof db.scenario.findMa
 
 scenarios.get('/', async (c) => {
   const rows = await db.scenario.findMany({
-    include: {
-      cast: {
-        include: {
-          character: true
-        },
-        orderBy: {
-          createdAt: 'asc'
-        }
-      },
-      chapters: {
-        include: {
-          characters: {
-            include: {
-              character: true
-            },
-            orderBy: {
-              createdAt: 'asc'
-            }
-          },
-          cues: {
-            orderBy: {
-              order: 'asc'
-            }
-          }
-        },
-        orderBy: {
-          number: 'asc'
-        }
-      }
-    },
+    include: scenarioInclude,
     orderBy: {
       createdAt: 'desc'
     }
@@ -179,4 +227,260 @@ scenarios.get('/', async (c) => {
   }
 
   return c.json(responseResult.data)
+})
+
+scenarios.post('/', async (c) => {
+  const bodyResult = ScenarioCreateApiSchema.safeParse(await c.req.json())
+
+  if (!bodyResult.success) {
+    return c.json({ error: 'Invalid request body', details: bodyResult.error.flatten() }, 400)
+  }
+
+  if (bodyResult.data.characterIds.length > 0) {
+    const characters = await findCharactersByIds(bodyResult.data.characterIds)
+
+    if (characters.length !== bodyResult.data.characterIds.length) {
+      return c.json({ error: 'Some characters were not found' }, 400)
+    }
+  }
+
+  const row = await db.scenario.create({
+    data: {
+      title: bodyResult.data.title,
+      genres: bodyResult.data.genres,
+      tone: bodyResult.data.tone,
+      ending: 'loop',
+      status: 'draft',
+      cast: {
+        create: bodyResult.data.characterIds.map((characterId, index) => ({
+          characterId,
+          role: index === 0 ? 'protagonist' : 'companion',
+          relationship: index === 0 ? 'self' : 'other',
+          alias: createCastAlias(index)
+        }))
+      }
+    },
+    include: scenarioInclude
+  })
+
+  return c.json(toScenarioApi(row), 201)
+})
+
+scenarios.put('/:id', async (c) => {
+  const bodyResult = ScenarioUpdateApiSchema.safeParse(await c.req.json())
+
+  if (!bodyResult.success) {
+    return c.json({ error: 'Invalid request body', details: bodyResult.error.flatten() }, 400)
+  }
+
+  const scenarioId = c.req.param('id')
+  const scenarioIdResult = ScenarioIdSchema.safeParse(scenarioId)
+
+  if (!scenarioIdResult.success) {
+    return c.json({ error: 'Invalid scenario id' }, 400)
+  }
+
+  const scenario = await db.scenario.findUnique({
+    where: {
+      id: scenarioIdResult.data
+    },
+    include: {
+      cast: {
+        orderBy: {
+          createdAt: 'asc'
+        }
+      },
+      chapters: {
+        orderBy: {
+          number: 'asc'
+        }
+      }
+    }
+  })
+
+  if (scenario === null) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  if (bodyResult.data.characterIds.length > 0) {
+    const characters = await findCharactersByIds(bodyResult.data.characterIds)
+
+    if (characters.length !== bodyResult.data.characterIds.length) {
+      return c.json({ error: 'Some characters were not found' }, 400)
+    }
+  }
+
+  const currentCharacterIds = scenario.cast.map((cast) => cast.characterId)
+  const hasCreatedChapters = scenario.chapters.length > 0
+  const isSameCast =
+    currentCharacterIds.length === bodyResult.data.characterIds.length &&
+    currentCharacterIds.every((characterId, index) => characterId === bodyResult.data.characterIds[index])
+
+  if (hasCreatedChapters && !isSameCast) {
+    return c.json({ error: 'Cannot change cast after chapters have been created' }, 409)
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.scenario.update({
+      where: {
+        id: scenario.id
+      },
+      data: {
+        title: bodyResult.data.title,
+        genres: bodyResult.data.genres,
+        tone: bodyResult.data.tone
+      }
+    })
+
+    if (!hasCreatedChapters) {
+      await tx.scenarioCast.deleteMany({
+        where: {
+          scenarioId: scenario.id
+        }
+      })
+
+      if (bodyResult.data.characterIds.length > 0) {
+        await tx.scenarioCast.createMany({
+          data: bodyResult.data.characterIds.map((characterId, index) => ({
+            scenarioId: scenario.id,
+            characterId,
+            role: index === 0 ? 'protagonist' : 'companion',
+            relationship: index === 0 ? 'self' : 'other',
+            alias: createCastAlias(index)
+          }))
+        })
+      }
+    }
+  })
+
+  const row = await db.scenario.findUnique({
+    where: {
+      id: scenario.id
+    },
+    include: scenarioInclude
+  })
+
+  return c.json(toScenarioApi(row))
+})
+
+scenarios.post('/:id/chapters', async (c) => {
+  const bodyResult = ScenarioAppendChapterApiSchema.safeParse(await c.req.json())
+
+  if (!bodyResult.success) {
+    return c.json({ error: 'Invalid request body', details: bodyResult.error.flatten() }, 400)
+  }
+
+  const scenario = await db.scenario.findUnique({
+    where: {
+      id: c.req.param('id')
+    },
+    include: {
+      cast: {
+        include: {
+          character: true
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      },
+      chapters: {
+        orderBy: {
+          number: 'asc'
+        }
+      }
+    }
+  })
+
+  if (scenario === null) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  if (scenario.chapters[scenario.chapters.length - 1]?.status === 'generating') {
+    return c.json({ error: 'Scenario is already generating a chapter' }, 409)
+  }
+
+  const nextChapterNumber =
+    scenario.chapters.length > 0 ? Math.max(...scenario.chapters.map((chapter) => chapter.number)) + 1 : 1
+  const selectedCharacterIds =
+    bodyResult.data.characterIds.length > 0
+      ? bodyResult.data.characterIds
+      : scenario.cast.map((cast) => cast.characterId)
+  const castCharacterIds = new Set(scenario.cast.map((cast) => cast.characterId))
+
+  if (!selectedCharacterIds.every((characterId) => castCharacterIds.has(characterId))) {
+    return c.json({ error: 'Chapter characters must belong to the scenario cast' }, 400)
+  }
+
+  const selectedCharacterNames = selectedCharacterIds.flatMap((characterId) => {
+    const matchedCast = scenario.cast.find((cast) => cast.characterId === characterId)
+    return matchedCast ? [matchedCast.character.name] : []
+  })
+  const title = bodyResult.data.title.trim() || `第${nextChapterNumber}章`
+  const synopsis =
+    bodyResult.data.synopsis.trim() ||
+    (selectedCharacterNames.length > 0
+      ? `${selectedCharacterNames.join('・')}を中心に第${nextChapterNumber}章のプロットを作成しました。`
+      : `第${nextChapterNumber}章のプロットを作成しました。`)
+
+  await db.$transaction(async (tx) => {
+    await tx.scenarioChapter.create({
+      data: {
+        scenarioId: scenario.id,
+        number: nextChapterNumber,
+        title,
+        status: 'draft',
+        cueCount: 0,
+        durationMinutes: 0,
+        synopsis,
+        characters: {
+          create: selectedCharacterIds.map((characterId) => ({
+            characterId
+          }))
+        }
+      }
+    })
+
+    await tx.scenario.update({
+      where: {
+        id: scenario.id
+      },
+      data: {
+        status: 'draft'
+      }
+    })
+  })
+
+  const row = await db.scenario.findUnique({
+    where: {
+      id: scenario.id
+    },
+    include: scenarioInclude
+  })
+
+  return c.json(toScenarioApi(row), 201)
+})
+
+scenarios.post('/:id/chapter-plan', async (c) => {
+  const idResult = ScenarioIdSchema.safeParse(c.req.param('id'))
+  const bodyResult = ChapterPlanRequestSchema.safeParse(await c.req.json())
+
+  if (!idResult.success) {
+    return c.json({ error: 'Invalid scenario id' }, 400)
+  }
+
+  if (!bodyResult.success) {
+    return c.json({ error: 'Invalid request body', details: bodyResult.error.flatten() }, 400)
+  }
+
+  if (bodyResult.data.dramaId !== idResult.data) {
+    return c.json({ error: 'Scenario id mismatch' }, 400)
+  }
+
+  try {
+    const plan = await planChapter(bodyResult.data)
+    return c.json(plan)
+  } catch (error) {
+    console.error('Failed to generate chapter plan.', error)
+    return c.json({ error: error instanceof Error ? error.message : 'Failed to generate chapter plan' }, 502)
+  }
 })
