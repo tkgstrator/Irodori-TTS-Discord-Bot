@@ -24,6 +24,7 @@ enum ScenarioStatus {
 enum ChapterStatus {
   draft
   generating
+  failed
   completed
 }
 
@@ -52,6 +53,7 @@ model Character {
   sampleQuotes    String[] @default([]) @map("sample_quotes")
   memo            String   @default("")
   speakerId       String?  @map("speaker_id")
+  caption         String?
 
   speaker Speaker? @relation(fields: [speakerId], references: [id], onDelete: SetNull)
 
@@ -101,6 +103,9 @@ model Scenario {
   title   String
   genres  String[]
   tone    String
+  promptNote  String @default("") @map("prompt_note")
+  editorModel String @default("gemini-2.5-flash") @map("editor_model")
+  writerModel String @default("gemini-2.5-flash") @map("writer_model")
   ending  String
   status  ScenarioStatus @default(draft)
   vdsJson Json?          @map("vds_json")
@@ -144,6 +149,7 @@ model ScenarioChapter {
   cueCount        Int           @default(0) @map("cue_count")
   durationMinutes Float         @default(0) @map("duration_minutes")
   synopsis        String        @default("")
+  generationError String?       @map("generation_error")
 
   scenario   Scenario                   @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
   cues       ScenarioCue[]
