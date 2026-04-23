@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
+import { ChapterEpisodeRequestSchema } from '../../schemas/chapter-episode-request.dto'
 import { ChapterPlanRequestSchema } from '../../schemas/chapter-plan-request.dto'
 import {
   type ScenarioApi,
@@ -13,9 +14,9 @@ import {
   ScenarioCreateApiSchema,
   ScenarioUpdateApiSchema
 } from '../../schemas/scenario-write.dto'
-import { estimateEpisodeDuration, validateEpisodeCues, writeChapterEpisode } from '../chapter-episode-writer'
 import { planChapter } from '../chapter-planner'
 import { db } from '../db'
+import { runScenarioEpisodeGeneration } from '../scenario-episode-generation'
 
 export const scenarios = new Hono()
 const ScenarioIdSchema = z.string().uuid()
@@ -52,7 +53,7 @@ const resolveScenarioStatus = ({
   fallback
 }: {
   chapterStatuses: readonly ScenarioApiChapter['status'][]
-  fallback: ScenarioApi['status'] | 'failed'
+  fallback: ScenarioApi['status']
 }): ScenarioApi['status'] => {
   if (chapterStatuses.length === 0) {
     return fallback
@@ -60,6 +61,10 @@ const resolveScenarioStatus = ({
 
   if (chapterStatuses.some((status) => status === 'generating')) {
     return 'generating'
+  }
+
+  if (chapterStatuses.some((status) => status === 'failed')) {
+    return 'failed'
   }
 
   if (chapterStatuses.every((status) => status === 'draft')) {
@@ -98,6 +103,7 @@ const buildChapterResponse = (
   cueCount: chapter.cueCount,
   durationMinutes: chapter.durationMinutes,
   synopsis: chapter.synopsis,
+  generationError: chapter.generationError,
   characters: chapter.characters.map((item) => ({
     name: item.character.name,
     imageUrl: item.character.imageUrl,
@@ -216,12 +222,15 @@ const buildScenarioResponse = (row: Awaited<ReturnType<typeof db.scenario.findMa
     }),
     genres: row.genres,
     tone: row.tone,
+    promptNote: row.promptNote,
+    editorModel: row.editorModel,
+    writerModel: row.writerModel,
     plotCharacters: row.cast.map((cast) => cast.character.name),
     cueCount: chapters.reduce((total, chapter) => total + chapter.cueCount, 0),
     speakerCount: row.cast.length,
     durationMinutes:
       chapters.length === 0 ? null : chapters.reduce((total, chapter) => total + chapter.durationMinutes, 0),
-    isAiGenerated: row.status !== 'draft',
+    isAiGenerated: chapters.some((chapter) => chapter.status === 'completed'),
     updatedAt: row.updatedAt.toISOString().slice(0, 10),
     speakers,
     chapters
@@ -267,6 +276,9 @@ scenarios.post('/', async (c) => {
       title: bodyResult.data.title,
       genres: bodyResult.data.genres,
       tone: bodyResult.data.tone,
+      promptNote: bodyResult.data.promptNote,
+      editorModel: bodyResult.data.editorModel,
+      writerModel: bodyResult.data.writerModel,
       ending: 'loop',
       status: 'draft',
       cast: {
@@ -347,7 +359,10 @@ scenarios.put('/:id', async (c) => {
       data: {
         title: bodyResult.data.title,
         genres: bodyResult.data.genres,
-        tone: bodyResult.data.tone
+        tone: bodyResult.data.tone,
+        promptNote: bodyResult.data.promptNote,
+        editorModel: bodyResult.data.editorModel,
+        writerModel: bodyResult.data.writerModel
       }
     })
 
@@ -424,8 +439,8 @@ scenarios.post('/:id/chapters', async (c) => {
     return c.json({ error: 'Not found' }, 404)
   }
 
-  if (scenario.chapters[scenario.chapters.length - 1]?.status === 'generating') {
-    return c.json({ error: 'Scenario is already generating a chapter' }, 409)
+  if (scenario.chapters.length > 0 && scenario.chapters[scenario.chapters.length - 1]?.status !== 'completed') {
+    return c.json({ error: 'Latest chapter must be completed before creating the next chapter' }, 409)
   }
 
   const nextChapterNumber =
@@ -515,6 +530,12 @@ scenarios.post('/:id/chapter-plan', async (c) => {
 })
 
 scenarios.post('/:id/chapters/:chapterId/create', async (c) => {
+  const bodyResult = ChapterEpisodeRequestSchema.safeParse(await c.req.json())
+
+  if (!bodyResult.success) {
+    return c.json({ error: 'Invalid request body', details: bodyResult.error.flatten() }, 400)
+  }
+
   const scenario = await db.scenario.findUnique({
     where: {
       id: c.req.param('id')
@@ -562,109 +583,52 @@ scenarios.post('/:id/chapters/:chapterId/create', async (c) => {
     return c.json({ error: 'Chapter not found' }, 404)
   }
 
-  if (chapter.status !== 'draft' && chapter.status !== 'completed') {
-    return c.json({ error: 'Only draft or completed chapters can be created' }, 409)
+  if (chapter.status !== 'draft' && chapter.status !== 'completed' && chapter.status !== 'failed') {
+    return c.json({ error: 'Only draft, failed or completed chapters can be created' }, 409)
   }
 
-  if (chapter.status === 'completed' && chapterIndex !== scenario.chapters.length - 1) {
-    return c.json({ error: 'Only the latest completed chapter can be regenerated' }, 409)
+  if (
+    (chapter.status === 'completed' || chapter.status === 'failed') &&
+    chapterIndex !== scenario.chapters.length - 1
+  ) {
+    return c.json({ error: 'Only the latest completed or failed chapter can be regenerated' }, 409)
   }
 
-  const chapterCharacterIds = new Set(chapter.characters.map((item) => item.characterId))
-  const cast = scenario.cast.filter((item) => chapterCharacterIds.has(item.characterId))
-
-  if (cast.length === 0) {
-    return c.json({ error: 'Chapter cast is empty' }, 400)
-  }
-
-  if (cast.some((item) => item.character.speakerId === null)) {
-    return c.json({ error: 'All chapter characters must have a linked speakerId' }, 400)
-  }
-
-  try {
-    const cues = await writeChapterEpisode({
-      model: 'gemini-2.5-flash',
-      scenario: {
-        title: scenario.title,
-        genres: scenario.genres,
-        tone: scenario.tone
+  await db.$transaction(async (tx) => {
+    await tx.scenarioChapter.update({
+      where: {
+        id: chapter.id
       },
-      chapter: {
-        title: chapter.title,
-        synopsis: chapter.synopsis
-      },
-      cast: cast.map((item) => ({
-        alias: item.alias,
-        character: item.character
-      }))
-    })
-    validateEpisodeCues({
-      cues,
-      speakerAliases: cast.map((item) => item.alias)
+      data: {
+        status: 'generating',
+        generationError: null
+      }
     })
 
-    await db.$transaction(async (tx) => {
-      await tx.scenarioCue.deleteMany({
-        where: {
-          chapterId: chapter.id
-        }
-      })
-
-      await tx.scenarioCue.createMany({
-        data: cues.map((cue, index) =>
-          cue.kind === 'speech'
-            ? {
-                chapterId: chapter.id,
-                order: index + 1,
-                kind: 'speech',
-                speakerAlias: cue.speaker,
-                text: cue.text,
-                pauseDuration: null
-              }
-            : {
-                chapterId: chapter.id,
-                order: index + 1,
-                kind: 'pause',
-                speakerAlias: null,
-                text: null,
-                pauseDuration: cue.duration
-              }
-        )
-      })
-
-      await tx.scenarioChapter.update({
-        where: {
-          id: chapter.id
-        },
-        data: {
-          status: 'completed',
-          cueCount: cues.length,
-          durationMinutes: estimateEpisodeDuration(cues)
-        }
-      })
-
-      await tx.scenario.update({
-        where: {
-          id: scenario.id
-        },
-        data: {
-          status: 'completed'
-        }
-      })
-    })
-
-    const row = await db.scenario.findUnique({
+    await tx.scenario.update({
       where: {
         id: scenario.id
       },
-      include: scenarioInclude
+      data: {
+        status: 'generating'
+      }
     })
+  })
 
-    return c.json(toScenarioApi(row))
-  } catch (error) {
-    console.error('Failed to create chapter episode.', error)
-    return c.json({ error: error instanceof Error ? error.message : 'Failed to create chapter episode' }, 502)
-  }
+  void runScenarioEpisodeGeneration({
+    chapterId: chapter.id,
+    request: bodyResult.data,
+    scenarioId: scenario.id
+  })
+
+  const row = await db.scenario.findUnique({
+    where: {
+      id: scenario.id
+    },
+    include: scenarioInclude
+  })
+
+  return c.json(toScenarioApi(row), 202)
 })
 
 scenarios.delete('/:id/chapters/:chapterId/episode', async (c) => {
@@ -699,8 +663,8 @@ scenarios.delete('/:id/chapters/:chapterId/episode', async (c) => {
     return c.json({ error: 'Chapter not found' }, 404)
   }
 
-  if (chapter.status !== 'completed') {
-    return c.json({ error: 'Only completed chapters can delete episodes' }, 409)
+  if (chapter.status === 'generating') {
+    return c.json({ error: 'Generating chapters cannot be deleted' }, 409)
   }
 
   if (chapterIndex !== scenario.chapters.length - 1) {
@@ -708,22 +672,31 @@ scenarios.delete('/:id/chapters/:chapterId/episode', async (c) => {
   }
 
   await db.$transaction(async (tx) => {
-    await tx.scenarioCue.deleteMany({
-      where: {
-        chapterId: chapter.id
-      }
-    })
+    if (chapter.status === 'draft' || (chapter.status === 'failed' && chapter.cues.length === 0)) {
+      await tx.scenarioChapter.delete({
+        where: {
+          id: chapter.id
+        }
+      })
+    } else {
+      await tx.scenarioCue.deleteMany({
+        where: {
+          chapterId: chapter.id
+        }
+      })
 
-    await tx.scenarioChapter.update({
-      where: {
-        id: chapter.id
-      },
-      data: {
-        status: 'draft',
-        cueCount: 0,
-        durationMinutes: 0
-      }
-    })
+      await tx.scenarioChapter.update({
+        where: {
+          id: chapter.id
+        },
+        data: {
+          status: 'draft',
+          cueCount: 0,
+          durationMinutes: 0,
+          generationError: null
+        }
+      })
+    }
 
     await tx.scenario.update({
       where: {

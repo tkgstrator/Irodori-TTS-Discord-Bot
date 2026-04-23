@@ -1,10 +1,11 @@
 import { z } from 'zod'
+import { GeminiModelSchema } from './llm-settings.dto'
 
 // シナリオ API のステータス値を定義する
-export const ScenarioApiStatusSchema = z.enum(['draft', 'generating', 'completed'])
+export const ScenarioApiStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
 
 // 章 API のステータス値を定義する
-export const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'completed'])
+export const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
 
 // 章内の話者表示情報を定義する
 export const ScenarioApiSpeakerSchema = z.object({
@@ -52,6 +53,7 @@ export const ScenarioApiChapterSchema = z.object({
   cueCount: z.number().int().nonnegative(),
   durationMinutes: z.number().nonnegative(),
   synopsis: z.string(),
+  generationError: z.string().nullable(),
   characters: z.array(ScenarioApiChapterCharacterSchema),
   cues: z.array(ScenarioApiCueSchema)
 })
@@ -63,6 +65,9 @@ export const ScenarioApiSchema = z.object({
   status: ScenarioApiStatusSchema,
   genres: z.array(z.string().nonempty()),
   tone: z.string().nonempty(),
+  promptNote: z.string(),
+  editorModel: GeminiModelSchema,
+  writerModel: GeminiModelSchema,
   plotCharacters: z.array(z.string().nonempty()),
   cueCount: z.number().int().nonnegative(),
   speakerCount: z.number().int().nonnegative(),
