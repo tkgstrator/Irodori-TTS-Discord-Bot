@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Check, Monitor, Moon, Palette, Sparkles, Sun } from 'lucide-react'
+import { Check, Palette, Sparkles } from 'lucide-react'
 import { useLlmSettings } from '@/components/llm-settings-provider'
 import { useTheme } from '@/components/theme-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { themeDescriptions, themeIcons, themeLabels } from '@/lib/theme'
+import { themeIcons, themeLabels } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
 import type { Theme } from '@/schemas/theme.dto'
@@ -81,18 +81,18 @@ const SettingsPage = () => {
               <Badge className="shrink-0 self-start">{themeLabels[theme]}</Badge>
             </div>
 
-            <ul className="max-w-4xl grid gap-4">
+            <ul className="max-w-4xl grid gap-3 sm:grid-cols-3">
               {themeOptions.map((option) => {
                 const Icon = themeIcons[option.value]
                 const isActive = theme === option.value
 
                 return (
-                  <li key={option.value} className="border-b border-border/70 pb-4 last:border-b-0 last:pb-0">
+                  <li key={option.value}>
                     <Button
                       type="button"
                       variant={isActive ? 'default' : 'outline'}
                       className={cn(
-                        'min-h-16 w-full justify-start rounded-xl px-4 py-4 text-left',
+                        'h-auto w-full justify-start rounded-xl px-4 py-3 text-left',
                         'hover:border-foreground/15 hover:bg-muted/70',
                         isActive &&
                           'border-primary bg-primary text-primary-foreground shadow-[0_0_0_1px_var(--color-primary)]'
@@ -100,28 +100,28 @@ const SettingsPage = () => {
                       aria-pressed={isActive}
                       onClick={() => setTheme(option.value)}
                     >
-                      <span className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
-                        <span
-                          className={cn(
-                            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg',
-                            isActive ? 'bg-primary-foreground/15' : 'bg-muted text-muted-foreground'
-                          )}
-                        >
-                          <Icon className="size-4" aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0 flex-1 space-y-1">
-                          <span className="flex flex-wrap items-center gap-2 text-sm font-semibold sm:text-base">
-                            {themeLabels[option.value]}
-                            {isActive ? <Check className="size-4" aria-hidden="true" /> : null}
-                          </span>
+                      <span className="flex w-full items-center justify-between gap-3">
+                        <span className={cn('flex min-w-0 items-center gap-2')}>
                           <span
                             className={cn(
-                              'block text-sm leading-6 sm:text-base',
-                              isActive ? 'text-primary-foreground/85' : 'text-muted-foreground'
+                              'flex size-5 shrink-0 items-center justify-center',
+                              isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                             )}
                           >
-                            {option.summary}
+                            <Icon className="size-4" aria-hidden="true" />
                           </span>
+                          <span className="min-w-0 text-sm font-semibold sm:text-base">
+                            {themeLabels[option.value]}
+                          </span>
+                          <span className="sr-only">{option.summary}</span>
+                        </span>
+                        <span
+                          className={cn(
+                            'flex size-5 shrink-0 items-center justify-center',
+                            isActive ? 'text-primary-foreground' : 'text-muted-foreground/50'
+                          )}
+                        >
+                          {isActive ? <Check className="size-4" aria-hidden="true" /> : null}
                         </span>
                       </span>
                     </Button>
@@ -129,6 +129,10 @@ const SettingsPage = () => {
                 )
               })}
             </ul>
+
+            <p className="text-xs leading-5 text-muted-foreground">
+              システム設定は OS の外観に追従します。右上の切り替えはクイックアクションとして利用できます。
+            </p>
 
             <section className="space-y-4 border-t border-border/70 pt-6">
               <div className="space-y-2">
@@ -196,59 +200,6 @@ const SettingsPage = () => {
           </div>
 
           <aside className="space-y-8 border-t border-border/70 pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-8">
-            <section className="space-y-4 border-b border-border/70 pb-6">
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold tracking-tight">現在の設定</h2>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  変更内容がどのように反映されるかを確認できます。
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
-                <div className="flex items-start gap-3 border-b border-border/70 pb-4">
-                  <span className="flex size-10 items-center justify-center rounded-lg bg-background ring-1 ring-border">
-                    {theme === 'light' ? (
-                      <Sun className="size-5" aria-hidden="true" />
-                    ) : theme === 'dark' ? (
-                      <Moon className="size-5" aria-hidden="true" />
-                    ) : (
-                      <Monitor className="size-5" aria-hidden="true" />
-                    )}
-                  </span>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold">{themeLabels[theme]}</p>
-                    <p className="text-sm leading-6 text-muted-foreground">{themeDescriptions[theme]}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-lg bg-background ring-1 ring-border">
-                      <Sparkles className="size-5" aria-hidden="true" />
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold">Editor の既定 LLM</p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {getGeminiModelLabel(llmSettings.editorModel)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-lg bg-background ring-1 ring-border">
-                      <Sparkles className="size-5" aria-hidden="true" />
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold">Writer の既定 LLM</p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {getGeminiModelLabel(llmSettings.writerModel)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             <section className="space-y-4 border-b border-border/70 pb-6">
               <div className="space-y-2">
                 <h2 className="text-lg font-semibold tracking-tight">LLM モデル比較</h2>

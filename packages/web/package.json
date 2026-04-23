@@ -15,8 +15,10 @@
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource/fraunces": "^5.2.9",
     "@hono/node-server": "^2.0.0",
     "@hookform/resolvers": "^5.2.2",
+    "@irodori-tts/shared": "workspace:*",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@tanstack/react-router": "^1.168.23",

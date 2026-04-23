@@ -418,3 +418,5 @@ $RECYCLE.BIN/
 
 # Playwright
 test-results/
+playwright-report/
+packages/web/e2e/results/

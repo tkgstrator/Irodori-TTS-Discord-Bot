@@ -1,25 +1,36 @@
-'use client'
-
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
+import { themeStorageKey } from '@/lib/theme'
+import { type Theme, ThemeSchema } from '@/schemas/theme.dto'
 
-type Theme = 'light' | 'dark' | 'system'
-
-type ThemeContext = {
+type ThemeContextValue = {
   theme: Theme
   setTheme: (theme: Theme) => void
 }
 
-const ThemeContext = createContext<ThemeContext>({ theme: 'system', setTheme: () => {} })
+const ThemeContext = createContext<ThemeContextValue>({ theme: 'system', setTheme: () => {} })
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+// ローカルストレージに保存されたテーマ設定を安全に復元する。
+const getStoredTheme = (): Theme => {
+  if (typeof window === 'undefined') {
+    return 'system'
+  }
+
+  const storedTheme = localStorage.getItem(themeStorageKey)
+  const storedThemeResult = ThemeSchema.safeParse(storedTheme)
+
+  return storedThemeResult.success ? storedThemeResult.data : 'system'
+}
+
+// テーマ設定をアプリ全体へ提供する。
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'system'
-    return (localStorage.getItem('irodori-theme') as Theme) ?? 'system'
+    return getStoredTheme()
   })
 
   useEffect(() => {
     const root = document.documentElement
 
+    // HTML ルートへテーマクラスを反映する。
     const applyTheme = (t: Theme) => {
       if (t === 'system') {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -30,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
 
     applyTheme(theme)
-    localStorage.setItem('irodori-theme', theme)
+    localStorage.setItem(themeStorageKey, theme)
 
     if (theme === 'system') {
       const mq = window.matchMedia('(prefers-color-scheme: dark)')

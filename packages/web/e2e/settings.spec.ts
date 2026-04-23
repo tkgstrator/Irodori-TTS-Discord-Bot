@@ -100,20 +100,9 @@ test.describe('settings route', () => {
     await expect(page.getByText(/ライトモード|ダークモード|システム設定/).first()).toBeVisible()
 
     const lightButton = page.getByRole('button', { name: /^ライトモード/ })
-    const lightButtonGrid = await lightButton.evaluate((button) => {
-      // モバイルでもアイコンと本文を横並びで維持して崩れを防ぐ。
-      const content = button.firstElementChild
-      if (!(content instanceof HTMLElement)) {
-        return ''
-      }
-
-      return window.getComputedStyle(content).gridTemplateColumns
-    })
-
-    expect(
-      lightButtonGrid.split(' ').length,
-      `unexpected theme button grid: ${lightButtonGrid}`
-    ).toBeGreaterThanOrEqual(2)
+    await expect(
+      page.getByText('システム設定は OS の外観に追従します。右上の切り替えはクイックアクションとして利用できます。')
+    ).toBeVisible()
     await lightButton.click()
     await expect(lightButton).toHaveAttribute('aria-pressed', 'true')
 

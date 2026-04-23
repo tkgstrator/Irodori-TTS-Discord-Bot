@@ -4,6 +4,8 @@ import { Providers } from '@/components/providers'
 import { AppShell } from '@/components/shell/app-shell'
 import { Button } from '@/components/ui/button'
 import { CharactersProvider } from '@/lib/characters'
+import { RelationsProvider } from '@/lib/relations'
+import { ScenariosProvider } from '@/lib/scenarios'
 import '@/app/globals.css'
 
 export const Route = createRootRoute({
@@ -16,9 +18,13 @@ function RootLayout() {
   return (
     <Providers>
       <CharactersProvider>
-        <AppShell>
-          <Outlet />
-        </AppShell>
+        <ScenariosProvider>
+          <RelationsProvider>
+            <AppShell>
+              <Outlet />
+            </AppShell>
+          </RelationsProvider>
+        </ScenariosProvider>
       </CharactersProvider>
     </Providers>
   )

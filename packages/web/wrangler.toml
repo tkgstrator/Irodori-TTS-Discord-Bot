@@ -1,0 +1,12 @@
+name = "irodori-tts-webui"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+main = "./worker/index.ts"
+preview_urls = true
+workers_dev = true
+
+[assets]
+not_found_handling = "single-page-application"
+
+[dev]
+ip = "0.0.0.0"
