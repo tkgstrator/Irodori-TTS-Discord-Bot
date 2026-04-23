@@ -1,5 +1,3 @@
-import axios from 'axios'
-import { config } from '../config'
 import type { SpeakerInfo, SynthRequest } from '@irodori-tts/shared/irodori-api'
 import type { SpeakerConfig } from '../schemas/user-settings.dto'
 import { irodoriClient } from './client'
@@ -9,7 +7,7 @@ import { irodoriClient } from './client'
  * @returns 話者一覧
  */
 export const getSpeakers = async (): Promise<SpeakerInfo[]> => {
-  const res = await irodoriClient.getSpeakers()
+  const res = await irodoriClient.get('/speakers')
   return res.speakers
 }
 
@@ -25,13 +23,13 @@ export const synthesize = async (
   speakerId: string,
   params: Omit<SynthRequest, 'speaker_id' | 'text'> = {}
 ): Promise<Buffer> => {
-  // Zodiosではarraybufferが正しく処理されないため、直接axiosを使用
-  const response = await axios.post<ArrayBuffer>(
-    `${config.IRODORI_TTS_BASE_URL}/synth`,
+  const response = await irodoriClient.post(
+    '/synth',
     { speaker_id: speakerId, text, ...params },
     { responseType: 'arraybuffer' }
   )
-  return Buffer.from(response.data)
+
+  return Buffer.from(response)
 }
 
 /**

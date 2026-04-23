@@ -8,8 +8,8 @@
  * 学園モノの BeatSheet を Writer に投げて、返ってきた VDS-JSON を標準出力に表示する。
  */
 
-import { config } from '../src/config'
 import { write } from '../src/agents/writer'
+import { config } from '../src/config'
 import type { BeatSheet } from '../src/schemas/agent-protocol'
 
 const sheet: BeatSheet = {
@@ -18,8 +18,7 @@ const sheet: BeatSheet = {
   beat: {
     beatId: 'beat-001',
     sceneKind: 'realtime',
-    goal:
-      '朝の登校中、エマとヒロが桜並木を歩きながら雑談する。エマが文化祭の準備が大変だと愚痴り、ヒロが冷静にフォローする。最後にエマが気合いを入れ直して教室に向かう',
+    goal: '朝の登校中、エマとヒロが桜並木を歩きながら雑談する。エマが文化祭の準備が大変だと愚痴り、ヒロが冷静にフォローする。最後にエマが気合いを入れ直して教室に向かう',
     tension: 'low',
     presentCharacters: ['emma', 'hiro', 'narrator']
   },
@@ -29,7 +28,7 @@ const sheet: BeatSheet = {
       persona:
         '好奇心旺盛な中学 2 年生の桜羽エマ。クラスの文化祭実行委員。ヒロには頼りつつも、からかわれるとムキになる。',
       speechStyle: 'くだけた若者口調。元気で明るい、早口気味',
-      firstPerson: 'boku', // ボクっ娘
+      firstPerson: 'boku_katakana', // ボクっ娘
       defaultHonorific: 'chan', // 他キャラをちゃん付けで呼ぶ
       knownFactsSnapshot: [
         { content: '自分は中学 2 年生、桜ヶ丘中学校 2-A 所属', beliefStrength: 'certain' },
@@ -40,8 +39,7 @@ const sheet: BeatSheet = {
     },
     hiro: {
       uuid: '5680ac39-43c9-487a-bc3e-018c0d29cc38',
-      persona:
-        '寡黙で論理的な中学 2 年生の二階堂ヒロ。口数は少ないが、エマの突飛な行動を冷静に拾ってフォローする。',
+      persona: '寡黙で論理的な中学 2 年生の二階堂ヒロ。口数は少ないが、エマの突飛な行動を冷静に拾ってフォローする。',
       speechStyle: 'ややフォーマルめの若者口調。落ち着いた言い回し',
       firstPerson: 'watashi', // 「私」を使う知的キャラ
       secondPerson: 'kimi', // 相手を名前で呼ばず常に「君（きみ）」と呼ぶ

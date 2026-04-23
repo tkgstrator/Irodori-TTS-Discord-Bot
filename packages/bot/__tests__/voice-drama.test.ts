@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { VdsJsonSchema } from '../src/schemas/voice-drama.dto'
+import { VdsJsonSchema } from '@irodori-tts/shared/voice-drama'
 
 const CHIERI_UUID = '7c9e6a55-5b6a-4a4d-9c49-1d5a3b2f6cbb'
 const TSUMUGI_UUID = '5680ac39-43c9-487a-bc3e-018c0d29cc38'

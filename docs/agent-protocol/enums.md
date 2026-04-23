@@ -238,9 +238,11 @@ type FirstPerson =
   | 'watakushi'   // わたくし（上品・格式高い）
   | 'atashi'      // あたし（砕けた女性）
   | 'boku'        // 僕（男性少年・やや丁寧）
+  | 'boku_katakana' // ボク（カタカナ表記で固定したい場合）
   | 'ore'         // 俺（砕けた男性）
   | 'uchi'        // うち（関西弁、または若い女性の砕けた一人称）
   | 'washi'       // ワシ（老人、あるいは時代劇）
+  | 'wagahai'     // わがはい（尊大・古風）
   | 'ware'        // 我（古風・威厳）
   | 'yo'          // 余（王族・権威）
   | 'soregashi'   // それがし（武士）
@@ -288,6 +290,9 @@ type SecondPerson =
 ```ts
 type Honorific =
   | 'none'       // 呼び捨て（例: "エマ"）
+  | 'family_name' // 苗字で呼ぶ（例: "桜羽"）
+  | 'given_name' // 名前で呼ぶ（例: "エマ"）
+  | 'full_name'  // フルネームで呼ぶ（例: "桜羽エマ"）
   | 'san'        // 〜さん
   | 'chan'       // 〜ちゃん
   | 'kun'        // 〜君
@@ -302,7 +307,7 @@ type Honorific =
 1. `CharacterSpec.addressOf[<相手の alias>]` に明示的な呼称があれば、それを最優先で使う
    （例: `addressOf: { hiro: '兄さん' }` なら "兄さん" で呼ぶ）
 2. 無ければ `defaultHonorific` を相手の name に付けて呼ぶ
-   （例: `defaultHonorific: 'chan'` → 相手が「桜羽エマ」なら "エマちゃん"）
+   （例: `defaultHonorific: 'family_name'` → "桜羽"、`defaultHonorific: 'given_name'` → "エマ"、`defaultHonorific: 'chan'` → "エマちゃん"、`defaultHonorific: 'full_name'` → "桜羽エマ"）
 3. `defaultHonorific` も未指定なら、文脈や関係性から自然な呼称を選ぶ
 
 ---

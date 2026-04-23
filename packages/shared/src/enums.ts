@@ -127,9 +127,11 @@ export const FirstPersonSchema = z.enum([
   'watakushi', // わたくし
   'atashi', // あたし
   'boku', // 僕
+  'boku_katakana', // ボク
   'ore', // 俺
   'uchi', // うち
   'washi', // ワシ
+  'wagahai', // わがはい
   'ware', // 我
   'yo', // 余
   'soregashi', // それがし
@@ -163,6 +165,9 @@ export const SecondPersonSchema = z.enum([
  */
 export const HonorificSchema = z.enum([
   'none', // 呼び捨て
+  'family_name', // 苗字
+  'given_name', // 名前
+  'full_name', // フルネーム
   'san', // 〜さん
   'chan', // 〜ちゃん
   'kun', // 〜君

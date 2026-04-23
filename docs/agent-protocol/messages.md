@@ -100,7 +100,7 @@ type CharacterSpec = {
 - **v1 では全キャラ human 固定**。`race` フィールドは存在しない（Race enum は v2 で復活予定、[`enums.md` Race](./enums.md#race) 参照）。
 - `firstPerson` は一人称（enum）。`'name'` を選ぶと自分の名前を一人称として使う。`'other'` を選んだ場合は `personaNote` で具体的な一人称を説明する。
 - `secondPerson` は二人称代名詞（enum、任意）。指定するとキャラは相手の名前を呼ばず、その代名詞で固定（例: `'kimi'` → 常に「君」）。
-- `defaultHonorific` は他キャラを呼ぶときの基本敬称（enum、任意）。例: `'chan'` なら Writer は相手を「◯◯ちゃん」と呼ばせる。`'none'` で呼び捨て。`secondPerson` が指定されていればそちらが優先され、これは無視される。
+- `defaultHonorific` は他キャラを呼ぶときの基本敬称・呼称パターン（enum、任意）。例: `'chan'` なら Writer は相手を「◯◯ちゃん」と呼ばせる。`'none'` で呼び捨て、`'family_name'` で苗字呼び、`'given_name'` で名前呼び、`'full_name'` でフルネーム呼び。`secondPerson` が指定されていればそちらが優先され、これは無視される。
 - `addressOf` は個別の呼称上書き（alias → 呼称の自由文マップ）。例: `{ hiro: '兄さん' }`。固有名詞や特殊呼称を含むため v1 の例外として自由文を許容する。**Writer の解決順**: `addressOf[<alias>]` があれば最優先 → なければ `secondPerson`（代名詞） → なければ `defaultHonorific` を name に付ける → それも無ければ文脈推測。
 - **v1 では自由文補足は `personaNote` + `addressOf` の値のみ**。`ageNote` / `raceNote` / `occupationNote` / `speechStyleNote` / `relationshipNote` は存在しない。enum 粒度を越える情報（特殊な年齢、方言の詳細、関係性の補足等）は全て `personaNote` に集約するか、enum の範囲内で割り切る。
 
@@ -141,7 +141,7 @@ const exampleBrief: DramaBrief = {
         ageGroup: 'teen',                   // 中学 2 年生 = 13〜14 歳 → teen (13-17)
         gender: 'female',
         speechStyle: 'casual_youthful',
-        firstPerson: 'boku',                // 一人称「ボク」（ボクっ娘）
+        firstPerson: 'boku_katakana',       // 一人称「ボク」（ボクっ娘）
         personality: ['cheerful', 'curious', 'emotional'],
         relationship: 'self',               // 主人公を一意に特定するキー
         occupation: 'student_middle',
