@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター関係図 — マトリクス (Desktop)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Geist', 'sans-serif'] },
+          colors: {
+            background: 'var(--background)', foreground: 'var(--foreground)',
+            card: 'var(--card)', 'card-foreground': 'var(--card-foreground)',
+            primary: 'var(--primary)', 'primary-foreground': 'var(--primary-foreground)',
+            secondary: 'var(--secondary)', 'secondary-foreground': 'var(--secondary-foreground)',
+            muted: 'var(--muted)', 'muted-foreground': 'var(--muted-foreground)',
+            accent: 'var(--accent)', 'accent-foreground': 'var(--accent-foreground)',
+            destructive: 'var(--destructive)',
+            border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',
+          },
+          borderRadius: { xl: 'calc(var(--radius) * 1.4)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); margin: 0; }
+    .matrix-cell { transition: background 0.12s; }
+    .matrix-cell:hover { background: var(--accent) !important; }
+    .matrix-cell:hover .cell-tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .cell-tooltip { opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s; }
+  </style>
+</head>
+<body class="h-screen flex flex-col">
+  <div id="root" class="h-full flex flex-col"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18?dev",
+      "react-dom/client": "https://esm.sh/react-dom@18/client?dev",
+      "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime?dev"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import React, { useState } from 'react';
+    import { createRoot } from 'react-dom/client';
+
+    const { createElement: h, Fragment } = React;
+
+    const RELATION_COLORS = {
+      family: { light: '#22c55e', dark: '#4ade80', bg: '#22c55e18', label: '家族' },
+      friend: { light: '#3b82f6', dark: '#60a5fa', bg: '#3b82f618', label: '友人' },
+      rival:  { light: '#ef4444', dark: '#f87171', bg: '#ef444418', label: 'ライバル' },
+      love:   { light: '#ec4899', dark: '#f472b6', bg: '#ec489918', label: '恋愛' },
+    };
+
+    const CHARACTERS = [
+      { id: 'renka',    name: '蓮花', initial: '蓮', role: '主人公',     age: 17, gender: '女性' },
+      { id: 'sakurako', name: '桜子', initial: '桜', role: '蓮花の姉',   age: 20, gender: '女性' },
+      { id: 'shota',    name: '翔太', initial: '翔', role: '蓮花の恋人', age: 18, gender: '男性' },
+      { id: 'mizuki',   name: '美月', initial: '美', role: '桜子の親友', age: 19, gender: '女性' },
+      { id: 'hayato',   name: '隼人', initial: '隼', role: 'ライバル',   age: 18, gender: '男性' },
+      { id: 'kazuki',   name: '和樹', initial: '和', role: '幼馴染',     age: 17, gender: '男性' },
+    ];
+
+    const RELATIONS = [
+      { a: 'renka',    b: 'sakurako', type: 'family', label: '姉妹' },
+      { a: 'renka',    b: 'shota',    type: 'love',   label: '恋人' },
+      { a: 'renka',    b: 'kazuki',   type: 'friend', label: '幼馴染' },
+      { a: 'sakurako', b: 'mizuki',   type: 'friend', label: '親友' },
+      { a: 'shota',    b: 'hayato',   type: 'rival',  label: 'ライバル' },
+      { a: 'mizuki',   b: 'hayato',   type: 'love',   label: '片想い' },
+      { a: 'kazuki',   b: 'shota',    type: 'friend', label: '友人' },
+      { a: 'sakurako', b: 'shota',    type: 'family', label: '義理の関係' },
+    ];
+
+    function getRelation(idA, idB) {
+      return RELATIONS.find(r => (r.a === idA && r.b === idB) || (r.a === idB && r.b === idA)) ?? null;
+    }
+
+    function getColor(type, isDark) {
+      const c = RELATION_COLORS[type];
+      return c ? (isDark ? c.dark : c.light) : '#888';
+    }
+
+    function CharAvatar({ char, size = 'md', isDark }) {
+      const sizeClass = size === 'sm' ? 'h-7 w-7 text-xs' : 'h-9 w-9 text-sm';
+      return h('div', {
+        className: `flex shrink-0 items-center justify-center rounded-full font-bold text-white ${sizeClass}`,
+        style: { background: isDark ? '#52525b' : '#71717a' },
+      }, char.initial);
+    }
+
+    function MatrixCell({ rowChar, colChar, isDark }) {
+      if (rowChar.id === colChar.id) {
+        return h('td', {
+          className: 'h-16 w-28 border p-1 text-center align-middle',
+          style: { borderColor: 'var(--border)', background: 'var(--muted)' }
+        },
+          h('span', { className: 'text-lg', style: { color: 'var(--muted-foreground)' } }, '—')
+        );
+      }
+
+      const rel = getRelation(rowChar.id, colChar.id);
+      if (!rel) {
+        return h('td', {
+          className: 'matrix-cell h-16 w-28 border p-1 text-center align-middle cursor-default',
+          style: { borderColor: 'var(--border)' }
+        },
+          h('div', {
+            className: 'mx-auto h-2 w-2 rounded-full',
+            style: { background: 'var(--border)' }
+          })
+        );
+      }
+
+      const color = getColor(rel.type, isDark);
+      return h('td', {
+        className: 'matrix-cell relative h-16 w-28 border p-1 text-center align-middle cursor-pointer',
+        style: { borderColor: 'var(--border)' }
+      },
+        h('div', { className: 'flex flex-col items-center gap-1' },
+          h('div', {
+            className: 'h-3 w-3 rounded-full',
+            style: { background: color }
+          }),
+          h('span', {
+            className: 'rounded-full px-2 py-0.5 text-[11px] font-medium text-white leading-none',
+            style: { background: color }
+          }, rel.label),
+        ),
+        h('div', {
+          className: 'cell-tooltip absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded-lg border px-2.5 py-1.5 shadow-md text-xs whitespace-nowrap',
+          style: { borderColor: 'var(--border)', background: 'var(--card)', color: 'var(--foreground)' }
+        },
+          h('span', { className: 'font-medium' }, `${rowChar.name} ↔ ${colChar.name}`),
+          h('br'),
+          h('span', { style: { color } }, rel.label),
+          h('span', { style: { color: 'var(--muted-foreground)' } }, ` (${RELATION_COLORS[rel.type].label})`),
+        ),
+      );
+    }
+
+    function App() {
+      const [isDark, setIsDark] = useState(false);
+
+      const toggleDark = () => {
+        document.documentElement.classList.toggle('dark');
+        setIsDark(prev => !prev);
+      };
+
+      return h(Fragment, null,
+        // Top bar
+        h('div', {
+          className: 'flex h-14 shrink-0 items-center justify-between border-b px-4',
+          style: { borderColor: 'var(--border)', background: 'var(--card)' }
+        },
+          h('div', { className: 'flex items-center gap-3' },
+            h('a', {
+              href: 'index.html',
+              className: 'inline-flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70',
+              style: { color: 'var(--muted-foreground)' }
+            },
+              h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+                h('polyline', { points: '15 18 9 12 15 6' }),
+              ),
+              '戻る',
+            ),
+            h('div', { className: 'h-4 w-px', style: { background: 'var(--border)' } }),
+            h('h1', { className: 'text-sm font-semibold' }, 'キャラクター関係図'),
+            // View mode tabs
+            h('div', {
+              className: 'flex items-center gap-1 rounded-lg border p-0.5',
+              style: { borderColor: 'var(--border)', background: 'var(--muted)' }
+            },
+              h('a', {
+                href: 'character-relationship-graph-desktop.html',
+                className: 'inline-flex h-6 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
+                style: { color: 'var(--muted-foreground)' }
+              }, 'グラフ'),
+              h('span', {
+                className: 'inline-flex h-6 items-center rounded-md px-2.5 text-xs font-medium',
+                style: { background: 'var(--card)', color: 'var(--foreground)', boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }
+              }, 'マトリクス'),
+              h('span', {
+                className: 'inline-flex h-6 items-center rounded-md px-2.5 text-xs font-medium',
+                style: { color: 'var(--muted-foreground)' }
+              }, 'リスト'),
+            ),
+          ),
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', {
+              className: 'rounded-full px-2 py-0.5 text-xs',
+              style: { background: 'var(--muted)', color: 'var(--muted-foreground)' }
+            }, `${CHARACTERS.length} キャラクター · ${RELATIONS.length} 関係`),
+            h('button', {
+              onClick: toggleDark,
+              className: 'inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm',
+              style: { borderColor: 'var(--input)', background: 'var(--background)', color: 'var(--muted-foreground)' }
+            }, isDark ? '☀️ ライト' : '🌙 ダーク'),
+          ),
+        ),
+
+        // Main content
+        h('div', { className: 'flex-1 overflow-auto p-6' },
+          h('div', {
+            className: 'inline-block min-w-full overflow-hidden rounded-xl border shadow-sm',
+            style: { borderColor: 'var(--border)', background: 'var(--card)' }
+          },
+            h('table', { className: 'border-collapse' },
+              // Header row
+              h('thead', null,
+                h('tr', null,
+                  // Top-left corner cell
+                  h('th', {
+                    className: 'h-16 w-40 border p-2 text-left align-bottom',
+                    style: { borderColor: 'var(--border)', background: 'var(--muted)' }
+                  },
+                    h('div', { className: 'flex items-end gap-1' },
+                      h('span', { className: 'text-[10px] font-medium uppercase tracking-wider', style: { color: 'var(--muted-foreground)' } }, '行 / 列'),
+                    ),
+                  ),
+                  // Column headers
+                  ...CHARACTERS.map(col =>
+                    h('th', {
+                      key: col.id,
+                      className: 'h-16 w-28 border p-2 text-center align-bottom',
+                      style: { borderColor: 'var(--border)', background: 'var(--muted)' }
+                    },
+                      h('div', { className: 'flex flex-col items-center gap-1' },
+                        h(CharAvatar, { char: col, size: 'sm', isDark }),
+                        h('span', { className: 'text-xs font-semibold' }, col.name),
+                      ),
+                    )
+                  ),
+                ),
+              ),
+              // Body rows
+              h('tbody', null,
+                ...CHARACTERS.map(row =>
+                  h('tr', { key: row.id },
+                    // Row header
+                    h('th', {
+                      className: 'h-16 w-40 border p-3 text-left align-middle',
+                      style: { borderColor: 'var(--border)', background: 'var(--muted)' }
+                    },
+                      h('div', { className: 'flex items-center gap-2.5' },
+                        h(CharAvatar, { char: row, size: 'sm', isDark }),
+                        h('div', { className: 'min-w-0' },
+                          h('p', { className: 'text-sm font-semibold' }, row.name),
+                          h('p', { className: 'text-[10px]', style: { color: 'var(--muted-foreground)' } }, row.role),
+                        ),
+                      ),
+                    ),
+                    // Data cells
+                    ...CHARACTERS.map(col =>
+                      h(MatrixCell, { key: col.id, rowChar: row, colChar: col, isDark })
+                    ),
+                  )
+                ),
+              ),
+            ),
+          ),
+
+          // Legend
+          h('div', { className: 'mt-5 flex items-center gap-6' },
+            h('span', { className: 'text-xs font-medium uppercase tracking-wider', style: { color: 'var(--muted-foreground)' } }, '凡例'),
+            h('div', { className: 'flex items-center gap-5' },
+              ...Object.entries(RELATION_COLORS).map(([key, val]) =>
+                h('div', { key, className: 'flex items-center gap-1.5' },
+                  h('div', {
+                    className: 'h-2.5 w-2.5 rounded-full',
+                    style: { background: isDark ? val.dark : val.light }
+                  }),
+                  h('span', { className: 'text-xs', style: { color: 'var(--muted-foreground)' } }, val.label),
+                )
+              ),
+              h('div', { className: 'flex items-center gap-1.5' },
+                h('div', { className: 'h-2.5 w-2.5 rounded-full', style: { background: 'var(--border)' } }),
+                h('span', { className: 'text-xs', style: { color: 'var(--muted-foreground)' } }, '関係なし'),
+              ),
+              h('div', { className: 'flex items-center gap-1.5' },
+                h('div', { className: 'flex h-4 w-5 items-center justify-center rounded text-xs', style: { background: 'var(--muted)', color: 'var(--muted-foreground)' } }, '—'),
+                h('span', { className: 'text-xs', style: { color: 'var(--muted-foreground)' } }, '自身'),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(h(App, null));
+  </script>
+</body>
+</html>

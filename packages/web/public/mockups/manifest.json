@@ -1,0 +1,338 @@
+[
+  {
+    "name": "character-grid-desktop",
+    "title": "キャラクター管理 - グリッド (Desktop)",
+    "description": "カード形式のグリッドレイアウト・デスクトップ版",
+    "file": "character-grid-desktop.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-grid-mobile",
+    "title": "キャラクター管理 - グリッド (Mobile)",
+    "description": "カード形式のグリッドレイアウト・モバイル版",
+    "file": "character-grid-mobile.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-table-desktop",
+    "title": "キャラクター管理 - テーブル (Desktop)",
+    "description": "データテーブル形式の一覧・デスクトップ版",
+    "file": "character-table-desktop.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-table-mobile",
+    "title": "キャラクター管理 - テーブル (Mobile)",
+    "description": "データテーブル形式の一覧・モバイル版",
+    "file": "character-table-mobile.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-kanban-desktop",
+    "title": "キャラクター管理 - カンバン (Desktop)",
+    "description": "ロール別カンバンボード・デスクトップ版",
+    "file": "character-kanban-desktop.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-kanban-mobile",
+    "title": "キャラクター管理 - カンバン (Mobile)",
+    "description": "ロール別カンバンボード・モバイル版",
+    "file": "character-kanban-mobile.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-list-desktop",
+    "title": "キャラクター管理 - リスト (Desktop)",
+    "description": "コンパクトなリスト表示・デスクトップ版",
+    "file": "character-list-desktop.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-list-mobile",
+    "title": "キャラクター管理 - リスト (Mobile)",
+    "description": "コンパクトなリスト表示・モバイル版",
+    "file": "character-list-mobile.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-gallery-desktop",
+    "title": "キャラクター管理 - ギャラリー (Desktop)",
+    "description": "ビジュアル重視のギャラリー表示・デスクトップ版",
+    "file": "character-gallery-desktop.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-gallery-mobile",
+    "title": "キャラクター管理 - ギャラリー (Mobile)",
+    "description": "ビジュアル重視のギャラリー表示・モバイル版",
+    "file": "character-gallery-mobile.html",
+    "createdAt": "2026-04-22T12:00:00Z"
+  },
+  {
+    "name": "character-relationship-graph-desktop",
+    "title": "キャラクター関係図 - グラフ (Desktop)",
+    "description": "React Flow によるインタラクティブ関係図。右サイドバーで詳細表示・デスクトップ版",
+    "file": "character-relationship-graph-desktop.html",
+    "createdAt": "2026-04-22T15:00:00Z"
+  },
+  {
+    "name": "character-relationship-graph-mobile",
+    "title": "キャラクター関係図 - グラフ (Mobile)",
+    "description": "React Flow によるインタラクティブ関係図。ボトムシートで詳細表示・モバイル版",
+    "file": "character-relationship-graph-mobile.html",
+    "createdAt": "2026-04-22T15:00:00Z"
+  },
+  {
+    "name": "character-relationship-matrix-desktop",
+    "title": "キャラクター関係図 - マトリクス (Desktop)",
+    "description": "隣接マトリクス形式の関係図。セルホバーでツールチップ表示・デスクトップ版",
+    "file": "character-relationship-matrix-desktop.html",
+    "createdAt": "2026-04-22T16:00:00Z"
+  },
+  {
+    "name": "character-relationship-matrix-mobile",
+    "title": "キャラクター関係図 - マトリクス (Mobile)",
+    "description": "隣接マトリクス形式の関係図。横スクロール＋スティッキー列・タップで詳細ポップアップ・モバイル版",
+    "file": "character-relationship-matrix-mobile.html",
+    "createdAt": "2026-04-22T16:00:00Z"
+  },
+  {
+    "name": "character-relationship-list-desktop",
+    "title": "キャラクター関係図 - リスト (Desktop)",
+    "description": "キャラクター別にグループ化したフラットリスト表示・デスクトップ版",
+    "file": "character-relationship-list-desktop.html",
+    "createdAt": "2026-04-22T17:00:00Z"
+  },
+  {
+    "name": "character-relationship-list-mobile",
+    "title": "キャラクター関係図 - リスト (Mobile)",
+    "description": "キャラクター別にグループ化した折りたたみリスト表示・モバイル版",
+    "file": "character-relationship-list-mobile.html",
+    "createdAt": "2026-04-22T17:00:00Z"
+  },
+  {
+    "name": "character-create-desktop",
+    "title": "キャラクター新規作成 - フォーム (Desktop)",
+    "description": "標準フォーム。基本情報・性格口調・属性背景の3セクション・デスクトップ版",
+    "file": "character-create-desktop.html",
+    "createdAt": "2026-04-22T18:00:00Z"
+  },
+  {
+    "name": "character-create-mobile",
+    "title": "キャラクター新規作成 - フォーム (Mobile)",
+    "description": "標準フォーム。シングルカラム・固定フッター・モバイル版",
+    "file": "character-create-mobile.html",
+    "createdAt": "2026-04-22T18:00:00Z"
+  },
+  {
+    "name": "character-create-wizard-desktop",
+    "title": "キャラクター新規作成 - ウィザード (Desktop)",
+    "description": "3ステップウィザード形式。プログレスバー付き・デスクトップ版",
+    "file": "character-create-wizard-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-wizard-mobile",
+    "title": "キャラクター新規作成 - ウィザード (Mobile)",
+    "description": "3ステップウィザード。プログレスドット・固定ボトムナビ・モバイル版",
+    "file": "character-create-wizard-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-preview-desktop",
+    "title": "キャラクター新規作成 - プレビュー (Desktop)",
+    "description": "フォーム＋ライブプレビューサイドバー・デスクトップ版",
+    "file": "character-create-preview-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-preview-mobile",
+    "title": "キャラクター新規作成 - プレビュー (Mobile)",
+    "description": "フォーム＋フローティングプレビューパネル・モバイル版",
+    "file": "character-create-preview-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-accordion-desktop",
+    "title": "キャラクター新規作成 - アコーディオン (Desktop)",
+    "description": "折りたたみセクション形式。完了チェック・サマリー付き・デスクトップ版",
+    "file": "character-create-accordion-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-accordion-mobile",
+    "title": "キャラクター新規作成 - アコーディオン (Mobile)",
+    "description": "折りたたみセクション。タッチフレンドリー・モバイル版",
+    "file": "character-create-accordion-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-tabs-desktop",
+    "title": "キャラクター新規作成 - タブ (Desktop)",
+    "description": "タブ切り替え形式。セクション間を水平タブで移動・デスクトップ版",
+    "file": "character-create-tabs-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "character-create-tabs-mobile",
+    "title": "キャラクター新規作成 - タブ (Mobile)",
+    "description": "スクロール可能なピルタブ・モバイル版",
+    "file": "character-create-tabs-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-list-desktop",
+    "title": "シナリオ管理 - カードリスト (Desktop)",
+    "description": "縦型カードリスト・AI生成ステータス・再生成ボタン・デスクトップ版",
+    "file": "scenario-list-desktop.html",
+    "createdAt": "2026-04-22T18:00:00Z"
+  },
+  {
+    "name": "scenario-list-mobile",
+    "title": "シナリオ管理 - カードリスト (Mobile)",
+    "description": "スタックカード・AI生成ステータス・モバイル版",
+    "file": "scenario-list-mobile.html",
+    "createdAt": "2026-04-22T18:00:00Z"
+  },
+  {
+    "name": "scenario-list-grid-desktop",
+    "title": "シナリオ管理 - グリッド (Desktop)",
+    "description": "3カラムカードグリッド・再生成ボタン付き・デスクトップ版",
+    "file": "scenario-list-grid-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-list-grid-mobile",
+    "title": "シナリオ管理 - グリッド (Mobile)",
+    "description": "2カラムコンパクトグリッド・モバイル版",
+    "file": "scenario-list-grid-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-list-table-desktop",
+    "title": "シナリオ管理 - テーブル (Desktop)",
+    "description": "ソート可能データテーブル・一括操作・デスクトップ版",
+    "file": "scenario-list-table-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-list-table-mobile",
+    "title": "シナリオ管理 - テーブル (Mobile)",
+    "description": "横スクロールテーブル・モバイル版",
+    "file": "scenario-list-table-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-list-kanban-desktop",
+    "title": "シナリオ管理 - カンバン (Desktop)",
+    "description": "ステータス別3カラムカンバンボード・デスクトップ版",
+    "file": "scenario-list-kanban-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-list-kanban-mobile",
+    "title": "シナリオ管理 - カンバン (Mobile)",
+    "description": "横スクロールカンバン・スワイプ切替・モバイル版",
+    "file": "scenario-list-kanban-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-desktop",
+    "title": "プロット作成 - エディタ (Desktop)",
+    "description": "ステップ式プロット作成・キャラ選択＆関係性設定・デスクトップ版",
+    "file": "scenario-create-desktop.html",
+    "createdAt": "2026-04-22T18:00:00Z"
+  },
+  {
+    "name": "scenario-create-mobile",
+    "title": "プロット作成 - エディタ (Mobile)",
+    "description": "ステップ式プロット作成・コンパクト入力・モバイル版",
+    "file": "scenario-create-mobile.html",
+    "createdAt": "2026-04-22T18:00:00Z"
+  },
+  {
+    "name": "scenario-create-split-desktop",
+    "title": "プロット作成 - スプリット (Desktop)",
+    "description": "50/50分割。プロット設定＋プレビュー・デスクトップ版",
+    "file": "scenario-create-split-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-split-mobile",
+    "title": "プロット作成 - スプリット (Mobile)",
+    "description": "編集/プレビュー切替モード・モバイル版",
+    "file": "scenario-create-split-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-chat-desktop",
+    "title": "プロット作成 - ステップ (Desktop)",
+    "description": "ステップ進行式プロット作成・デスクトップ版",
+    "file": "scenario-create-chat-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-chat-mobile",
+    "title": "プロット作成 - ステップ (Mobile)",
+    "description": "ステップ進行式プロット作成・モバイル版",
+    "file": "scenario-create-chat-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-timeline-desktop",
+    "title": "プロット作成 - シングルページ (Desktop)",
+    "description": "1ページ完結のプロット作成・デスクトップ版",
+    "file": "scenario-create-timeline-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-timeline-mobile",
+    "title": "プロット作成 - シングルページ (Mobile)",
+    "description": "1ページ完結のプロット作成・モバイル版",
+    "file": "scenario-create-timeline-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-fullscreen-desktop",
+    "title": "プロット作成 - カード (Desktop)",
+    "description": "カード形式のプロット作成・デスクトップ版",
+    "file": "scenario-create-fullscreen-desktop.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-create-fullscreen-mobile",
+    "title": "プロット作成 - カード (Mobile)",
+    "description": "カード形式のプロット作成・モバイル版",
+    "file": "scenario-create-fullscreen-mobile.html",
+    "createdAt": "2026-04-22T19:00:00Z"
+  },
+  {
+    "name": "scenario-detail-desktop",
+    "title": "シナリオ詳細 - 章タイムライン (Desktop)",
+    "description": "章ごとの進捗タイムライン・生成ステータス・再生成対応・デスクトップ版",
+    "file": "scenario-detail-desktop.html",
+    "createdAt": "2026-04-22T20:00:00Z"
+  },
+  {
+    "name": "scenario-detail-mobile",
+    "title": "シナリオ詳細 - 章タイムライン (Mobile)",
+    "description": "章ごとの進捗タイムライン・生成ステータス・再生成対応・モバイル版",
+    "file": "scenario-detail-mobile.html",
+    "createdAt": "2026-04-22T20:00:00Z"
+  },
+  {
+    "name": "chapter-detail-desktop",
+    "title": "章詳細 - セリフタイムライン (Desktop)",
+    "description": "セリフ単位タイムライン・パンくず・章ナビゲーション・デスクトップ版",
+    "file": "chapter-detail-desktop.html",
+    "createdAt": "2026-04-22T20:00:00Z"
+  },
+  {
+    "name": "chapter-detail-mobile",
+    "title": "章詳細 - セリフタイムライン (Mobile)",
+    "description": "セリフ単位タイムライン・章ナビゲーション・モバイル版",
+    "file": "chapter-detail-mobile.html",
+    "createdAt": "2026-04-22T20:00:00Z"
+  }
+]

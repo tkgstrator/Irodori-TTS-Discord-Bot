@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター管理 - リスト (Desktop)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Geist', 'sans-serif'] },
+          colors: {
+            background: 'var(--background)', foreground: 'var(--foreground)',
+            card: 'var(--card)', 'card-foreground': 'var(--card-foreground)',
+            primary: 'var(--primary)', 'primary-foreground': 'var(--primary-foreground)',
+            secondary: 'var(--secondary)', 'secondary-foreground': 'var(--secondary-foreground)',
+            muted: 'var(--muted)', 'muted-foreground': 'var(--muted-foreground)',
+            accent: 'var(--accent)', 'accent-foreground': 'var(--accent-foreground)',
+            destructive: 'var(--destructive)',
+            border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',
+          },
+          borderRadius: { xl: 'calc(var(--radius) * 1.4)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); }
+    .action-buttons { opacity: 0; transition: opacity 0.15s; }
+    tr:hover .action-buttons { opacity: 1; }
+    .list-row:hover { background: var(--muted); }
+    .list-row { transition: background 0.1s; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+
+    <!-- Back link -->
+    <a href="index.html" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      一覧に戻る
+    </a>
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-6">
+      <div class="flex-1">
+        <h1 class="text-xl font-semibold">キャラクター管理</h1>
+        <p class="text-sm text-muted-foreground mt-0.5">登録されたキャラクターの一覧</p>
+      </div>
+      <!-- Search -->
+      <div class="relative">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          type="text"
+          placeholder="名前で検索..."
+          class="h-9 pl-8 pr-3 text-sm rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-52"
+        />
+      </div>
+      <!-- New button -->
+      <button class="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        新規作成
+      </button>
+    </div>
+
+    <!-- List container -->
+    <div class="rounded-xl border border-border bg-card ring-1 ring-foreground/5 overflow-hidden">
+
+      <!-- Column labels -->
+      <div class="grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4 py-2 border-b border-border bg-muted/50">
+        <div></div>
+        <span class="text-xs text-muted-foreground font-medium">名前 / 役割</span>
+        <span class="text-xs text-muted-foreground font-medium w-10 text-center">性別</span>
+        <span class="text-xs text-muted-foreground font-medium w-10 text-center">年齢</span>
+        <span class="text-xs text-muted-foreground font-medium w-20 text-center">音声</span>
+        <div></div>
+        <div></div>
+      </div>
+
+      <!-- Row 1: 朝日 陽太 -->
+      <div class="list-row grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4 border-b border-border" style="height:56px">
+        <div class="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold flex-shrink-0">陽</div>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-semibold text-sm truncate">朝日 陽太</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary flex-shrink-0">主人公</span>
+        </div>
+        <span class="text-sm text-muted-foreground w-10 text-center">男性</span>
+        <span class="text-sm text-muted-foreground w-10 text-center">17歳</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground w-20 justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          設定済み
+        </span>
+        <div class="action-buttons flex items-center gap-1">
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+      <!-- Row 2: 月城 凛 -->
+      <div class="list-row grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4 border-b border-border" style="height:56px">
+        <div class="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold flex-shrink-0">月</div>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-semibold text-sm truncate">月城 凛</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary flex-shrink-0">ヒロイン</span>
+        </div>
+        <span class="text-sm text-muted-foreground w-10 text-center">女性</span>
+        <span class="text-sm text-muted-foreground w-10 text-center">17歳</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground w-20 justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          設定済み
+        </span>
+        <div class="action-buttons flex items-center gap-1">
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+      <!-- Row 3: 蒼井 大和 -->
+      <div class="list-row grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4 border-b border-border" style="height:56px">
+        <div class="size-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-semibold flex-shrink-0">蒼</div>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-semibold text-sm truncate">蒼井 大和</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground flex-shrink-0">サブキャラ</span>
+        </div>
+        <span class="text-sm text-muted-foreground w-10 text-center">男性</span>
+        <span class="text-sm text-muted-foreground w-10 text-center">17歳</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground w-20 justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          設定済み
+        </span>
+        <div class="action-buttons flex items-center gap-1">
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+      <!-- Row 4: 紅林 アカネ -->
+      <div class="list-row grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4 border-b border-border" style="height:56px">
+        <div class="size-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center text-xs font-semibold flex-shrink-0">紅</div>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-semibold text-sm truncate">紅林 アカネ</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive flex-shrink-0">敵キャラ</span>
+        </div>
+        <span class="text-sm text-muted-foreground w-10 text-center">女性</span>
+        <span class="text-sm text-muted-foreground w-10 text-center">16歳</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground w-20 justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          設定済み
+        </span>
+        <div class="action-buttons flex items-center gap-1">
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+      <!-- Row 5: 白石 先生 -->
+      <div class="list-row grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4 border-b border-border" style="height:56px">
+        <div class="size-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-semibold flex-shrink-0">白</div>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-semibold text-sm truncate">白石 先生</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground flex-shrink-0">サブキャラ</span>
+        </div>
+        <span class="text-sm text-muted-foreground w-10 text-center">男性</span>
+        <span class="text-sm text-muted-foreground w-10 text-center">34歳</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground w-20 justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          未設定
+        </span>
+        <div class="action-buttons flex items-center gap-1">
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+      <!-- Row 6: 雪村 ユキ -->
+      <div class="list-row grid grid-cols-[2rem_1fr_auto_auto_auto_auto_5rem] items-center gap-3 px-4" style="height:56px">
+        <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">雪</div>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="font-semibold text-sm truncate">雪村 ユキ</span>
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary flex-shrink-0">ヒロイン</span>
+        </div>
+        <span class="text-sm text-muted-foreground w-10 text-center">女性</span>
+        <span class="text-sm text-muted-foreground w-10 text-center">16歳</span>
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground w-20 justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          未設定
+        </span>
+        <div class="action-buttons flex items-center gap-1">
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+    </div>
+
+    <!-- Count -->
+    <p class="text-xs text-muted-foreground mt-3 text-right">6件のキャラクター</p>
+
+  </div>
+
+  <!-- Dark mode toggle -->
+  <button onclick="document.documentElement.classList.toggle('dark')" class="fixed bottom-4 right-4 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm hover:bg-secondary" title="テーマ切替">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+</body>
+</html>

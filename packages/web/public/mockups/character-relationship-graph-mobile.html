@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター関係図 (Mobile)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['Geist', 'sans-serif'] } } }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    html, body {
+      font-family: 'Geist', sans-serif;
+      background: oklch(0.88 0 0);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    #app {
+      width: 375px;
+      height: 100vh;
+      background: var(--background);
+      color: var(--foreground);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 40px rgba(0,0,0,0.15);
+    }
+    .canvas-bg {
+      background-color: var(--background);
+      background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .node-card {
+      position: absolute;
+      width: 120px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+    }
+    .node-card:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+    .node-card.selected { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .handle {
+      position: absolute;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--card);
+      transform: translateY(-50%);
+    }
+    .handle-l { left: -3px; }
+    .handle-r { right: -3px; }
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      max-height: 55vh;
+    }
+    .bottom-sheet.collapsed { transform: translateY(calc(100% - 48px)); }
+    .bottom-sheet.expanded  { transform: translateY(0); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Compact top bar (h-12) -->
+  <div class="flex h-12 shrink-0 items-center justify-between border-b px-3" style="border-color:var(--border)">
+    <div class="flex items-center gap-2">
+      <a href="index.html" class="inline-flex items-center" style="color:var(--muted-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+      <span class="text-xs font-semibold">関係図</span>
+      <span class="rounded-full px-1.5 py-0.5 text-[10px]" style="background:var(--muted);color:var(--muted-foreground)">6人</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button id="dark-toggle" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border" style="border-color:var(--input);background:var(--background)">
+        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <button class="inline-flex h-7 w-7 items-center justify-center rounded-lg" style="background:var(--primary);color:var(--primary-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="relative flex-1 overflow-hidden canvas-bg" id="canvas">
+
+    <!-- SVG edges -->
+    <svg id="edges-svg" class="absolute inset-0 w-full h-full" style="pointer-events:none;overflow:visible">
+      <defs>
+        <marker id="am-family" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#22c55e"/>
+        </marker>
+        <marker id="am-friend" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#3b82f6"/>
+        </marker>
+        <marker id="am-rival" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#ef4444"/>
+        </marker>
+        <marker id="am-love" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#ec4899"/>
+        </marker>
+        <marker id="am-family-d" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#4ade80"/>
+        </marker>
+        <marker id="am-friend-d" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#60a5fa"/>
+        </marker>
+        <marker id="am-rival-d" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#f87171"/>
+        </marker>
+        <marker id="am-love-d" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+          <path d="M0,0 L0,5 L7,2.5 z" fill="#f472b6"/>
+        </marker>
+      </defs>
+    </svg>
+
+    <!-- Nodes: renka=20,120  sakurako=210,30  shota=210,230  mizuki=20,330  hayato=210,330 (swap to avoid overlap) -->
+    <!-- Layout: renka left-center, sakurako top-right, shota mid-right, mizuki bottom-left, hayato bottom-right, kazuki left-bottom -->
+    <!-- renka=20,140  sakurako=215,30  shota=215,220  mizuki=215,340  hayato=20,340  kazuki=20,255 -->
+
+    <div class="node-card selected" id="node-renka" style="left:20px;top:140px" onclick="selectChar('renka','蓮花','主人公','17歳','女性','ずんだもん','primary')">
+      <div class="handle handle-l"></div>
+      <div class="handle handle-r"></div>
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold" style="color:var(--card-foreground)">蓮花</p>
+        <p class="truncate text-[9px]" style="color:var(--muted-foreground)">主人公</p>
+      </div>
+    </div>
+
+    <div class="node-card" id="node-sakurako" style="left:215px;top:30px" onclick="selectChar('sakurako','桜子','蓮花の姉','20歳','女性','四国めたん','family')">
+      <div class="handle handle-l"></div>
+      <div class="handle handle-r"></div>
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#22c55e">桜</div>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold" style="color:var(--card-foreground)">桜子</p>
+        <p class="truncate text-[9px]" style="color:var(--muted-foreground)">蓮花の姉</p>
+      </div>
+    </div>
+
+    <div class="node-card" id="node-shota" style="left:215px;top:200px" onclick="selectChar('shota','翔太','蓮花の恋人','18歳','男性','剣崎雌雄','love')">
+      <div class="handle handle-l"></div>
+      <div class="handle handle-r"></div>
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#ec4899">翔</div>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold" style="color:var(--card-foreground)">翔太</p>
+        <p class="truncate text-[9px]" style="color:var(--muted-foreground)">蓮花の恋人</p>
+      </div>
+    </div>
+
+    <div class="node-card" id="node-mizuki" style="left:215px;top:340px" onclick="selectChar('mizuki','美月','桜子の親友','19歳','女性','春日部つむぎ','friend')">
+      <div class="handle handle-l"></div>
+      <div class="handle handle-r"></div>
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#3b82f6">美</div>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold" style="color:var(--card-foreground)">美月</p>
+        <p class="truncate text-[9px]" style="color:var(--muted-foreground)">桜子の親友</p>
+      </div>
+    </div>
+
+    <div class="node-card" id="node-hayato" style="left:20px;top:340px" onclick="selectChar('hayato','隼人','ライバル','18歳','男性','雨晴はう','rival')">
+      <div class="handle handle-l"></div>
+      <div class="handle handle-r"></div>
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#ef4444">隼</div>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold" style="color:var(--card-foreground)">隼人</p>
+        <p class="truncate text-[9px]" style="color:var(--muted-foreground)">ライバル</p>
+      </div>
+    </div>
+
+    <div class="node-card" id="node-kazuki" style="left:20px;top:255px" onclick="selectChar('kazuki','和樹','幼馴染','17歳','男性','WhiteCUL','friend')">
+      <div class="handle handle-l"></div>
+      <div class="handle handle-r"></div>
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#3b82f6">和</div>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-semibold" style="color:var(--card-foreground)">和樹</p>
+        <p class="truncate text-[9px]" style="color:var(--muted-foreground)">幼馴染</p>
+      </div>
+    </div>
+
+    <!-- Bottom sheet -->
+    <div class="bottom-sheet collapsed" id="bottom-sheet">
+      <!-- Drag handle + legend header -->
+      <button class="flex w-full flex-col items-center pt-2 pb-1" onclick="toggleSheet()">
+        <div class="h-1 w-8 rounded-full mb-1" style="background:var(--muted-foreground);opacity:0.4"></div>
+      </button>
+      <div class="flex items-center justify-between px-4 pb-2">
+        <span class="text-xs font-semibold" id="sheet-name">蓮花</span>
+        <div class="flex gap-2">
+          <div class="flex items-center gap-1">
+            <div class="h-1.5 w-3 rounded-full" style="background:#22c55e"></div>
+            <span class="text-[9px]" style="color:var(--muted-foreground)">家族</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-1.5 w-3 rounded-full" style="background:#3b82f6"></div>
+            <span class="text-[9px]" style="color:var(--muted-foreground)">友人</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-1.5 w-3 rounded-full" style="background:#ec4899"></div>
+            <span class="text-[9px]" style="color:var(--muted-foreground)">恋愛</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-1.5 w-3 rounded-full" style="background:#ef4444"></div>
+            <span class="text-[9px]" style="color:var(--muted-foreground)">ライバル</span>
+          </div>
+        </div>
+      </div>
+      <div class="overflow-y-auto px-4 pb-6" id="sheet-body" style="max-height:calc(55vh - 56px)">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const NODE_W = 120;
+  const NODE_H = 40;
+
+  const NODES = {
+    renka:    { x: 20,  y: 140 },
+    sakurako: { x: 215, y: 30  },
+    shota:    { x: 215, y: 200 },
+    mizuki:   { x: 215, y: 340 },
+    hayato:   { x: 20,  y: 340 },
+    kazuki:   { x: 20,  y: 255 },
+  };
+
+  const COLORS_LIGHT = { family: '#22c55e', friend: '#3b82f6', rival: '#ef4444', love: '#ec4899' };
+  const COLORS_DARK  = { family: '#4ade80', friend: '#60a5fa', rival: '#f87171', love: '#f472b6' };
+
+  const EDGES = [
+    { s: 'renka',    t: 'sakurako', type: 'family', label: '姉妹',      dashed: false },
+    { s: 'renka',    t: 'shota',    type: 'love',   label: '恋人',      dashed: false },
+    { s: 'renka',    t: 'kazuki',   type: 'friend', label: '幼馴染',    dashed: false },
+    { s: 'sakurako', t: 'shota',    type: 'family', label: '義理',      dashed: false, opacity: 0.45 },
+    { s: 'shota',    t: 'hayato',   type: 'rival',  label: 'ライバル',  dashed: true  },
+    { s: 'shota',    t: 'mizuki',   type: 'love',   label: '片想い',    dashed: false },
+    { s: 'kazuki',   t: 'shota',    type: 'friend', label: '友人',      dashed: false },
+    { s: 'sakurako', t: 'mizuki',   type: 'friend', label: '親友',      dashed: false },
+  ];
+
+  const CHAR_DATA = {
+    renka:    { name: '蓮花', role: '主人公',     age: '17歳', gender: '女性', voice: 'ずんだもん',   color: null,      initial: '蓮' },
+    sakurako: { name: '桜子', role: '蓮花の姉',   age: '20歳', gender: '女性', voice: '四国めたん',   color: '#22c55e', initial: '桜' },
+    shota:    { name: '翔太', role: '蓮花の恋人', age: '18歳', gender: '男性', voice: '剣崎雌雄',     color: '#ec4899', initial: '翔' },
+    mizuki:   { name: '美月', role: '桜子の親友', age: '19歳', gender: '女性', voice: '春日部つむぎ', color: '#3b82f6', initial: '美' },
+    hayato:   { name: '隼人', role: 'ライバル',   age: '18歳', gender: '男性', voice: '雨晴はう',     color: '#ef4444', initial: '隼' },
+    kazuki:   { name: '和樹', role: '幼馴染',     age: '17歳', gender: '男性', voice: 'WhiteCUL',     color: '#3b82f6', initial: '和' },
+  };
+
+  function isDark() {
+    return document.documentElement.classList.contains('dark');
+  }
+
+  function getColor(type) {
+    return isDark() ? COLORS_DARK[type] : COLORS_LIGHT[type];
+  }
+
+  function markerRef(type) {
+    return isDark() ? `url(#am-${type}-d)` : `url(#am-${type})`;
+  }
+
+  function renderEdges() {
+    const svg = document.getElementById('edges-svg');
+    svg.querySelectorAll('.edge-group').forEach(el => el.remove());
+
+    EDGES.forEach(edge => {
+      const sn = NODES[edge.s];
+      const tn = NODES[edge.t];
+      const color = getColor(edge.type);
+      const opacity = edge.opacity ?? 1;
+
+      const sx = sn.x + NODE_W;
+      const sy = sn.y + NODE_H / 2;
+      const tx = tn.x;
+      const ty = tn.y + NODE_H / 2;
+
+      const dx = tx - sx;
+      const cx1 = sx + dx * 0.45;
+      const cx2 = tx - dx * 0.45;
+      const d = `M ${sx} ${sy} C ${cx1} ${sy}, ${cx2} ${ty}, ${tx} ${ty}`;
+      const lx = (sx + tx) / 2;
+      const ly = (sy + ty) / 2;
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.classList.add('edge-group');
+      g.style.opacity = opacity;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('marker-end', markerRef(edge.type));
+      if (edge.dashed) path.setAttribute('stroke-dasharray', '5 3');
+
+      const textW = edge.label.length * 9 + 6;
+      const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      labelBg.setAttribute('x', lx - textW / 2);
+      labelBg.setAttribute('y', ly - 7);
+      labelBg.setAttribute('width', textW);
+      labelBg.setAttribute('height', 14);
+      labelBg.setAttribute('rx', '3');
+      labelBg.setAttribute('fill', 'var(--card)');
+      labelBg.setAttribute('stroke', color);
+      labelBg.setAttribute('stroke-width', '0.5');
+
+      const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      labelText.setAttribute('x', lx);
+      labelText.setAttribute('y', ly);
+      labelText.setAttribute('text-anchor', 'middle');
+      labelText.setAttribute('dominant-baseline', 'middle');
+      labelText.setAttribute('font-family', 'Geist, sans-serif');
+      labelText.setAttribute('font-size', '9');
+      labelText.setAttribute('fill', color);
+      labelText.setAttribute('font-weight', '500');
+      labelText.textContent = edge.label;
+
+      g.appendChild(path);
+      g.appendChild(labelBg);
+      g.appendChild(labelText);
+      svg.appendChild(g);
+    });
+  }
+
+  let sheetExpanded = false;
+
+  function toggleSheet() {
+    sheetExpanded = !sheetExpanded;
+    const sheet = document.getElementById('bottom-sheet');
+    sheet.classList.toggle('expanded', sheetExpanded);
+    sheet.classList.toggle('collapsed', !sheetExpanded);
+  }
+
+  function selectChar(id, name, role, age, gender, voice, colorType) {
+    document.querySelectorAll('.node-card').forEach(n => n.classList.remove('selected'));
+    document.getElementById('node-' + id).classList.add('selected');
+
+    document.getElementById('sheet-name').textContent = name;
+
+    const char = CHAR_DATA[id];
+    const relations = EDGES.filter(e => e.s === id || e.t === id);
+
+    const avatarBg = char.color ? `background:${char.color}` : 'background:var(--primary)';
+    const avatarColor = char.color ? 'color:#fff' : 'color:var(--primary-foreground)';
+
+    const relChips = relations.map(rel => {
+      const otherId = rel.s === id ? rel.t : rel.s;
+      const other = CHAR_DATA[otherId];
+      const c = getColor(rel.type);
+      return `<div class="inline-flex items-center gap-1.5 rounded-full border px-2 py-1" style="border-color:${c}40">
+        <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style="background:${c}">${other.initial}</div>
+        <span class="text-[11px] font-medium">${other.name}</span>
+        <span class="rounded-full px-1.5 py-0.5 text-[9px] font-medium text-white" style="background:${c}">${rel.label}</span>
+      </div>`;
+    }).join('');
+
+    document.getElementById('sheet-body').innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold" style="${avatarBg};${avatarColor}">${char.initial}</div>
+        <div class="min-w-0 flex-1">
+          <h2 class="text-sm font-semibold">${name}</h2>
+          <p class="text-[11px]" style="color:var(--muted-foreground)">${role} · ${gender} · ${age}</p>
+        </div>
+      </div>
+      <div class="mb-3 rounded-lg border px-2.5 py-1.5 text-xs" style="border-color:var(--border);background:var(--secondary)">
+        <span style="color:var(--muted-foreground)">声優: </span><span class="font-medium">${voice}</span>
+      </div>
+      <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wider" style="color:var(--muted-foreground)">関係 (${relations.length})</p>
+      <div class="flex flex-wrap gap-1.5">${relChips}</div>
+    `;
+
+    if (!sheetExpanded) toggleSheet();
+  }
+
+  renderEdges();
+
+  document.getElementById('dark-toggle').addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark');
+    const dark = isDark();
+    document.getElementById('sun-icon').classList.toggle('hidden', !dark);
+    document.getElementById('moon-icon').classList.toggle('hidden', dark);
+    renderEdges();
+  });
+</script>
+</body>
+</html>

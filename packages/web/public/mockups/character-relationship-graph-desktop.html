@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>キャラクター関係図</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['Geist', 'sans-serif'] } } }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+      --ef: #22c55e; --ff: #3b82f6; --rf: #ef4444; --lf: #ec4899;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+      --ef: #4ade80; --ff: #60a5fa; --rf: #f87171; --lf: #f472b6;
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); margin: 0; }
+    .canvas-bg {
+      background-color: var(--background);
+      background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .node-card {
+      position: absolute;
+      width: 170px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      cursor: pointer;
+      transition: box-shadow 0.15s, outline 0.1s;
+      user-select: none;
+    }
+    .node-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .node-card.selected { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .handle { position: absolute; top: 50%; width: 8px; height: 8px; border-radius: 50%; background: var(--border); border: 2px solid var(--card); transform: translateY(-50%); }
+    .handle-l { left: -4px; }
+    .handle-r { right: -4px; }
+    .edge-label-bg { fill: var(--card); stroke: var(--border); stroke-width: 0.5; rx: 4; }
+    .edge-label-text { font-family: 'Geist', sans-serif; font-size: 11px; fill: var(--card-foreground); }
+    .ctrl-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px;
+      background: var(--card); color: var(--foreground);
+      border-bottom: 1px solid var(--border); cursor: pointer;
+      font-size: 14px; border: none;
+    }
+    .ctrl-btn:hover { background: var(--accent); }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col overflow-hidden">
+
+  <!-- Top bar -->
+  <div class="flex h-14 shrink-0 items-center justify-between border-b px-4" style="border-color:var(--border)">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="inline-flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70" style="color:var(--muted-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        戻る
+      </a>
+      <div class="h-4 w-px" style="background:var(--border)"></div>
+      <h1 class="text-sm font-semibold">キャラクター関係図</h1>
+      <span class="rounded-full px-2 py-0.5 text-xs" style="background:var(--muted);color:var(--muted-foreground)">6 キャラクター · 8 関係</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="relative">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-foreground)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="h-8 w-44 rounded-lg border pl-8 pr-3 text-sm outline-none" style="border-color:var(--input);background:var(--background);color:var(--foreground)" placeholder="キャラクター検索..." />
+      </div>
+      <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm" style="border-color:var(--input);background:var(--background);color:var(--muted-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        フィルター
+      </button>
+      <button class="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm" style="border-color:var(--input);background:var(--background);color:var(--muted-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        自動レイアウト
+      </button>
+      <button id="dark-toggle" class="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm" style="border-color:var(--input);background:var(--background);color:var(--muted-foreground)">
+        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span id="dark-label">ダーク</span>
+      </button>
+      <button class="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium" style="background:var(--primary);color:var(--primary-foreground)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        関係を追加
+      </button>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="relative flex flex-1 overflow-hidden">
+
+    <!-- Canvas -->
+    <div class="relative flex-1 overflow-hidden canvas-bg" id="canvas">
+
+      <!-- SVG edges layer -->
+      <svg id="edges-svg" class="absolute inset-0 w-full h-full" style="pointer-events:none;overflow:visible">
+        <defs>
+          <marker id="arr-family" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#22c55e"/>
+          </marker>
+          <marker id="arr-friend" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+          </marker>
+          <marker id="arr-rival" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"/>
+          </marker>
+          <marker id="arr-love" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#ec4899"/>
+          </marker>
+          <marker id="arr-family-d" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#4ade80"/>
+          </marker>
+          <marker id="arr-friend-d" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#60a5fa"/>
+          </marker>
+          <marker id="arr-rival-d" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#f87171"/>
+          </marker>
+          <marker id="arr-love-d" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#f472b6"/>
+          </marker>
+        </defs>
+        <!-- Edges drawn via JS -->
+      </svg>
+
+      <!-- Node cards (positions: renka=80,200  sakurako=360,70  shota=360,340  mizuki=640,200  hayato=640,420  kazuki=80,430) -->
+      <!-- Node: 蓮花 (selected) -->
+      <div class="node-card selected" id="node-renka" style="left:80px;top:200px" onclick="selectChar('renka')">
+        <div class="handle handle-l"></div>
+        <div class="handle handle-r"></div>
+        <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-t-xl" style="background:var(--primary);background-opacity:0.08">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold" style="color:var(--card-foreground)">蓮花</p>
+            <p class="truncate text-[11px]" style="color:var(--muted-foreground)">主人公</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5">
+          <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">4 関係</span>
+        </div>
+      </div>
+
+      <!-- Node: 桜子 -->
+      <div class="node-card" id="node-sakurako" style="left:360px;top:70px" onclick="selectChar('sakurako')">
+        <div class="handle handle-l"></div>
+        <div class="handle handle-r"></div>
+        <div class="flex items-center gap-2.5 px-3 py-2.5">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style="background:#22c55e">桜</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold" style="color:var(--card-foreground)">桜子</p>
+            <p class="truncate text-[11px]" style="color:var(--muted-foreground)">蓮花の姉</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5">
+          <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">3 関係</span>
+        </div>
+      </div>
+
+      <!-- Node: 翔太 -->
+      <div class="node-card" id="node-shota" style="left:360px;top:340px" onclick="selectChar('shota')">
+        <div class="handle handle-l"></div>
+        <div class="handle handle-r"></div>
+        <div class="flex items-center gap-2.5 px-3 py-2.5">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style="background:#ec4899">翔</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold" style="color:var(--card-foreground)">翔太</p>
+            <p class="truncate text-[11px]" style="color:var(--muted-foreground)">蓮花の恋人</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5">
+          <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">4 関係</span>
+        </div>
+      </div>
+
+      <!-- Node: 美月 -->
+      <div class="node-card" id="node-mizuki" style="left:640px;top:200px" onclick="selectChar('mizuki')">
+        <div class="handle handle-l"></div>
+        <div class="handle handle-r"></div>
+        <div class="flex items-center gap-2.5 px-3 py-2.5">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style="background:#3b82f6">美</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold" style="color:var(--card-foreground)">美月</p>
+            <p class="truncate text-[11px]" style="color:var(--muted-foreground)">桜子の親友</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5">
+          <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">2 関係</span>
+        </div>
+      </div>
+
+      <!-- Node: 隼人 -->
+      <div class="node-card" id="node-hayato" style="left:640px;top:420px" onclick="selectChar('hayato')">
+        <div class="handle handle-l"></div>
+        <div class="handle handle-r"></div>
+        <div class="flex items-center gap-2.5 px-3 py-2.5">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style="background:#ef4444">隼</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold" style="color:var(--card-foreground)">隼人</p>
+            <p class="truncate text-[11px]" style="color:var(--muted-foreground)">ライバル</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5">
+          <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">2 関係</span>
+        </div>
+      </div>
+
+      <!-- Node: 和樹 -->
+      <div class="node-card" id="node-kazuki" style="left:80px;top:430px" onclick="selectChar('kazuki')">
+        <div class="handle handle-l"></div>
+        <div class="handle handle-r"></div>
+        <div class="flex items-center gap-2.5 px-3 py-2.5">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style="background:#3b82f6">和</div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold" style="color:var(--card-foreground)">和樹</p>
+            <p class="truncate text-[11px]" style="color:var(--muted-foreground)">幼馴染</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1.5">
+          <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium" style="background:var(--secondary);color:var(--secondary-foreground)">2 関係</span>
+        </div>
+      </div>
+
+      <!-- Zoom controls (bottom-left) -->
+      <div class="absolute bottom-4 left-4 flex flex-col rounded-lg border overflow-hidden shadow-sm" style="border-color:var(--border)">
+        <button class="ctrl-btn" style="background:var(--card);border-bottom:1px solid var(--border)">+</button>
+        <button class="ctrl-btn" style="background:var(--card);border-bottom:1px solid var(--border)">−</button>
+        <button class="ctrl-btn text-xs font-medium" style="background:var(--card);border-bottom:1px solid var(--border);width:28px;font-size:9px;color:var(--muted-foreground)">75%</button>
+        <button class="ctrl-btn" style="background:var(--card)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </button>
+      </div>
+
+      <!-- Minimap (bottom-right) -->
+      <div class="absolute bottom-4 right-4 rounded-lg border overflow-hidden shadow-sm" style="border-color:var(--border);background:var(--card);width:120px;height:80px">
+        <svg viewBox="0 0 120 80" width="120" height="80">
+          <!-- minimap nodes -->
+          <rect x="10" y="22" width="18" height="10" rx="2" fill="#22c55e" opacity="0.6"/>
+          <rect x="42" y="8" width="18" height="10" rx="2" fill="#22c55e" opacity="0.6"/>
+          <rect x="42" y="38" width="18" height="10" rx="2" fill="#ec4899" opacity="0.6"/>
+          <rect x="74" y="22" width="18" height="10" rx="2" fill="#3b82f6" opacity="0.6"/>
+          <rect x="74" y="50" width="18" height="10" rx="2" fill="#ef4444" opacity="0.6"/>
+          <rect x="10" y="50" width="18" height="10" rx="2" fill="#3b82f6" opacity="0.6"/>
+          <!-- minimap viewport indicator -->
+          <rect x="2" y="2" width="116" height="76" rx="3" fill="none" stroke="var(--ring)" stroke-width="1.5" opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Right sidebar -->
+    <div class="w-72 shrink-0 flex flex-col border-l overflow-y-auto" style="border-color:var(--border);background:var(--card)">
+      <div class="flex-1 p-4" id="sidebar-content">
+        <!-- 蓮花 selected by default -->
+        <div class="mb-4 flex items-center gap-3">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold" style="background:var(--primary);color:var(--primary-foreground)">蓮</div>
+          <div class="min-w-0 flex-1">
+            <h2 class="text-base font-semibold">蓮花</h2>
+            <p class="text-xs" style="color:var(--muted-foreground)">主人公 · 女性 · 17歳</p>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h3 class="mb-1.5 text-xs font-medium uppercase tracking-wider" style="color:var(--muted-foreground)">音声設定</h3>
+          <div class="rounded-lg border p-2.5" style="border-color:var(--border);background:var(--secondary)">
+            <div class="flex items-center justify-between text-sm">
+              <span style="color:var(--muted-foreground)">声優モデル</span>
+              <span class="font-medium">ずんだもん</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h3 class="mb-1.5 text-xs font-medium uppercase tracking-wider" style="color:var(--muted-foreground)">関係 (4)</h3>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2.5 rounded-lg border p-2 cursor-pointer hover:opacity-80" style="border-color:var(--border)">
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#22c55e">桜</div>
+              <div class="min-w-0 flex-1"><p class="truncate text-sm font-medium">桜子</p></div>
+              <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-white" style="background:#22c55e">姉妹</span>
+            </div>
+            <div class="flex items-center gap-2.5 rounded-lg border p-2 cursor-pointer hover:opacity-80" style="border-color:var(--border)">
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#ec4899">翔</div>
+              <div class="min-w-0 flex-1"><p class="truncate text-sm font-medium">翔太</p></div>
+              <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-white" style="background:#ec4899">恋人</span>
+            </div>
+            <div class="flex items-center gap-2.5 rounded-lg border p-2 cursor-pointer hover:opacity-80" style="border-color:var(--border)">
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style="background:#3b82f6">和</div>
+              <div class="min-w-0 flex-1"><p class="truncate text-sm font-medium">和樹</p></div>
+              <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-white" style="background:#3b82f6">幼馴染</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button class="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-sm" style="border-color:var(--input);background:var(--background)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            編集
+          </button>
+          <button class="flex-1 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border text-sm" style="border-color:var(--input);background:var(--background);color:var(--destructive)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            削除
+          </button>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="border-t p-4" style="border-color:var(--border)">
+        <h3 class="mb-2 text-xs font-medium uppercase tracking-wider" style="color:var(--muted-foreground)">凡例</h3>
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <div class="h-0.5 w-5 rounded-full" style="background:#22c55e"></div>
+            <span class="text-xs" style="color:var(--muted-foreground)">家族</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="h-0.5 w-5 rounded-full" style="background:#3b82f6"></div>
+            <span class="text-xs" style="color:var(--muted-foreground)">友人</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="h-0.5 w-5 rounded-full border-t border-dashed" style="border-color:#ef4444;background:transparent"></div>
+            <span class="text-xs" style="color:var(--muted-foreground)">ライバル</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="h-0.5 w-5 rounded-full" style="background:#ec4899"></div>
+            <span class="text-xs" style="color:var(--muted-foreground)">恋愛</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const NODE_W = 170;
+    const NODE_H = 68;
+
+    const NODES = {
+      renka:    { x: 80,  y: 200 },
+      sakurako: { x: 360, y: 70  },
+      shota:    { x: 360, y: 340 },
+      mizuki:   { x: 640, y: 200 },
+      hayato:   { x: 640, y: 420 },
+      kazuki:   { x: 80,  y: 430 },
+    };
+
+    const COLORS_LIGHT = { family: '#22c55e', friend: '#3b82f6', rival: '#ef4444', love: '#ec4899' };
+    const COLORS_DARK  = { family: '#4ade80', friend: '#60a5fa', rival: '#f87171', love: '#f472b6' };
+
+    const EDGES = [
+      { s: 'renka',    t: 'sakurako', type: 'family', label: '姉妹',      dashed: false },
+      { s: 'renka',    t: 'shota',    type: 'love',   label: '恋人',      dashed: false },
+      { s: 'renka',    t: 'kazuki',   type: 'friend', label: '幼馴染',    dashed: false },
+      { s: 'sakurako', t: 'mizuki',   type: 'friend', label: '親友',      dashed: false },
+      { s: 'shota',    t: 'hayato',   type: 'rival',  label: 'ライバル',  dashed: true  },
+      { s: 'mizuki',   t: 'hayato',   type: 'love',   label: '片想い',    dashed: false },
+      { s: 'kazuki',   t: 'shota',    type: 'friend', label: '友人',      dashed: false },
+      { s: 'sakurako', t: 'shota',    type: 'family', label: '義理の関係',dashed: false, opacity: 0.45 },
+    ];
+
+    function midpoint(x1, y1, x2, y2) {
+      return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+    }
+
+    function isDark() {
+      return document.documentElement.classList.contains('dark');
+    }
+
+    function getColor(type) {
+      return isDark() ? COLORS_DARK[type] : COLORS_LIGHT[type];
+    }
+
+    function markerRef(type) {
+      return isDark() ? `url(#arr-${type}-d)` : `url(#arr-${type})`;
+    }
+
+    function buildEdgePath(sId, tId) {
+      const sn = NODES[sId];
+      const tn = NODES[tId];
+      const sx = sn.x + NODE_W;
+      const sy = sn.y + NODE_H / 2;
+      const tx = tn.x;
+      const ty = tn.y + NODE_H / 2;
+      const cx1 = sx + (tx - sx) * 0.5;
+      const cy1 = sy;
+      const cx2 = tx - (tx - sx) * 0.5;
+      const cy2 = ty;
+      return { d: `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`, mx: (sx + tx) / 2, my: (sy + ty) / 2 };
+    }
+
+    function renderEdges() {
+      const svg = document.getElementById('edges-svg');
+      const existing = svg.querySelectorAll('.edge-group');
+      existing.forEach(el => el.remove());
+
+      EDGES.forEach((edge, i) => {
+        const sn = NODES[edge.s];
+        const tn = NODES[edge.t];
+        const color = getColor(edge.type);
+        const opacity = edge.opacity ?? 1;
+
+        const sRight = edge.s;
+        const tLeft  = edge.t;
+
+        const sx = sn.x + NODE_W;
+        const sy = sn.y + NODE_H / 2;
+        const tx = tn.x;
+        const ty = tn.y + NODE_H / 2;
+
+        const dx = tx - sx;
+        const cx1 = sx + dx * 0.45;
+        const cx2 = tx - dx * 0.45;
+
+        const d = `M ${sx} ${sy} C ${cx1} ${sy}, ${cx2} ${ty}, ${tx} ${ty}`;
+        const lx = (sx + tx) / 2;
+        const ly = (sy + ty) / 2;
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.classList.add('edge-group');
+        g.style.opacity = opacity;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', color);
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('marker-end', markerRef(edge.type));
+        if (edge.dashed) path.setAttribute('stroke-dasharray', '6 4');
+
+        const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        labelText.setAttribute('x', lx);
+        labelText.setAttribute('y', ly);
+        labelText.setAttribute('text-anchor', 'middle');
+        labelText.setAttribute('dominant-baseline', 'middle');
+        labelText.setAttribute('font-family', 'Geist, sans-serif');
+        labelText.setAttribute('font-size', '10');
+        labelText.setAttribute('fill', color);
+        labelText.setAttribute('font-weight', '500');
+        labelText.textContent = edge.label;
+
+        const textW = edge.label.length * 10 + 8;
+        labelBg.setAttribute('x', lx - textW / 2);
+        labelBg.setAttribute('y', ly - 8);
+        labelBg.setAttribute('width', textW);
+        labelBg.setAttribute('height', 16);
+        labelBg.setAttribute('rx', '4');
+        labelBg.setAttribute('fill', 'var(--card)');
+        labelBg.setAttribute('stroke', color);
+        labelBg.setAttribute('stroke-width', '0.5');
+
+        g.appendChild(path);
+        g.appendChild(labelBg);
+        g.appendChild(labelText);
+        svg.appendChild(g);
+      });
+    }
+
+    function selectChar(id) {
+      document.querySelectorAll('.node-card').forEach(n => n.classList.remove('selected'));
+      document.getElementById('node-' + id).classList.add('selected');
+    }
+
+    renderEdges();
+
+    document.getElementById('dark-toggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      const dark = isDark();
+      document.getElementById('sun-icon').classList.toggle('hidden', !dark);
+      document.getElementById('moon-icon').classList.toggle('hidden', dark);
+      document.getElementById('dark-label').textContent = dark ? 'ライト' : 'ダーク';
+      renderEdges();
+    });
+  </script>
+</body>
+</html>

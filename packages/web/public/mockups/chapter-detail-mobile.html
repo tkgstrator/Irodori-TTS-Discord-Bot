@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>章詳細 (Mobile)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Geist', 'sans-serif'] },
+          colors: {
+            background: 'var(--background)', foreground: 'var(--foreground)',
+            card: 'var(--card)', 'card-foreground': 'var(--card-foreground)',
+            primary: 'var(--primary)', 'primary-foreground': 'var(--primary-foreground)',
+            secondary: 'var(--secondary)', 'secondary-foreground': 'var(--secondary-foreground)',
+            muted: 'var(--muted)', 'muted-foreground': 'var(--muted-foreground)',
+            accent: 'var(--accent)', 'accent-foreground': 'var(--accent-foreground)',
+            destructive: 'var(--destructive)',
+            border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',
+          },
+          borderRadius: { xl: 'calc(var(--radius) * 1.4)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0); --radius: 0.625rem;
+    }
+    .dark {
+      --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+    }
+    body { font-family: 'Geist', sans-serif; background: var(--background); color: var(--foreground); }
+    .avatar-renka { background: #f9a8d4; color: #be185d; }
+    .avatar-shota { background: #93c5fd; color: #1d4ed8; }
+    .avatar-narr { background: #d8b4fe; color: #6d28d9; }
+  </style>
+</head>
+<body class="min-h-screen bg-muted/30 pb-32">
+  <div class="max-w-[390px] mx-auto min-h-screen flex flex-col bg-background">
+
+    <!-- ===== Sticky Top Bar ===== -->
+    <div class="sticky top-0 z-20 bg-card border-b border-border">
+      <!-- Row 1: Back + Breadcrumb -->
+      <div class="flex items-center gap-2 px-3 pt-3 pb-1">
+        <a href="#" class="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <span class="text-xs text-muted-foreground truncate">夏の約束 / 第1章</span>
+      </div>
+
+      <!-- Row 2: Title + Badges -->
+      <div class="flex items-center gap-2 px-3 pb-1.5">
+        <h1 class="text-base font-semibold truncate">第1章: 出会い</h1>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 flex-shrink-0">生成済み</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400 flex-shrink-0">AI</span>
+      </div>
+
+      <!-- Row 3: Speakers + Stats + Regenerate -->
+      <div class="flex items-center gap-2 px-3 pb-2.5">
+        <!-- Speaker avatars stacked -->
+        <div class="flex -space-x-1.5 flex-shrink-0">
+          <div class="avatar-renka size-5 rounded-full flex items-center justify-center text-[9px] font-bold ring-2 ring-card">蓮</div>
+          <div class="avatar-shota size-5 rounded-full flex items-center justify-center text-[9px] font-bold ring-2 ring-card">翔</div>
+          <div class="avatar-narr size-5 rounded-full flex items-center justify-center text-[9px] font-bold ring-2 ring-card">語</div>
+        </div>
+        <span class="text-[11px] text-muted-foreground">8 cues &middot; ~1.5分</span>
+        <div class="flex-1"></div>
+        <button class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          再生成
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== Cue Timeline ===== -->
+    <div class="flex-1 px-3 py-3 space-y-2">
+
+      <!-- Cue 1: Narration -->
+      <div class="rounded-xl bg-secondary/40 p-3 ring-1 ring-border">
+        <div class="flex items-start gap-2">
+          <div class="avatar-narr size-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">語</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs font-medium text-muted-foreground">ナレーション</span>
+            </div>
+            <p class="text-[13px] leading-relaxed">「夏の終わり、蝉の声が遠くなった放課後。図書室の窓から差し込む夕日が、古びた机の上の埃を金色に輝かせていた。」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause 0.8s -->
+      <div class="flex items-center gap-2 py-1">
+        <div class="flex-1 h-px bg-border"></div>
+        <span class="text-[10px] text-muted-foreground font-medium tracking-wide flex-shrink-0">&#x23F8; 0.8秒</span>
+        <div class="flex-1 h-px bg-border"></div>
+      </div>
+
+      <!-- Cue 2: Renka -->
+      <div class="rounded-xl bg-card p-3 ring-1 ring-border">
+        <div class="flex items-start gap-2">
+          <div class="avatar-renka size-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">蓮</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs font-medium">蓮花</span>
+            </div>
+            <p class="text-[13px] leading-relaxed">「また来てたんだ。この本、気に入ってるの？」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cue 3: Shota -->
+      <div class="rounded-xl bg-card p-3 ring-1 ring-border">
+        <div class="flex items-start gap-2">
+          <div class="avatar-shota size-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">翔</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs font-medium">翔太</span>
+            </div>
+            <p class="text-[13px] leading-relaxed">「……べつに。どこにいても同じだから。」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause 1.5s -->
+      <div class="flex items-center gap-2 py-1">
+        <div class="flex-1 h-px bg-border"></div>
+        <span class="text-[10px] text-muted-foreground font-medium tracking-wide flex-shrink-0">&#x23F8; 1.5秒</span>
+        <div class="flex-1 h-px bg-border"></div>
+      </div>
+
+      <!-- Cue 4: Renka -->
+      <div class="rounded-xl bg-card p-3 ring-1 ring-border">
+        <div class="flex items-start gap-2">
+          <div class="avatar-renka size-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">蓮</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs font-medium">蓮花</span>
+            </div>
+            <p class="text-[13px] leading-relaxed">「そんなこと言わないで。……ねえ、名前、教えてくれる？」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause 0.5s -->
+      <div class="flex items-center gap-2 py-1">
+        <div class="flex-1 h-px bg-border"></div>
+        <span class="text-[10px] text-muted-foreground font-medium tracking-wide flex-shrink-0">&#x23F8; 0.5秒</span>
+        <div class="flex-1 h-px bg-border"></div>
+      </div>
+
+      <!-- Cue 5: Shota -->
+      <div class="rounded-xl bg-card p-3 ring-1 ring-border">
+        <div class="flex items-start gap-2">
+          <div class="avatar-shota size-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">翔</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs font-medium">翔太</span>
+            </div>
+            <p class="text-[13px] leading-relaxed">「……翔太。」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cue 6: Renka -->
+      <div class="rounded-xl bg-card p-3 ring-1 ring-border">
+        <div class="flex items-start gap-2">
+          <div class="avatar-renka size-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">蓮</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs font-medium">蓮花</span>
+            </div>
+            <p class="text-[13px] leading-relaxed">「翔太くん。私は蓮花。よろしくね。」</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="flex items-center justify-center gap-2 py-3">
+        <span class="text-[11px] text-muted-foreground">8 / 8 cues</span>
+        <span class="text-muted-foreground/40">&middot;</span>
+        <span class="text-[11px] text-muted-foreground">第1章</span>
+        <span class="text-muted-foreground/40">&middot;</span>
+        <span class="text-[11px] text-muted-foreground">~1.5分</span>
+      </div>
+
+    </div>
+
+    <!-- ===== Fixed Bottom Bar ===== -->
+    <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] bg-card border-t border-border px-3 py-2.5 z-20">
+      <div class="flex items-center gap-2">
+        <!-- Prev chapter -->
+        <button class="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          前の章
+        </button>
+        <!-- Next chapter -->
+        <button class="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-accent transition-colors flex-shrink-0">
+          次の章
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="flex-1"></div>
+        <!-- VDS Export -->
+        <button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          VDS出力
+        </button>
+        <!-- Dark mode toggle -->
+        <button onclick="document.documentElement.classList.toggle('dark')" class="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0" title="テーマ切替">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
