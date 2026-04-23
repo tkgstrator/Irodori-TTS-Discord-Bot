@@ -12,6 +12,7 @@ const createChapters = () =>
       cueCount: 1,
       durationMinutes: 1,
       synopsis: 'chapter 1 synopsis',
+      generationError: null,
       characters: [],
       cues: []
     },
@@ -23,6 +24,7 @@ const createChapters = () =>
       cueCount: 1,
       durationMinutes: 1,
       synopsis: 'chapter 2 synopsis',
+      generationError: null,
       characters: [],
       cues: []
     }
@@ -60,6 +62,47 @@ describe('canGenerateNextChapter', () => {
         cueCount: 0,
         durationMinutes: 0,
         synopsis: 'chapter 3 synopsis',
+        generationError: null,
+        characters: [],
+        cues: []
+      }
+    ] as const
+
+    expect(canGenerateNextChapter(chapters)).toBe(false)
+  })
+
+  test('末尾が下書きなら次章を生成できない', () => {
+    const chapters = [
+      ...createChapters(),
+      {
+        id: 'ch3',
+        number: 3,
+        title: 'chapter 3',
+        status: 'draft',
+        cueCount: 0,
+        durationMinutes: 0,
+        synopsis: 'chapter 3 synopsis',
+        generationError: null,
+        characters: [],
+        cues: []
+      }
+    ] as const
+
+    expect(canGenerateNextChapter(chapters)).toBe(false)
+  })
+
+  test('末尾が失敗なら次章を生成できない', () => {
+    const chapters = [
+      ...createChapters(),
+      {
+        id: 'ch3',
+        number: 3,
+        title: 'chapter 3',
+        status: 'failed',
+        cueCount: 0,
+        durationMinutes: 0,
+        synopsis: 'chapter 3 synopsis',
+        generationError: 'generation failed',
         characters: [],
         cues: []
       }
@@ -70,6 +113,10 @@ describe('canGenerateNextChapter', () => {
 
   test('末尾が完了済みなら次章を生成できる', () => {
     expect(canGenerateNextChapter(createChapters())).toBe(true)
+  })
+
+  test('章が未作成なら第1章を生成できる', () => {
+    expect(canGenerateNextChapter([])).toBe(true)
   })
 })
 
@@ -82,6 +129,9 @@ describe('createNextChapter', () => {
         status: 'completed',
         genres: ['学園'],
         tone: 'ほろ苦い',
+        promptNote: '',
+        editorModel: 'gemini-2.5-flash',
+        writerModel: 'gemini-2.5-flash',
         plotCharacters: ['桜羽エマ', '二階堂ヒロ'],
         cueCount: 0,
         speakerCount: 2,
@@ -109,6 +159,7 @@ describe('createNextChapter', () => {
           sampleQuotes: ['よろしくね'],
           memo: '',
           speakerId: 'speaker-ema',
+          caption: null,
           createdAt: '2026-04-22',
           updatedAt: '2026-04-22',
           speaker: null
@@ -119,6 +170,7 @@ describe('createNextChapter', () => {
     expect(nextChapter.number).toBe(3)
     expect(nextChapter.status).toBe('generating')
     expect(nextChapter.title).toBe('第3章')
+    expect(nextChapter.generationError).toBeNull()
     expect(nextChapter.characters).toEqual([
       {
         name: '桜羽エマ',
@@ -141,6 +193,9 @@ describe('createNextChapter', () => {
         status: 'completed',
         genres: ['学園'],
         tone: 'ほろ苦い',
+        promptNote: '',
+        editorModel: 'gemini-2.5-flash',
+        writerModel: 'gemini-2.5-flash',
         plotCharacters: ['桜羽エマ'],
         cueCount: 0,
         speakerCount: 1,
@@ -171,6 +226,9 @@ describe('resolveScenarioState', () => {
         status: 'completed',
         genres: ['ファンタジー'],
         tone: '幻想的',
+        promptNote: '',
+        editorModel: 'gemini-2.5-flash',
+        writerModel: 'gemini-2.5-flash',
         plotCharacters: ['橘シェリー', '氷上メルル'],
         cueCount: 36,
         speakerCount: 2,
@@ -196,6 +254,9 @@ describe('resolveScenarioState', () => {
         status: 'draft',
         genres: ['学園'],
         tone: 'ほろ苦い',
+        promptNote: '',
+        editorModel: 'gemini-2.5-flash',
+        writerModel: 'gemini-2.5-flash',
         plotCharacters: ['桜羽エマ'],
         cueCount: 0,
         speakerCount: 1,
@@ -212,6 +273,7 @@ describe('resolveScenarioState', () => {
             cueCount: 8,
             durationMinutes: 2,
             synopsis: 'chapter 1 synopsis',
+            generationError: null,
             characters: [],
             cues: []
           },
@@ -223,6 +285,7 @@ describe('resolveScenarioState', () => {
             cueCount: 5,
             durationMinutes: 1.5,
             synopsis: 'chapter 2 synopsis',
+            generationError: null,
             characters: [],
             cues: []
           }
@@ -234,5 +297,44 @@ describe('resolveScenarioState', () => {
     expect(scenario.status).toBe('generating')
     expect(scenario.cueCount).toBe(13)
     expect(scenario.durationMinutes).toBe(3.5)
+  })
+
+  test('失敗章があるシナリオは failed として集計する', () => {
+    const scenario = resolveScenarioState({
+      scenario: {
+        id: 'scenario-1',
+        title: 'autumn',
+        status: 'completed',
+        genres: ['学園'],
+        tone: 'ほろ苦い',
+        promptNote: '',
+        editorModel: 'gemini-2.5-flash',
+        writerModel: 'gemini-2.5-flash',
+        plotCharacters: ['桜羽エマ'],
+        cueCount: 0,
+        speakerCount: 1,
+        durationMinutes: null,
+        isAiGenerated: false,
+        updatedAt: '2026-04-22',
+        speakers: [],
+        chapters: [
+          {
+            id: 'ch1',
+            number: 1,
+            title: 'chapter 1',
+            status: 'failed',
+            cueCount: 8,
+            durationMinutes: 2,
+            synopsis: 'chapter 1 synopsis',
+            generationError: 'generation failed',
+            characters: [],
+            cues: []
+          }
+        ]
+      },
+      characters: []
+    })
+
+    expect(scenario.status).toBe('failed')
   })
 })

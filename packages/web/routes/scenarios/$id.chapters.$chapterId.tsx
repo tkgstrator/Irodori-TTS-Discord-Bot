@@ -69,7 +69,7 @@ const ChapterDetailPageContent = () => {
   const { pathname } = useLocation()
   const { characters } = useSuspenseCharacters()
   const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
-  const { createEpisodeFromChapter, deleteEpisodeFromChapter } = useScenarioMutations({ scenarios })
+  const { createEpisodeFromChapter, deleteEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
   const scenario = getScenario(id)
   const isPlotsRoute = pathname.startsWith('/plots')
   const [isRegenerating, setIsRegenerating] = useState(false)
@@ -100,18 +100,20 @@ const ChapterDetailPageContent = () => {
 
   const speechCueCount = chapter.cues.filter((c) => c.kind === 'speech').length
   const regenHint =
-    chapter.status !== 'completed'
-      ? '生成済みの章のみ再生成できます'
+    chapter.status !== 'completed' && chapter.status !== 'failed'
+      ? '生成済みまたは失敗した章のみ再試行できます'
       : canRegenerateChapter(scenario.chapters, chapter.id)
         ? null
         : '後続の章があるため、この章は再生成できません'
   const canRegen = regenHint === null
   const deleteHint =
-    chapter.status !== 'completed'
-      ? '生成済みの章のみエピソードを削除できます'
+    chapter.status === 'generating'
+      ? '生成中の章は削除できません'
       : canRegenerateChapter(scenario.chapters, chapter.id)
         ? null
-        : '後続の章があるため、この章のエピソードは削除できません'
+        : chapter.status === 'draft'
+          ? '後続の章があるため、この章は削除できません'
+          : '後続の章があるため、この章のエピソードは削除できません'
   const canDeleteEpisode = deleteHint === null
   const chapterVdsExport = createChapterVdsExport({ scenario, chapter })
   const chapterVdsJsonExport = createChapterVdsJsonExport({ scenario, chapter })
@@ -238,12 +240,12 @@ const ChapterDetailPageContent = () => {
                   {isRegenerating ? (
                     <>
                       <Loader2 className="size-3 animate-spin" />
-                      再生成中...
+                      {chapter.status === 'failed' ? '再試行中...' : '再生成中...'}
                     </>
                   ) : (
                     <>
                       <RefreshCw className="size-3" />
-                      この章を再生成
+                      {chapter.status === 'failed' ? 'この章を再試行' : 'この章を再生成'}
                     </>
                   )}
                 </Button>
@@ -253,7 +255,7 @@ const ChapterDetailPageContent = () => {
                     <span>
                       <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs sm:w-auto" disabled>
                         <RefreshCw className="size-3" />
-                        この章を再生成
+                        {chapter.status === 'failed' ? 'この章を再試行' : 'この章を再生成'}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -276,7 +278,7 @@ const ChapterDetailPageContent = () => {
                   ) : (
                     <>
                       <Trash2 className="size-3" />
-                      エピソード削除
+                      {chapter.status === 'draft' ? '章を削除' : 'エピソード削除'}
                     </>
                   )}
                 </Button>
@@ -286,7 +288,7 @@ const ChapterDetailPageContent = () => {
                     <span>
                       <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs sm:w-auto" disabled>
                         <Trash2 className="size-3" />
-                        エピソード削除
+                        {chapter.status === 'draft' ? '章を削除' : 'エピソード削除'}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -317,12 +319,20 @@ const ChapterDetailPageContent = () => {
               )}
             </div>
           </div>
-          {regenError && <p className="mt-3 text-sm text-destructive">{regenError}</p>}
+          {(chapter.generationError || regenError) && (
+            <p className="mt-3 text-sm text-destructive">{regenError ?? chapter.generationError}</p>
+          )}
           <div className="mt-5 border-b border-border" />
         </div>
       </div>
 
       <div className="mx-auto max-w-3xl py-8">
+        {chapter.status === 'generating' && chapter.cues.length > 0 && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
+            既存のセリフを保持したまま再生成しています。完了すると自動で更新されます。
+          </div>
+        )}
+
         {chapter.cues.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
             {chapter.status === 'generating' ? (
@@ -330,6 +340,8 @@ const ChapterDetailPageContent = () => {
                 <Loader2 className="size-8 animate-spin text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">セリフを生成中です...</p>
               </>
+            ) : chapter.status === 'failed' ? (
+              <p className="text-sm text-destructive">{chapter.generationError ?? 'この章の生成に失敗しました'}</p>
             ) : (
               <p className="text-sm text-muted-foreground">この章にはまだセリフがありません</p>
             )}
@@ -341,10 +353,8 @@ const ChapterDetailPageContent = () => {
               if (cue.kind === 'pause') {
                 return <PauseCueRow key={key} duration={cue.duration} />
               }
-              const speaker = scenario.speakers.find((s) => s.speakerId === cue.speaker)
-              const character = chapter.characters.find(
-                (item) => item.speakerId !== null && item.speakerId === speaker?.speakerId
-              )
+              const speaker = scenario.speakers.find((s) => s.alias === cue.speaker)
+              const character = chapter.characters.find((item) => item.name === speaker?.name)
               return <SpeechCueCard key={key} cue={cue} speaker={speaker} character={character} />
             })}
           </div>
