@@ -16,14 +16,14 @@ export const DramaBriefSchema = z
 
     genre: z
       .object({
-        categories: GenreSchema.array().min(1).max(3),
+        categories: GenreSchema.array().nonempty().max(3),
         tone: ToneSchema
       })
       .strict(),
 
     cast: z
       .object({
-        characters: CharacterSpecSchema.array().min(1),
+        characters: CharacterSpecSchema.array().nonempty(),
         narrator: z.object({ uuid: z.uuid() }).strict().optional()
       })
       .strict(),

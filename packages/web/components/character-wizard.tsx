@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Plus, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useCallback, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -31,9 +31,10 @@ const STEPS = [
 
 const STEP_FIELDS: readonly (readonly string[])[] = [
   ['name', 'ageGroup', 'gender', 'occupation'],
-  ['personalityTags', 'speechStyle', 'firstPerson', 'secondPerson', 'honorific'],
+  ['personalityTags', 'speechStyle', 'firstPerson', 'secondPerson', 'honorific', 'sampleQuotes'],
   ['attributeTags', 'backgroundTags', 'memo']
 ]
+const maxSampleQuoteCount = 5
 
 const PERSONALITY_TAGS = [
   '明るい',
@@ -83,6 +84,7 @@ export const DEFAULT_VALUES: CharacterFormValues = {
   honorific: 'san',
   attributeTags: [],
   backgroundTags: [],
+  sampleQuotes: [],
   memo: '',
   speakerId: null
 }
@@ -400,6 +402,64 @@ function Step2({
             />
           )}
         />
+      </div>
+      <div className="space-y-2">
+        <Label>
+          セリフサンプル <span className="text-xs font-normal text-muted-foreground">0〜5件任意 / 1件40文字以内</span>
+        </Label>
+        <Controller
+          name="sampleQuotes"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-3">
+              {field.value.length > 0 ? (
+                field.value.map((sampleQuote, index) => {
+                  const duplicateCount = field.value.slice(0, index).filter((item) => item === sampleQuote).length
+                  const sampleQuoteKey = `${sampleQuote}-${duplicateCount}`
+
+                  return (
+                    <div key={sampleQuoteKey} className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <Input
+                          type="text"
+                          maxLength={40}
+                          value={sampleQuote}
+                          placeholder={`セリフサンプル ${index + 1}`}
+                          onChange={(event) =>
+                            field.onChange(
+                              field.value.map((item, itemIndex) => (itemIndex === index ? event.target.value : item))
+                            )
+                          }
+                        />
+                        <p className="text-right text-[11px] text-muted-foreground">{sampleQuote.length} / 40</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label="セリフサンプルを削除"
+                        onClick={() => field.onChange(field.value.filter((_, itemIndex) => itemIndex !== index))}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  )
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  キャラクターらしい短い口癖や言い回しを入れると、生成時の口調が安定します。
+                </p>
+              )}
+              {field.value.length < maxSampleQuoteCount && (
+                <Button type="button" variant="outline" size="sm" onClick={() => field.onChange([...field.value, ''])}>
+                  <Plus data-icon="inline-start" />
+                  セリフサンプルを追加
+                </Button>
+              )}
+            </div>
+          )}
+        />
+        {errors.sampleQuotes && <p className="text-xs text-destructive">{errors.sampleQuotes.message}</p>}
       </div>
     </div>
   )

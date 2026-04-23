@@ -30,6 +30,7 @@ describe('Speaker DTO', () => {
         honorific: 'san',
         attributeTags: [],
         backgroundTags: [],
+        sampleQuotes: [],
         memo: ''
       }
     })
@@ -54,6 +55,7 @@ describe('Speaker DTO', () => {
         honorific: 'san',
         attributeTags: [],
         backgroundTags: [],
+        sampleQuotes: [],
         memo: ''
       }
     })

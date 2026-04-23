@@ -15,6 +15,7 @@ export const StoryCharacterContextSchema = CharacterSchema.pick({
   honorific: true,
   attributeTags: true,
   backgroundTags: true,
+  sampleQuotes: true,
   memo: true,
   speakerId: true
 })

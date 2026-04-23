@@ -13,6 +13,7 @@ const currentValues = {
   honorific: 'sensei',
   attributeTags: ['眼鏡'],
   backgroundTags: ['天才'],
+  sampleQuotes: ['任せてください'],
   memo: '既存メモ',
   speakerId: '46a72407-2c4d-57d1-8c07-7d0cac36d01d'
 }
@@ -30,6 +31,7 @@ describe('speaker import helpers', () => {
       honorific: 'san',
       attributeTags: [],
       backgroundTags: [],
+      sampleQuotes: [],
       memo: ''
     })
 
@@ -37,6 +39,7 @@ describe('speaker import helpers', () => {
     expect(result.personalityTags).toEqual(['穏やか'])
     expect(result.attributeTags).toEqual(['眼鏡'])
     expect(result.backgroundTags).toEqual(['天才'])
+    expect(result.sampleQuotes).toEqual(['任せてください'])
     expect(result.memo).toBe('既存メモ')
     expect(result.secondPerson).toBe('anata')
     expect(result.speakerId).toBe(currentValues.speakerId)

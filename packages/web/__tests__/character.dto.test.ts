@@ -15,6 +15,7 @@ const validCharacterInput = {
   honorific: 'san',
   attributeTags: ['眼鏡'],
   backgroundTags: ['天才'],
+  sampleQuotes: [],
   memo: 'テスト用メモ',
   speakerId: null
 }
@@ -105,5 +106,23 @@ describe('CharacterSchema', () => {
     })
 
     expect(result.success).toBe(true)
+  })
+
+  test('セリフサンプルを最大5件まで受け入れる', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      sampleQuotes: ['こんにちは', 'よろしくね', '大丈夫？', 'それで？', '行こう']
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  test('セリフサンプルが6件あると失敗する', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      sampleQuotes: ['1', '2', '3', '4', '5', '6']
+    })
+
+    expect(result.success).toBe(false)
   })
 })

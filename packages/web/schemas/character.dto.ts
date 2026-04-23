@@ -15,9 +15,38 @@ export const SpeakerLinkSchema = z.object({
   name: z.string().nonempty()
 })
 
+// セリフサンプル 1 件の形式を定義する
+export const CharacterSampleQuoteSchema = z.string().trim().min(1).max(40, 'セリフサンプルは40文字以内です')
+
+// セリフサンプル入力を正規化してから検証する
+const normalizeCharacterSampleQuotes = (value: unknown) => {
+  if (value === undefined) {
+    return []
+  }
+
+  if (!Array.isArray(value)) {
+    return value
+  }
+
+  return value.flatMap((item) => {
+    if (typeof item !== 'string') {
+      return []
+    }
+
+    const normalizedValue = item.trim()
+    return normalizedValue.length > 0 ? [normalizedValue] : []
+  })
+}
+
+// セリフサンプル配列の形式を定義する
+export const CharacterSampleQuotesSchema = z.preprocess(
+  normalizeCharacterSampleQuotes,
+  z.array(CharacterSampleQuoteSchema).max(5, 'セリフサンプルは5件までです')
+)
+
 // キャラクター入力の共通項目を定義する
 const CharacterBaseSchema = z.object({
-  name: z.string().min(1, '名前は必須です'),
+  name: z.string().nonempty('名前は必須です'),
   imageUrl: z.string().nullable(),
   ageGroup: AgeGroupSchema,
   gender: GenderSchema,
@@ -29,6 +58,7 @@ const CharacterBaseSchema = z.object({
   honorific: HonorificSchema,
   attributeTags: z.array(z.string()),
   backgroundTags: z.array(z.string()),
+  sampleQuotes: CharacterSampleQuotesSchema,
   memo: z.string(),
   speakerId: z.string().uuid().nullable()
 })
