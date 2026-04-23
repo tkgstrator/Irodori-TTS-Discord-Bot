@@ -25,7 +25,7 @@ export const DramaBibleSchema = z
 
     genre: z
       .object({
-        categories: GenreSchema.array().min(1).max(3),
+        categories: GenreSchema.array().nonempty().max(3),
         tone: ToneSchema
       })
       .strict(),

@@ -45,7 +45,7 @@ export const BeatSchema = z
     sceneKind: SceneKindSchema,
     goal: z.string().nonempty(),
     tension: TensionSchema,
-    presentCharacters: z.string().nonempty().array().min(1),
+    presentCharacters: z.string().nonempty().array().nonempty(),
 
     // realtime なら省略可（DramaState の時空を使う）、flashback なら必須
     sceneContext: SceneContextSchema.optional(),

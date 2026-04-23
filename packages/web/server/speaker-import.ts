@@ -29,7 +29,7 @@ const SpeakerSourceSchema = z.object({
 })
 
 const SpeakerSourceListResponseSchema = z.object({
-  speakers: z.array(SpeakerSourceSchema).min(1)
+  speakers: z.array(SpeakerSourceSchema).nonempty()
 })
 
 // seed 用のキャラクター画像を話者名に対応付ける
@@ -95,7 +95,8 @@ const speakerCharacterDefaults = {
   secondPerson: '',
   honorific: 'san',
   attributeTags: [],
-  backgroundTags: []
+  backgroundTags: [],
+  sampleQuotes: []
 } as const
 
 // 環境変数から irodori-tts のベース URL を取得する

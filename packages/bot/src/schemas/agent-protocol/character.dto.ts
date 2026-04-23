@@ -42,7 +42,7 @@ export const CharacterSpecSchema = z
     firstPerson: FirstPersonSchema,
 
     // 必須 enum 配列（1〜4 個）
-    personality: PersonalitySchema.array().min(1).max(4),
+    personality: PersonalitySchema.array().nonempty().max(4),
 
     // 主人公との関係
     relationship: RelationshipSchema,

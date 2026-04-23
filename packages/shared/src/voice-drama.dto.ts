@@ -96,7 +96,7 @@ export const VdsJsonSchema = z
     title: z.string().optional(),
     defaults: VdsSynthOptionsSchema.optional(),
     speakers: z.record(z.string().regex(ALIAS_PATTERN), SpeakerRefSchema),
-    cues: z.array(CueSchema).min(1)
+    cues: z.array(CueSchema).nonempty()
   })
   .strict()
   .superRefine((data, ctx) => {
@@ -141,7 +141,7 @@ export const LooseVdsJsonSchema = z
     title: z.string().optional(),
     defaults: VdsSynthOptionsSchema.optional(),
     speakers: z.record(z.string().regex(ALIAS_PATTERN), SpeakerRefSchema),
-    cues: z.array(LooseCueSchema).min(1)
+    cues: z.array(LooseCueSchema).nonempty()
   })
   .strict()
   .superRefine((data, ctx) => {

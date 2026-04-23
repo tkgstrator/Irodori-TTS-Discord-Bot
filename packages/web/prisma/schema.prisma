@@ -49,6 +49,7 @@ model Character {
   honorific       String   @default("san")
   attributeTags   String[] @map("attribute_tags")
   backgroundTags  String[] @map("background_tags")
+  sampleQuotes    String[] @default([]) @map("sample_quotes")
   memo            String   @default("")
   speakerId       String?  @map("speaker_id")
 

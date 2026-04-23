@@ -39,6 +39,7 @@ pause pause
     String honorific 
     String attribute_tags 
     String background_tags 
+    String sample_quotes 
     String memo 
     String speaker_id "nullable"
     }

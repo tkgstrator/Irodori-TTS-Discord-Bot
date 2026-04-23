@@ -23,6 +23,7 @@ const createCharacterInput = (): CharacterInput => {
     honorific: 'san',
     attributeTags: ['眼鏡'],
     backgroundTags: ['天才'],
+    sampleQuotes: ['よろしくな'],
     memo: `db-test:${token}`,
     speakerId: null
   }
@@ -104,6 +105,7 @@ describe('Character DB operations', () => {
     expect(row?.id).toBe(created.id)
     expect(row?.name).toBe(input.name)
     expect(row?.memo).toBe(input.memo)
+    expect(row?.sampleQuotes).toEqual(input.sampleQuotes)
   })
 
   test('delete したキャラクターは DB から取得できない', async () => {

@@ -29,6 +29,7 @@ const createCharacterSeedRows = async () => {
         honorific: row.honorific,
         attributeTags: row.attributeTags,
         backgroundTags: row.backgroundTags,
+        sampleQuotes: row.sampleQuotes,
         memo: row.memo,
         speakerId: row.speakerId
       }

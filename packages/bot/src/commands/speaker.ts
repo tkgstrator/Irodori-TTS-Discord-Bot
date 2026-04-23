@@ -1,3 +1,4 @@
+import type { SpeakerInfo } from '@irodori-tts/shared/irodori-api'
 import {
   type AutocompleteInteraction,
   type ChatInputCommandInteraction,
@@ -5,7 +6,6 @@ import {
   MessageFlags,
   SlashCommandBuilder
 } from 'discord.js'
-import type { SpeakerInfo } from '@irodori-tts/shared/irodori-api'
 import type { SpeakerConfigUpdate } from '../schemas/user-settings.dto'
 import {
   deleteUserSettings,
