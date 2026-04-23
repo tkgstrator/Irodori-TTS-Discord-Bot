@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { useLlmSettings } from '@/components/llm-settings-provider'
 import { PageSuspense } from '@/components/page-suspense'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -88,6 +87,15 @@ const chapterStatusBadge = ({ status }: { status: ChapterStatus }) => {
     )
   }
 
+  if (status === 'failed') {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
+        <RefreshCw className="size-2.5" />
+        失敗
+      </span>
+    )
+  }
+
   return (
     <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
       未生成
@@ -98,11 +106,13 @@ const chapterStatusBadge = ({ status }: { status: ChapterStatus }) => {
 const timelineNodeCls = (status: ChapterStatus): string => {
   if (status === 'completed') return 'bg-primary border-primary'
   if (status === 'generating') return 'bg-amber-400 border-amber-400 animate-pulse'
+  if (status === 'failed') return 'bg-destructive border-destructive'
   return 'border-border bg-background'
 }
 
 const chapterRowCls = (status: ChapterStatus): string => {
   if (status === 'generating') return 'border-amber-200/80'
+  if (status === 'failed') return 'border-destructive/40'
   if (status === 'draft') return 'border-border/70 opacity-80'
   return 'border-border'
 }
@@ -172,8 +182,18 @@ const ChapterCard = ({
 }) => {
   const isDraft = chapter.status === 'draft'
   const isCompleted = chapter.status === 'completed'
-  const regenHint = getChapterRegenHint({ chapter, scenario })
+  const isFailed = chapter.status === 'failed'
+  const regenHint = getChapterRegenHint({
+    chapter: isFailed
+      ? {
+          ...chapter,
+          status: 'completed'
+        }
+      : chapter,
+    scenario
+  })
   const isRegenDisabled = regenHint !== null
+  const hasReadableEpisode = isCompleted || (isFailed && chapter.cues.length > 0)
   const chapterDetailLink = isPlotsRoute ? '/plots/$id/chapters/$chapterId' : '/scenarios/$id/chapters/$chapterId'
 
   return (
@@ -184,6 +204,7 @@ const ChapterCard = ({
             'mt-4 h-6 w-1.5 shrink-0 rounded-full sm:hidden',
             chapter.status === 'completed' && 'bg-primary',
             chapter.status === 'generating' && 'animate-pulse bg-amber-400',
+            chapter.status === 'failed' && 'bg-destructive',
             chapter.status === 'draft' && 'bg-border'
           )}
         />
@@ -197,7 +218,7 @@ const ChapterCard = ({
           <div className="flex min-w-0 flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-muted-foreground">第{chapter.number}章</span>
-              {isCompleted ? (
+              {hasReadableEpisode ? (
                 <Link
                   to={chapterDetailLink}
                   params={{ id: scenario.id, chapterId: chapter.id }}
@@ -220,6 +241,7 @@ const ChapterCard = ({
             <p className={`text-sm ${isDraft ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
               {chapter.synopsis}
             </p>
+            {chapter.generationError && <p className="text-xs text-destructive">{chapter.generationError}</p>}
           </div>
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
@@ -230,7 +252,7 @@ const ChapterCard = ({
               ))}
             </div>
             <div className="relative z-20 flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
-              {chapter.status === 'completed' &&
+              {(chapter.status === 'completed' || chapter.status === 'failed') &&
                 (isRegenDisabled ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -243,7 +265,7 @@ const ChapterCard = ({
                           disabled
                         >
                           <RefreshCw className="size-3.5" />
-                          再生成
+                          {chapter.status === 'failed' ? '再試行' : '再生成'}
                         </Button>
                       </span>
                     </TooltipTrigger>
@@ -261,17 +283,17 @@ const ChapterCard = ({
                     {isEpisodeCreating ? (
                       <>
                         <Loader2 className="size-3.5 animate-spin" />
-                        再生成中...
+                        {chapter.status === 'failed' ? '再試行中...' : '再生成中...'}
                       </>
                     ) : (
                       <>
                         <RefreshCw className="size-3.5" />
-                        再生成
+                        {chapter.status === 'failed' ? '再試行' : '再生成'}
                       </>
                     )}
                   </Button>
                 ))}
-              {chapter.status === 'completed' && (
+              {hasReadableEpisode && (
                 <Button
                   asChild
                   variant={isPlotsRoute ? 'outline' : 'ghost'}
@@ -310,6 +332,27 @@ const ChapterCard = ({
                   )}
                 </Button>
               )}
+              {chapter.status === 'failed' && !hasReadableEpisode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 px-2.5 text-xs text-destructive"
+                  onClick={() => void onCreateEpisode(chapter.id)}
+                  disabled={isEpisodeCreating}
+                >
+                  {isEpisodeCreating ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      再試行中...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="size-3" />
+                      再試行
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -325,7 +368,6 @@ const ScenarioDetailPageContent = () => {
   const { characters } = useSuspenseCharacters()
   const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
   const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
-  const { llmSettings } = useLlmSettings()
   const scenario = getScenario(id)
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
   const [isChapterPlanning, setIsChapterPlanning] = useState(false)
@@ -379,9 +421,16 @@ const ScenarioDetailPageContent = () => {
     createdChapters.length > 0 ? Math.max(...createdChapters.map((chapter) => chapter.number)) : 0
   const characterNames = scenario.plotCharacters.join('・')
   const nextChapterNumber = latestChapterNumber + 1
+  const latestChapter = scenario.chapters[scenario.chapters.length - 1]
   const canAppendChapter = canGenerateNextChapter(scenario.chapters)
   const hasCharacterChoices = scenario.plotCharacters.length > 0
-  const nextChapterHint = canAppendChapter ? null : '生成中の章が完了するまで次の章は生成できません'
+  const nextChapterHint = canAppendChapter
+    ? null
+    : latestChapter?.status === 'draft'
+      ? '未生成のエピソードがあるため、先にその章を生成してください'
+      : latestChapter?.status === 'failed'
+        ? '失敗した章を再試行するか削除してから次の章を作成してください'
+        : '生成中の章が完了するまで次の章は作成できません'
   const scenarioVdsExport = createScenarioVdsExport(scenario)
   const scenarioVdsJsonExport = createScenarioVdsJsonExport(scenario)
   const scenarioVdsPreviewReason =
@@ -435,7 +484,10 @@ const ScenarioDetailPageContent = () => {
   }) =>
     buildChapterPlanRequest({
       input,
-      llmSettings,
+      llmSettings: {
+        editor: scenario.editorModel,
+        writer: scenario.writerModel
+      },
       mode,
       scenario,
       characters
@@ -512,7 +564,7 @@ const ScenarioDetailPageContent = () => {
                 <Button asChild variant="outline" className="w-full gap-2 sm:w-auto">
                   <Link to={isPlotsRoute ? '/plots/$id/edit' : '/scenarios/$id/edit'} params={{ id: scenario.id }}>
                     <Pencil className="size-3.5" />
-                    プロットを編集
+                    編集
                   </Link>
                 </Button>
                 {canAppendChapter && hasCharacterChoices ? (
@@ -522,7 +574,7 @@ const ScenarioDetailPageContent = () => {
                     onClick={() => setIsChapterDialogOpen(true)}
                   >
                     <Play className="size-3.5" />
-                    {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
+                    作成
                   </Button>
                 ) : !hasCharacterChoices ? (
                   <Tooltip>
@@ -530,7 +582,7 @@ const ScenarioDetailPageContent = () => {
                       <span>
                         <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
                           <Play className="size-3.5" />
-                          {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
+                          作成
                         </Button>
                       </span>
                     </TooltipTrigger>
@@ -542,7 +594,7 @@ const ScenarioDetailPageContent = () => {
                       <span>
                         <Button variant="outline" className="w-full gap-2 sm:w-auto" disabled>
                           <Play className="size-3.5" />
-                          {createdChapterCount === 0 ? '第1章を作成' : `第${nextChapterNumber}章を作成`}
+                          作成
                         </Button>
                       </span>
                     </TooltipTrigger>
@@ -556,14 +608,14 @@ const ScenarioDetailPageContent = () => {
                     vdsExport={scenarioVdsExport}
                     vdsJsonExport={scenarioVdsJsonExport}
                     triggerClassName="w-full gap-2 sm:w-auto"
-                    triggerLabel="VDSビュー"
+                    triggerLabel="ダウンロード"
                   />
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span>
                         <Button className="w-full gap-2 sm:w-auto" disabled>
-                          VDSビュー
+                          ダウンロード
                         </Button>
                       </span>
                     </TooltipTrigger>

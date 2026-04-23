@@ -1,4 +1,5 @@
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import type { ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
 import type { Character } from '@/schemas/character.dto'
 import {
@@ -7,9 +8,10 @@ import {
   type ScenarioUpdateApiInput
 } from '@/schemas/scenario-write.dto'
 import { backendApi, readApiErrorMessage } from './backend-api'
+import { buildChapterEpisodeRequest } from './chapter-episode-request'
 
-export type ScenarioStatus = 'draft' | 'generating' | 'completed'
-export type ChapterStatus = 'draft' | 'generating' | 'completed'
+export type ScenarioStatus = 'draft' | 'generating' | 'failed' | 'completed'
+export type ChapterStatus = 'draft' | 'generating' | 'failed' | 'completed'
 
 export interface SpeechCue {
   readonly kind: 'speech'
@@ -44,6 +46,7 @@ export interface Chapter {
   readonly cueCount: number
   readonly durationMinutes: number
   readonly synopsis: string
+  readonly generationError: string | null
   readonly characters: readonly ChapterCharacter[]
   readonly cues: readonly Cue[]
 }
@@ -54,6 +57,9 @@ export interface Scenario {
   readonly status: ScenarioStatus
   readonly genres: readonly string[]
   readonly tone: string
+  readonly promptNote: string
+  readonly editorModel: string
+  readonly writerModel: string
   readonly plotCharacters: readonly string[]
   readonly cueCount: number
   readonly speakerCount: number
@@ -77,9 +83,16 @@ export const canRegenerateChapter = (chapters: readonly Chapter[], chapterId: st
   return chapterIndex === chapters.length - 1
 }
 
-// 生成中の章が存在しないときだけ次章生成を許可する。
-export const canGenerateNextChapter = (chapters: readonly Chapter[]): boolean =>
-  chapters[chapters.length - 1]?.status !== 'generating'
+// 末尾章が完了済み、または章が未作成のときだけ次章作成を許可する。
+export const canGenerateNextChapter = (chapters: readonly Chapter[]): boolean => {
+  const latestChapter = chapters[chapters.length - 1]
+
+  if (!latestChapter) {
+    return true
+  }
+
+  return latestChapter.status === 'completed'
+}
 
 // シナリオに紐づく登場人物から章表示用のキャラクター配列を組み立てる。
 const buildChapterCharacters = ({
@@ -139,6 +152,7 @@ export const createNextChapter = ({
     cueCount: 0,
     durationMinutes: 0,
     synopsis,
+    generationError: null,
     characters: buildChapterCharacters({ names: selectedNames, characters }),
     cues: []
   }
@@ -171,7 +185,41 @@ const resolveScenarioStatus = (chapters: readonly Chapter[]): ScenarioStatus => 
     return 'generating'
   }
 
+  if (chapters.some((chapter) => chapter.status === 'failed')) {
+    return 'failed'
+  }
+
   return 'completed'
+}
+
+// 生成中の章があれば一覧取得を定期更新する。
+const shouldPollScenarios = (scenarios: readonly Scenario[] | undefined): boolean =>
+  scenarios?.some(
+    (scenario) =>
+      scenario.status === 'generating' || scenario.chapters.some((chapter) => chapter.status === 'generating')
+  )
+
+// 生成中のシナリオがある間だけ一定間隔で再取得する。
+const useScenarioPolling = ({
+  refetch,
+  scenarios
+}: {
+  refetch: () => Promise<unknown>
+  scenarios: readonly Scenario[]
+}) => {
+  useEffect(() => {
+    if (!shouldPollScenarios(scenarios)) {
+      return
+    }
+
+    const timerId = window.setInterval(() => {
+      void refetch()
+    }, 3000)
+
+    return () => {
+      window.clearInterval(timerId)
+    }
+  }, [refetch, scenarios])
 }
 
 // 章配列から表示用のセリフ数を再計算する。
@@ -237,6 +285,10 @@ export const scenariosQueryOptions = queryOptions({
  */
 export const useSuspenseScenarios = () => {
   const query = useSuspenseQuery(scenariosQueryOptions)
+  useScenarioPolling({
+    refetch: query.refetch,
+    scenarios: query.data
+  })
 
   return {
     ...query,
@@ -252,6 +304,10 @@ export const useSuspenseResolvedScenarios = (characters: readonly Character[] = 
   const query = useSuspenseQuery({
     ...scenariosQueryOptions,
     select: (rows: readonly Scenario[]) => rows.map((scenario) => resolveScenarioState({ scenario, characters }))
+  })
+  useScenarioPolling({
+    refetch: query.refetch,
+    scenarios: query.data
   })
 
   return {
@@ -353,8 +409,20 @@ export const useScenarioMutations = ({
   })
   const createEpisodeFromChapterMutation = useMutation({
     mutationFn: async ({ scenarioId, chapterId }: { scenarioId: string; chapterId: string }) => {
+      const scenario = scenarios.find((item) => item.id === scenarioId)
+
+      if (!scenario) {
+        throw new Error('Scenario not found')
+      }
+
+      const request = buildChapterEpisodeRequest({
+        scenario,
+        chapterId,
+        characters
+      })
+
       try {
-        return await backendApi.createScenarioEpisode(undefined, {
+        return await backendApi.createScenarioEpisode(request, {
           params: {
             id: scenarioId,
             chapterId

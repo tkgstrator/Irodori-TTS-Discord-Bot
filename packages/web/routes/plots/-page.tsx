@@ -43,6 +43,10 @@ const getCardBorderClass = (status: Scenario['status']): string => {
     return 'border-dashed bg-card/60'
   }
 
+  if (status === 'failed') {
+    return 'border-destructive/40 bg-destructive/5'
+  }
+
   return 'border-border'
 }
 

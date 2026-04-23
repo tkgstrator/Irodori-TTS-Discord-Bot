@@ -26,6 +26,8 @@ const getStatusLabel = (status: ScenarioStatus): string => {
       return '生成済み'
     case 'generating':
       return '生成中'
+    case 'failed':
+      return '失敗'
     case 'draft':
       return '未生成'
   }
@@ -56,6 +58,10 @@ const getCardBorderClass = (status: ScenarioStatus): string => {
     return 'border-dashed bg-card/60'
   }
 
+  if (status === 'failed') {
+    return 'border-destructive/40 bg-destructive/5'
+  }
+
   return 'border-border'
 }
 
@@ -73,6 +79,14 @@ const StatusBadge = ({ status }: { status: ScenarioStatus }) => {
     return (
       <Badge className="bg-blue-500 text-white hover:bg-blue-500" aria-label="生成中">
         <span className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-white" />
+        {getStatusLabel(status)}
+      </Badge>
+    )
+  }
+
+  if (status === 'failed') {
+    return (
+      <Badge className="bg-destructive text-white hover:bg-destructive" aria-label="失敗">
         {getStatusLabel(status)}
       </Badge>
     )
@@ -181,6 +195,7 @@ const ScenariosPageContent = () => {
   const { scenarios } = useSuspenseResolvedScenarios()
   const completedCount = scenarios.filter((scenario) => scenario.status === 'completed').length
   const generatingCount = scenarios.filter((scenario) => scenario.status === 'generating').length
+  const failedCount = scenarios.filter((scenario) => scenario.status === 'failed').length
   const draftCount = scenarios.filter((scenario) => scenario.status === 'draft').length
 
   return (
@@ -195,7 +210,8 @@ const ScenariosPageContent = () => {
           全 <strong className="text-foreground">{scenarios.length}</strong> プロット | 生成済み:{' '}
           <strong className="text-green-500">{completedCount}</strong> | 生成中:{' '}
           <strong className="text-blue-500">{generatingCount}</strong> | 未生成:{' '}
-          <strong className="text-muted-foreground">{draftCount}</strong>
+          <strong className="text-muted-foreground">{draftCount}</strong> | 失敗:{' '}
+          <strong className="text-destructive">{failedCount}</strong>
         </div>
 
         {scenarios.length === 0 ? (
