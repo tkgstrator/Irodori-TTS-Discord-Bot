@@ -4,14 +4,14 @@ import { backendApi, toApiError } from './backend-api'
 /**
  * 話者候補一覧の query key を定義する。
  */
-export const speakerKeys = {
+const speakerKeys = {
   all: ['speakers'] as const
 }
 
 /**
  * 話者候補一覧取得の query options を定義する。
  */
-export const speakerImportsQueryOptions = queryOptions({
+const speakerImportsQueryOptions = queryOptions({
   queryKey: speakerKeys.all,
   queryFn: async () => {
     try {

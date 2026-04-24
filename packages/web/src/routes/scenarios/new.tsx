@@ -32,7 +32,7 @@ import {
 } from '@/schemas/scenario.dto'
 import { type ScenarioGenerateRequest, ScenarioGenerateRequestSchema } from '@/schemas/scenario-generate-request.dto'
 
-export const defaultValues: ScenarioCreateFormValues = {
+const defaultValues: ScenarioCreateFormValues = {
   title: '',
   genres: [],
   tone: 'ほろ苦い',

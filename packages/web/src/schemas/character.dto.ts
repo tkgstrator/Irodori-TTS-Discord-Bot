@@ -16,7 +16,7 @@ export const SpeakerLinkSchema = z.object({
 })
 
 // セリフサンプル 1 件の形式を定義する
-export const CharacterSampleQuoteSchema = z.string().trim().min(1).max(40, 'セリフサンプルは40文字以内です')
+const CharacterSampleQuoteSchema = z.string().trim().min(1).max(40, 'セリフサンプルは40文字以内です')
 
 // セリフサンプル入力を正規化してから検証する
 const normalizeCharacterSampleQuotes = (value: unknown) => {
@@ -39,7 +39,7 @@ const normalizeCharacterSampleQuotes = (value: unknown) => {
 }
 
 // セリフサンプル配列の形式を定義する
-export const CharacterSampleQuotesSchema = z.preprocess(
+const CharacterSampleQuotesSchema = z.preprocess(
   normalizeCharacterSampleQuotes,
   z.array(CharacterSampleQuoteSchema).max(5, 'セリフサンプルは5件までです')
 )
@@ -59,7 +59,7 @@ const normalizeCharacterCaption = (value: unknown) => {
 }
 
 // speaker 未連携時の caption 文字列を定義する
-export const CharacterCaptionSchema = z.preprocess(
+const CharacterCaptionSchema = z.preprocess(
   normalizeCharacterCaption,
   z.string().trim().nonempty('caption を入力してください').max(120, 'caption は120文字以内です').nullable()
 )

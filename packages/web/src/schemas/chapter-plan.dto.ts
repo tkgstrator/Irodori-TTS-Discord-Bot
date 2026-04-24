@@ -2,7 +2,7 @@ import { SceneKindSchema, TensionSchema } from '@irodori-tts/shared/enums'
 import { z } from 'zod'
 
 // 章内の Beat 設計を定義する。
-export const ChapterPlanBeatSchema = z.object({
+const ChapterPlanBeatSchema = z.object({
   order: z.number().int().positive(),
   sceneKind: SceneKindSchema,
   summary: z.string().trim().nonempty(),

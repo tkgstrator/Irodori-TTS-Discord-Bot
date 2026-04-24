@@ -1,8 +1,20 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "ignore": ["src/components/ui/**", "src/hooks/use-mobile.tsx", "__tests__/**", "e2e/**", "playwright.config.ts"],
-  "ignoreDependencies": ["pg"],
+  "entry": ["__tests__/**/*.test.ts", "prisma/**/*.ts"],
+  "project": ["src/**/*.{ts,tsx}", "__tests__/**/*.ts", "prisma/**/*.ts"],
+  "ignore": ["src/components/ui/**", "src/hooks/use-mobile.tsx"],
+  "ignoreDependencies": [
+    "pg",
+    "@fontsource-variable/geist",
+    "@fontsource/fraunces",
+    "shadcn",
+    "tw-animate-css",
+    "tailwindcss"
+  ],
   "paths": {
     "@/*": ["./src/*"]
+  },
+  "rules": {
+    "duplicates": "off"
   }
 }

@@ -4,10 +4,10 @@ import { ScenarioGenreSchema, ScenarioToneSchema, scenarioCharacterLimit } from 
 import { StoryCharacterContextSchema } from './story-character-context.dto'
 
 // LLM 送信時に含めるキャラクター情報を定義する
-export const ScenarioGenerateCharacterSchema = StoryCharacterContextSchema
+const ScenarioGenerateCharacterSchema = StoryCharacterContextSchema
 
 // LLM 送信時に含めるプロット入力情報を定義する
-export const ScenarioGeneratePlotSchema = z.object({
+const ScenarioGeneratePlotSchema = z.object({
   title: z.string().trim().nonempty('タイトルは必須です').max(60, 'タイトルは60文字以内で入力してください'),
   genres: z
     .array(ScenarioGenreSchema)

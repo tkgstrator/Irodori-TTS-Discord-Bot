@@ -3,7 +3,7 @@ import { ChapterGenerateFormSchema } from './chapter-generation.dto'
 import { LlmRequestModelSchema } from './llm-settings.dto'
 
 // 章生成時に送るシナリオ情報を定義する
-export const ChapterGenerateScenarioSchema = z.object({
+const ChapterGenerateScenarioSchema = z.object({
   id: z.string().nonempty(),
   title: z.string().nonempty(),
   genres: z.array(z.string().nonempty()),
@@ -15,7 +15,7 @@ export const ChapterGenerateScenarioSchema = z.object({
 export const ChapterGenerateModeSchema = z.enum(['auto', 'manual'])
 
 // 章生成時に送る章入力情報を定義する
-export const ChapterGenerateRequestChapterSchema = z.object({
+const ChapterGenerateRequestChapterSchema = z.object({
   mode: ChapterGenerateModeSchema,
   number: z.number().int().positive(),
   resolvedTitle: z.string().nonempty(),
@@ -30,4 +30,3 @@ export const ChapterGenerateRequestSchema = z.object({
 })
 
 export type ChapterGenerateMode = z.infer<typeof ChapterGenerateModeSchema>
-export type ChapterGenerateRequest = z.infer<typeof ChapterGenerateRequestSchema>

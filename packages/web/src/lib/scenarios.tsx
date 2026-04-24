@@ -76,8 +76,6 @@ export interface Scenario {
   readonly chapters: readonly Chapter[]
 }
 
-export type ScenarioInput = Omit<Scenario, 'id'>
-
 // 後続章がある章は時系列整合のため再生成不可とする。
 export const canRegenerateChapter = (chapters: readonly Chapter[], chapterId: string): boolean => {
   const chapterIndex = chapters.findIndex((chapter) => chapter.id === chapterId)
@@ -295,14 +293,14 @@ export const resolveScenarioState = ({
 /**
  * scenarios 一覧の query key を定義する。
  */
-export const scenarioKeys = {
+const scenarioKeys = {
   all: ['scenarios'] as const
 }
 
 /**
  * scenarios 一覧取得の query options を定義する。
  */
-export const scenariosQueryOptions = queryOptions({
+const scenariosQueryOptions = queryOptions({
   queryKey: scenarioKeys.all,
   queryFn: async () => {
     try {

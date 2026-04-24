@@ -11,7 +11,7 @@ export const SpeakerImportValuesSchema = CharacterFormFieldsSchema.omit({
 })
 
 // 話者一覧用のレスポンス要素を定義する
-export const SpeakerImportItemSchema = z.object({
+const SpeakerImportItemSchema = z.object({
   speakerId: SpeakerIdSchema,
   name: z.string().nonempty()
 })
@@ -25,6 +25,5 @@ export const SpeakerImportTemplateSchema = z.object({
   values: SpeakerImportValuesSchema
 })
 
-export type SpeakerImportItem = z.infer<typeof SpeakerImportItemSchema>
 export type SpeakerImportValues = z.infer<typeof SpeakerImportValuesSchema>
 export type SpeakerImportTemplate = z.infer<typeof SpeakerImportTemplateSchema>

@@ -30,4 +30,3 @@ export const ScenarioAppendChapterApiSchema = z.object({
 
 export type ScenarioCreateApiInput = z.infer<typeof ScenarioCreateApiSchema>
 export type ScenarioUpdateApiInput = z.infer<typeof ScenarioUpdateApiSchema>
-export type ScenarioAppendChapterApiInput = z.infer<typeof ScenarioAppendChapterApiSchema>
