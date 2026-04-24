@@ -376,6 +376,10 @@ const ScenarioDetailPageContent = () => {
   const [isChapterCreating, setIsChapterCreating] = useState(false)
   const [creatingChapterId, setCreatingChapterId] = useState<string | null>(null)
   const [chapterPlanError, setChapterPlanError] = useState<string | null>(null)
+  const [regenDialog, setRegenDialog] = useState<{ chapterId: string | null; userDirection: string }>({
+    chapterId: null,
+    userDirection: ''
+  })
   const matches = useMatches()
   const isPlotsRoute = pathname.startsWith('/plots')
   const hasChildRoute = matches.some(
@@ -450,12 +454,12 @@ const ScenarioDetailPageContent = () => {
   const promptNote = watch('promptNote')
   const canCreateChapter = chapterTitle.trim().length > 0 && promptNote.trim().length > 0
 
-  const handleCreateEpisode = async (chapterId: string) => {
+  const handleCreateEpisode = async (chapterId: string, userDirection?: string) => {
     setCreatingChapterId(chapterId)
     setChapterPlanError(null)
 
     try {
-      const nextScenario = await createEpisodeFromChapter(scenario.id, chapterId)
+      const nextScenario = await createEpisodeFromChapter(scenario.id, chapterId, userDirection)
       const nextChapter = nextScenario.chapters.find((chapter) => chapter.id === chapterId)
 
       if (!nextChapter) {
@@ -474,6 +478,19 @@ const ScenarioDetailPageContent = () => {
     } finally {
       setCreatingChapterId(null)
     }
+  }
+
+  const handleOpenRegenDialog = async (chapterId: string) => {
+    setRegenDialog({ chapterId, userDirection: '' })
+  }
+
+  const handleConfirmRegen = async () => {
+    const { chapterId, userDirection } = regenDialog
+    if (!chapterId) {
+      return
+    }
+    setRegenDialog({ chapterId: null, userDirection: '' })
+    await handleCreateEpisode(chapterId, userDirection.trim() || undefined)
   }
 
   // ダイアログ入力から章計画用の送信 JSON を組み立てる
@@ -671,7 +688,7 @@ const ScenarioDetailPageContent = () => {
               scenario={scenario}
               isPlotsRoute={isPlotsRoute}
               isEpisodeCreating={creatingChapterId === chapter.id}
-              onCreateEpisode={handleCreateEpisode}
+              onCreateEpisode={handleOpenRegenDialog}
             />
           ))}
         </div>
@@ -818,6 +835,38 @@ const ScenarioDetailPageContent = () => {
                   作成
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={regenDialog.chapterId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRegenDialog({ chapterId: null, userDirection: '' })
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>エピソードを生成</DialogTitle>
+            <DialogDescription>LLM への追加指示があれば入力してください（任意）</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="例: もっとコミカルな雰囲気にして"
+            value={regenDialog.userDirection}
+            onChange={(e) => setRegenDialog((prev) => ({ ...prev, userDirection: e.target.value }))}
+            maxLength={500}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegenDialog({ chapterId: null, userDirection: '' })}>
+              キャンセル
+            </Button>
+            <Button onClick={() => void handleConfirmRegen()}>
+              <RefreshCw className="size-3" />
+              生成
             </Button>
           </DialogFooter>
         </DialogContent>

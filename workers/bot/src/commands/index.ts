@@ -1,12 +1,19 @@
 import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js'
 import { configCommand, handleConfigCommand } from './config'
+import { handlePlayCommand, playCommand } from './play'
 import { handleSpeakerAutocomplete, handleSpeakerCommand, speakerCommand } from './speaker'
 import { handleJoinCommand, handleLeaveCommand, joinCommand, leaveCommand } from './voice'
 
 /**
  * 全スラッシュコマンドの定義
  */
-export const commands = [joinCommand.toJSON(), leaveCommand.toJSON(), speakerCommand.toJSON(), configCommand.toJSON()]
+export const commands = [
+  joinCommand.toJSON(),
+  leaveCommand.toJSON(),
+  speakerCommand.toJSON(),
+  configCommand.toJSON(),
+  playCommand.toJSON()
+]
 
 /**
  * コマンドハンドラーのマップ
@@ -15,7 +22,8 @@ const commandHandlers: Record<string, (interaction: ChatInputCommandInteraction)
   join: handleJoinCommand,
   leave: handleLeaveCommand,
   speaker: handleSpeakerCommand,
-  config: handleConfigCommand
+  config: handleConfigCommand,
+  play: handlePlayCommand
 }
 
 /**
