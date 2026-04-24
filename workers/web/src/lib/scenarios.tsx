@@ -8,6 +8,7 @@ import {
   type ScenarioUpdateApiInput
 } from '@/schemas/scenario-write.dto'
 import { backendApi, toApiError } from './backend-api'
+import { charactersQueryOptions } from './characters'
 import { buildChapterEpisodeRequest } from './chapter-episode-request'
 
 export type ScenarioStatus = 'draft' | 'generating' | 'failed' | 'completed'
@@ -312,7 +313,7 @@ const scenariosQueryOptions = queryOptions({
   }
 })
 
-export const scenarioQueryOptions = (id: string) =>
+const scenarioQueryOptions = (id: string) =>
   queryOptions({
     queryKey: scenarioKeys.detail(id),
     queryFn: async () => {
@@ -462,7 +463,11 @@ export const useScenarioMutations = ({
         return undefined
       }
 
-      const characterByName = new Map(characters.map((character) => [character.name, character.id] as const))
+      const resolvedCharacters =
+        characters.length > 0 ? characters : await queryClient.fetchQuery(charactersQueryOptions)
+      const characterByName = new Map(
+        resolvedCharacters.map((character) => [character.name, character.id] as const)
+      )
       const selectedCharacterIds =
         input && input.characterNames.length > 0
           ? input.characterNames.flatMap((name) => {
@@ -520,10 +525,12 @@ export const useScenarioMutations = ({
         throw new Error('Scenario not found')
       }
 
+      const resolvedCharacters =
+        characters.length > 0 ? characters : await queryClient.fetchQuery(charactersQueryOptions)
       const request = buildChapterEpisodeRequest({
         scenario,
         chapterId,
-        characters,
+        characters: resolvedCharacters,
         userDirection
       })
 

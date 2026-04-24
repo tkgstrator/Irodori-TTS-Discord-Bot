@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, Outlet, useLocation, useMatches, useNavigate, useParams } from '@tanstack/react-router'
 import {
   Check,
@@ -31,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
 import { buildChapterPlanRequest, requestChapterPlan } from '@/lib/chapter-plan'
-import { useSuspenseCharacters } from '@/lib/characters'
+import { charactersQueryOptions } from '@/lib/characters'
 import type { Chapter, ChapterCharacter, ChapterStatus, Scenario } from '@/lib/scenarios'
 import {
   canGenerateNextChapter,
@@ -367,10 +368,10 @@ const ScenarioDetailPageContent = () => {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const scenarioId = id ?? ''
-  const { characters } = useSuspenseCharacters()
-  const { scenario } = useSuspenseResolvedScenario(scenarioId, characters)
+  const queryClient = useQueryClient()
+  const { scenario } = useSuspenseResolvedScenario(scenarioId)
   const scenarios = useMemo(() => (scenario ? [scenario] : []), [scenario])
-  const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
+  const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ scenarios })
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
   const [isChapterPlanning, setIsChapterPlanning] = useState(false)
   const [isChapterCreating, setIsChapterCreating] = useState(false)
@@ -494,14 +495,15 @@ const ScenarioDetailPageContent = () => {
   }
 
   // ダイアログ入力から章計画用の送信 JSON を組み立てる
-  const buildPreviewChapterPlanRequest = ({
+  const buildPreviewChapterPlanRequest = async ({
     input,
     mode
   }: {
     input: ChapterGenerateFormValues
     mode: ChapterGenerateMode
-  }) =>
-    buildChapterPlanRequest({
+  }) => {
+    const characters = await queryClient.fetchQuery(charactersQueryOptions)
+    return buildChapterPlanRequest({
       input,
       llmSettings: {
         editor: scenario.editorModel as GeminiModel,
@@ -511,6 +513,7 @@ const ScenarioDetailPageContent = () => {
       scenario,
       characters
     })
+  }
 
   // おまかせで章タイトルと流れメモを自動入力する。
   const handleAutoFill = async () => {
@@ -518,7 +521,7 @@ const ScenarioDetailPageContent = () => {
     setChapterPlanError(null)
 
     try {
-      const request = buildPreviewChapterPlanRequest({
+      const request = await buildPreviewChapterPlanRequest({
         input: {
           title: '',
           promptNote: '',
