@@ -1,6 +1,6 @@
 import type { PrismaClient } from '../generated/prisma/client'
+import { Prisma } from '../generated/prisma/client'
 import { plotSeedIds, plotSpeakerSeedIds } from '../src/lib/plot-seed-ids'
-import type { CharacterInput } from '../src/schemas/character.dto'
 import type {
   ScenarioSeedCast,
   ScenarioSeedChapter,
@@ -13,15 +13,6 @@ import {
   ScenarioSeedSetSchema
 } from '../src/schemas/scenario-seed.dto'
 import { characterSeedRows } from './character-seeds'
-
-// CharacterInput の配列フィールドを Prisma 用の JSON 文字列へ変換する
-const toCharacterPrismaData = (input: CharacterInput) => ({
-  ...input,
-  personalityTags: JSON.stringify(input.personalityTags),
-  attributeTags: JSON.stringify(input.attributeTags),
-  backgroundTags: JSON.stringify(input.backgroundTags),
-  sampleQuotes: JSON.stringify(input.sampleQuotes)
-})
 
 type SeedDbClient = Pick<
   PrismaClient,
@@ -260,16 +251,15 @@ const upsertScenarioSeedCharacter = async (
   client: SeedDbDelegate,
   characterSeed: (typeof scenarioSeedSet.characters)[number]
 ) => {
-  const prismaData = toCharacterPrismaData(characterSeed.data)
   await client.character.upsert({
     where: {
       id: characterSeed.id
     },
     create: {
       id: characterSeed.id,
-      ...prismaData
+      ...characterSeed.data
     },
-    update: prismaData
+    update: characterSeed.data
   })
 }
 
@@ -341,21 +331,21 @@ const upsertScenario = async (
     create: {
       id: scenario.id,
       title: scenario.title,
-      genres: JSON.stringify(scenario.genres),
+      genres: scenario.genres,
       tone: scenario.tone,
       ending: scenario.ending,
       status: scenario.status,
       narratorId: scenario.narratorSpeakerId ? (characterMap.get(scenario.narratorSpeakerId) ?? null) : null,
-      vdsJson: scenario.vdsJson ?? null
+      vdsJson: scenario.vdsJson ?? Prisma.JsonNull
     },
     update: {
       title: scenario.title,
-      genres: JSON.stringify(scenario.genres),
+      genres: scenario.genres,
       tone: scenario.tone,
       ending: scenario.ending,
       status: scenario.status,
       narratorId: scenario.narratorSpeakerId ? (characterMap.get(scenario.narratorSpeakerId) ?? null) : null,
-      vdsJson: scenario.vdsJson ?? null
+      vdsJson: scenario.vdsJson ?? Prisma.JsonNull
     }
   })
 }
@@ -444,7 +434,7 @@ const syncScenarioChapterCues = async (client: SeedDbDelegate, chapterId: string
       speakerAlias: cue.kind === 'speech' ? cue.speaker : null,
       text: cue.kind === 'speech' ? cue.text : null,
       pauseDuration: cue.kind === 'pause' ? cue.duration : null,
-      synthOptions: null
+      synthOptions: Prisma.JsonNull
     }))
   })
 }

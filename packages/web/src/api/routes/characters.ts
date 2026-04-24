@@ -1,5 +1,4 @@
 import { Hono } from 'hono'
-import type { CharacterInput } from '@/schemas/character.dto'
 import { CharacterIdSchema, CharacterInputSchema } from '@/schemas/character.dto'
 import { db } from '../db'
 
@@ -8,15 +7,6 @@ export const characters = new Hono()
 const characterInclude = {
   speaker: true
 } as const
-
-// CharacterInput の配列フィールドを Prisma 用の JSON 文字列へ変換する
-const toCharacterPrismaData = (input: CharacterInput) => ({
-  ...input,
-  personalityTags: JSON.stringify(input.personalityTags),
-  attributeTags: JSON.stringify(input.attributeTags),
-  backgroundTags: JSON.stringify(input.backgroundTags),
-  sampleQuotes: JSON.stringify(input.sampleQuotes)
-})
 
 // 連携先の話者 ID が有効かを確認する
 const hasValidSpeaker = async (speakerId: string | null) => {
@@ -82,7 +72,7 @@ characters.post('/', async (c) => {
   }
 
   const row = await db.character.create({
-    data: toCharacterPrismaData(bodyResult.data),
+    data: bodyResult.data,
     include: characterInclude
   })
 
@@ -117,7 +107,7 @@ characters.put('/:id', async (c) => {
 
   const row = await db.character.update({
     where: { id: idResult.data },
-    data: toCharacterPrismaData(bodyResult.data),
+    data: bodyResult.data,
     include: characterInclude
   })
 
