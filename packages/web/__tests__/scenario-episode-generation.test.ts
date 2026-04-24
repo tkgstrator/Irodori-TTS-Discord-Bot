@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
-import type { ChapterEpisodeRequest } from '../schemas/chapter-episode-request.dto'
+import type { ChapterEpisodeRequest } from '../src/schemas/chapter-episode-request.dto'
 import { db } from '../server/db'
 import { runScenarioEpisodeGeneration } from '../server/scenario-episode-generation'
 

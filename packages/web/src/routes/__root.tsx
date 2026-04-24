@@ -4,7 +4,7 @@ import { Providers } from '@/components/providers'
 import { AppShell } from '@/components/shell/app-shell'
 import { Button } from '@/components/ui/button'
 import { RelationsProvider } from '@/lib/relations'
-import '@/app/globals.css'
+import '@/globals.css'
 
 export const Route = createRootRoute({
   component: RootLayout,

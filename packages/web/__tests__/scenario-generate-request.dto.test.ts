@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ScenarioGenerateRequestSchema } from '../schemas/scenario-generate-request.dto'
+import { ScenarioGenerateRequestSchema } from '../src/schemas/scenario-generate-request.dto'
 
 describe('ScenarioGenerateRequestSchema', () => {
   test('LLM 送信用の JSON を受け入れる', () => {

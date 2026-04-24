@@ -13,15 +13,15 @@ export default defineConfig({
   plugins: [
     tanstackRouter({
       quoteStyle: 'single',
-      routesDirectory: './routes',
-      generatedRouteTree: './routeTree.gen.ts'
+      routesDirectory: './src/routes',
+      generatedRouteTree: './src/routeTree.gen.ts'
     }),
     react(),
     tailwindcss()
   ],
   resolve: {
     alias: {
-      '@': new URL('.', import.meta.url).pathname
+      '@': new URL('./src', import.meta.url).pathname
     }
   }
 })

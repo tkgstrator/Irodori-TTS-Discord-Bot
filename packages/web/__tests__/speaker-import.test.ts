@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { mergeImportedValues } from '../lib/speaker-import'
-import type { CharacterFormValues } from '../schemas/character.dto'
+import { mergeImportedValues } from '../src/lib/speaker-import'
+import type { CharacterFormValues } from '../src/schemas/character.dto'
 
 const currentValues: CharacterFormValues = {
   name: '既存キャラクター',

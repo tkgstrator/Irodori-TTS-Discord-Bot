@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ScenarioAppendChapterApiSchema, ScenarioCreateApiSchema } from '../schemas/scenario-write.dto'
+import { ScenarioAppendChapterApiSchema, ScenarioCreateApiSchema } from '../src/schemas/scenario-write.dto'
 
 describe('ScenarioCreateApiSchema', () => {
   test('シナリオ作成 API の入力を受け入れる', () => {

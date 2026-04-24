@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
-import type { CharacterInput } from '../schemas/character.dto'
+import type { CharacterInput } from '../src/schemas/character.dto'
 import { db } from '../server/db'
 
 // テストで作成したレコードの ID を保持する

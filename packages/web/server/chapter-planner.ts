@@ -4,9 +4,9 @@ import {
   buildChapterPlanPrompt,
   buildChapterPlanRepairPrompt,
   chapterPlanSystemInstruction
-} from '../lib/chapter-plan-prompt'
-import { type ChapterPlan, ChapterPlanSchema } from '../schemas/chapter-plan.dto'
-import type { ChapterPlanRequest } from '../schemas/chapter-plan-request.dto'
+} from '../src/lib/chapter-plan-prompt'
+import { type ChapterPlan, ChapterPlanSchema } from '../src/schemas/chapter-plan.dto'
+import type { ChapterPlanRequest } from '../src/schemas/chapter-plan-request.dto'
 
 // Gemini 利用時に必要な環境変数を定義する。
 const GeminiEnvSchema = z.object({

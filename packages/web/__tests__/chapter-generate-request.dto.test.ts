@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ChapterGenerateRequestSchema } from '../schemas/chapter-generate-request.dto'
+import { ChapterGenerateRequestSchema } from '../src/schemas/chapter-generate-request.dto'
 
 describe('ChapterGenerateRequestSchema', () => {
   test('章生成用の JSON を受け入れる', () => {

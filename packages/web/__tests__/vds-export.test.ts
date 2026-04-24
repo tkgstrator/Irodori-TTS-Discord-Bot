@@ -4,7 +4,7 @@ import {
   createChapterVdsJsonExport,
   createScenarioVdsExport,
   createScenarioVdsJsonExport
-} from '../lib/vds'
+} from '../src/lib/vds'
 
 const scenarioFixture = {
   id: 'scenario-1',

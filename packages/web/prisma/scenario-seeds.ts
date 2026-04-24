@@ -1,17 +1,17 @@
 import type { PrismaClient } from '../generated/prisma/client'
 import { Prisma } from '../generated/prisma/client'
-import { plotSeedIds, plotSpeakerSeedIds } from '../lib/plot-seed-ids'
+import { plotSeedIds, plotSpeakerSeedIds } from '../src/lib/plot-seed-ids'
 import type {
   ScenarioSeedCast,
   ScenarioSeedChapter,
   ScenarioSeedCue,
   ScenarioSeedScenario
-} from '../schemas/scenario-seed.dto'
+} from '../src/schemas/scenario-seed.dto'
 import {
   ScenarioSeedChapterSchema,
   ScenarioSeedScenarioSchema,
   ScenarioSeedSetSchema
-} from '../schemas/scenario-seed.dto'
+} from '../src/schemas/scenario-seed.dto'
 import { characterSeedRows } from './character-seeds'
 
 type SeedDbClient = Pick<

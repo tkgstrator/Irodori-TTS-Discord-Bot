@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { SpeakerImportListSchema, SpeakerImportTemplateSchema } from '../schemas/speaker.dto'
+import { SpeakerImportListSchema, SpeakerImportTemplateSchema } from '../src/schemas/speaker.dto'
 
 describe('Speaker DTO', () => {
   test('accepts a valid speaker import list', () => {

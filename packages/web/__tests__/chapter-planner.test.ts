@@ -3,8 +3,8 @@ import {
   buildChapterPlanDebugPayload,
   buildChapterPlanPrompt,
   buildChapterPlanRepairPrompt
-} from '../lib/chapter-plan-prompt'
-import type { ChapterPlanRequest } from '../schemas/chapter-plan-request.dto'
+} from '../src/lib/chapter-plan-prompt'
+import type { ChapterPlanRequest } from '../src/schemas/chapter-plan-request.dto'
 import { parseChapterPlanText } from '../server/chapter-planner'
 
 const requestFixture: ChapterPlanRequest = {

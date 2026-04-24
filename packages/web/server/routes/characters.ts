@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { CharacterIdSchema, CharacterInputSchema } from '../../schemas/character.dto'
+import { CharacterIdSchema, CharacterInputSchema } from '../../src/schemas/character.dto'
 import { db } from '../db'
 
 export const characters = new Hono()
