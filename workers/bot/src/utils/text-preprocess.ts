@@ -33,7 +33,7 @@ const convertCustomEmoji = (text: string): string => {
 /**
  * コードブロック（マルチライン / インライン）を除去する
  */
-const removeCodeBlocks = (text: string): string => text.replace(/```[\s\S]*?```/g, 'コード省略').replace(/`[^`]+`/g, '')
+const removeCodeBlocks = (text: string): string => text.replace(/```[\s\S]*?```/g, '').replace(/`[^`]+`/g, '')
 
 /**
  * スポイラーを除去する
@@ -60,20 +60,22 @@ const truncateText = (text: string, maxLength: number): string => {
 }
 
 /**
- * TTS用にテキストを前処理する
+ * メッセージ全体に適用する前処理（マルチラインを跨ぐ構造のみ）
+ * 行分割前にコールする必要がある
+ */
+export const preprocessMessageForTts = (text: string): string => {
+  const steps: Array<(s: string) => string> = [removeCodeBlocks, removeSpoilers]
+  return steps.reduce((acc, step) => step(acc), text)
+}
+
+/**
+ * TTS用にテキストを前処理する（行単位）
  * @param text 元のテキスト
  * @returns 前処理後のテキスト（空文字の場合はnull）
  */
 export const preprocessForTts = (text: string): string | null => {
   // 各種除去・変換処理を順に適用
-  const steps: Array<(s: string) => string> = [
-    removeCodeBlocks,
-    removeSpoilers,
-    removeUrls,
-    removeMentions,
-    convertCustomEmoji,
-    normalizeWhitespace
-  ]
+  const steps: Array<(s: string) => string> = [removeUrls, removeMentions, convertCustomEmoji, normalizeWhitespace]
   const processed = steps.reduce((acc, step) => step(acc), text)
 
   // 空になった場合はnullを返す

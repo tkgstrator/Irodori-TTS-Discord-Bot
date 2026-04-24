@@ -14,5 +14,5 @@ export {
   updateCurrentSpeakerConfig,
   updateSpeakerConfig
 } from './redis'
-export { preprocessForTts } from './text-preprocess'
+export { preprocessForTts, preprocessMessageForTts } from './text-preprocess'
 export { getSpeakers, type PcmAudio, synthesize, textToSpeech, textToSpeechWithSettings } from './tts'
