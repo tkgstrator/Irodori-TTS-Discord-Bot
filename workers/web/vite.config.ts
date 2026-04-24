@@ -1,17 +1,12 @@
 import { execSync } from 'node:child_process'
-import { cpSync, existsSync } from 'node:fs'
+import { cpSync } from 'node:fs'
 import { resolve } from 'node:path'
 import devServer, { defaultOptions } from '@hono/vite-dev-server'
 import nodeAdapter from '@hono/vite-dev-server/node'
 import tailwindcss from '@tailwindcss/vite'
 import tanstackRouter from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin } from 'vite'
-
-const envFile = resolve(__dirname, '.env')
-if (existsSync(envFile)) {
-  process.loadEnvFile(envFile)
-}
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 const serverBundle = (): Plugin => ({
   name: 'server-bundle',
@@ -22,29 +17,38 @@ const serverBundle = (): Plugin => ({
   }
 })
 
-export default defineConfig({
-  server: {
-    host: '0.0.0.0',
-    port: 3000
-  },
-  plugins: [
-    devServer({
-      entry: 'src/app.ts',
-      adapter: nodeAdapter,
-      exclude: [/^(?!\/api).*/, ...defaultOptions.exclude]
-    }) as Plugin,
-    tanstackRouter({
-      quoteStyle: 'single',
-      routesDirectory: './src/routes',
-      generatedRouteTree: './src/routeTree.gen.ts'
-    }),
-    react(),
-    tailwindcss(),
-    serverBundle()
-  ],
-  resolve: {
-    alias: {
-      '@': new URL('./src', import.meta.url).pathname
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, '')
+  for (const [key, value] of Object.entries(env)) {
+    if (process.env[key] === undefined) {
+      process.env[key] = value
+    }
+  }
+
+  return {
+    server: {
+      host: '0.0.0.0',
+      port: 3000
+    },
+    plugins: [
+      devServer({
+        entry: 'src/app.ts',
+        adapter: nodeAdapter,
+        exclude: [/^(?!\/api).*/, ...defaultOptions.exclude]
+      }) as Plugin,
+      tanstackRouter({
+        quoteStyle: 'single',
+        routesDirectory: './src/routes',
+        generatedRouteTree: './src/routeTree.gen.ts'
+      }),
+      react(),
+      tailwindcss(),
+      serverBundle()
+    ],
+    resolve: {
+      alias: {
+        '@': new URL('./src', import.meta.url).pathname
+      }
     }
   }
 })
