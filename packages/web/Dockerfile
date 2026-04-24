@@ -30,7 +30,6 @@ ENV NODE_ENV=production
 
 COPY --from=prod-deps /app/node_modules node_modules
 COPY --from=build /app/packages/shared packages/shared
-RUN mkdir -p node_modules/@irodori-tts && ln -s /app/packages/shared node_modules/@irodori-tts/shared
 COPY --from=build /app/tsconfig.base.json tsconfig.base.json
 COPY --from=build /app/packages/web/tsconfig.json packages/web/tsconfig.json
 COPY --from=build /app/packages/web/generated packages/web/generated
