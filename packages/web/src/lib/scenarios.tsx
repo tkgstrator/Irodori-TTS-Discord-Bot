@@ -7,7 +7,7 @@ import {
   type ScenarioCreateApiInput,
   type ScenarioUpdateApiInput
 } from '@/schemas/scenario-write.dto'
-import { backendApi, readApiErrorMessage } from './backend-api'
+import { backendApi, toApiError } from './backend-api'
 import { buildChapterEpisodeRequest } from './chapter-episode-request'
 
 export type ScenarioStatus = 'draft' | 'generating' | 'failed' | 'completed'
@@ -291,11 +291,6 @@ export const resolveScenarioState = ({
     chapters
   }
 }
-
-/**
- * Query error を UI 向けの Error へ正規化する。
- */
-const toApiError = (error: unknown, fallback: string) => new Error(readApiErrorMessage(error, fallback))
 
 /**
  * scenarios 一覧の query key を定義する。

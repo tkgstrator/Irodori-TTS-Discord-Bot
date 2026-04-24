@@ -15,6 +15,7 @@ import {
 } from '@/lib/character-options'
 import type { Cue } from '@/lib/scenarios'
 import type { ChapterEpisodeRequest } from '@/schemas/chapter-episode-request.dto'
+import { formatZodIssues, parseJsonText } from './gemini-utils'
 
 const GeminiEnvSchema = z.object({
   GEMINI_API_KEY: z.string().nonempty()
@@ -250,19 +251,3 @@ export const estimateEpisodeDuration = (cues: readonly Cue[]): number => {
   const totalPauseSeconds = cues.reduce((total, cue) => (cue.kind === 'pause' ? total + cue.duration : total), 0)
   return Number((totalSpeechChars / 330 + totalPauseSeconds / 60 || 0).toFixed(1))
 }
-
-const parseJsonText = (text: string): unknown => {
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new Error('Gemini returned invalid JSON')
-  }
-}
-
-const formatZodIssues = (error: z.ZodError): string =>
-  error.issues
-    .map((issue) => {
-      const path = issue.path.length > 0 ? issue.path.join('.') : 'root'
-      return `${path}: ${issue.message}`
-    })
-    .join('; ')
