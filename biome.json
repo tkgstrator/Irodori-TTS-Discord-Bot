@@ -4,8 +4,9 @@
   "files": {
     "includes": [
       "packages/**/*.{ts,tsx}",
-      "!packages/**/node_modules",
-      "!packages/**/components/ui/*.tsx",
+      "workers/**/*.{ts,tsx}",
+      "!**/node_modules",
+      "!**/components/ui/*.tsx",
       "!**/routeTree.gen.ts",
       "!**/generated/prisma/*.ts"
     ]

@@ -266,6 +266,19 @@ scenarios.get('/', async (c) => {
   return c.json(responseResult.data)
 })
 
+scenarios.get('/:id', async (c) => {
+  const row = await db.scenario.findUnique({
+    where: { id: c.req.param('id') },
+    include: scenarioInclude
+  })
+
+  if (!row) {
+    return c.json({ error: 'Not found' }, 404)
+  }
+
+  return c.json(toScenarioApi(row))
+})
+
 scenarios.post('/', async (c) => {
   const bodyResult = ScenarioCreateApiSchema.safeParse(await c.req.json())
 

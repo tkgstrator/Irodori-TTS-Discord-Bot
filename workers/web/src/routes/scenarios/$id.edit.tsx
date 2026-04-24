@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useSuspenseCharacters } from '@/lib/characters'
-import { useScenarioMutations, useSuspenseResolvedScenarios } from '@/lib/scenarios'
+import { useScenarioMutations, useSuspenseResolvedScenario } from '@/lib/scenarios'
 import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
 import {
   ScenarioCreateFormSchema,
@@ -56,10 +56,10 @@ const getGeminiModelLabel = (model: GeminiModel) => {
 const ScenarioEditPageContent = () => {
   const navigate = useNavigate()
   const { id } = useParams({ strict: false })
+  const scenarioId = id ?? ''
   const { characters } = useSuspenseCharacters()
-  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
-  const { updateScenario } = useScenarioMutations({ scenarios })
-  const scenario = id ? getScenario(id) : undefined
+  const { scenario } = useSuspenseResolvedScenario(scenarioId, characters)
+  const { updateScenario } = useScenarioMutations({ scenarios: scenario ? [scenario] : [] })
   const [submitError, setSubmitError] = useState<string | null>(null)
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
   const selectedScenarioCharacterIds = useMemo(() => {
