@@ -23,7 +23,6 @@ WORKDIR /app/workers/web
 ENV NODE_ENV=production
 
 COPY --from=build /app/workers/web/dist dist
-COPY --from=build /app/workers/web/prisma/schema.prisma prisma/schema.prisma
 
 EXPOSE 3000
 CMD ["bun", "run", "dist/server/index.js"]
