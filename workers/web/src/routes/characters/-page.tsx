@@ -16,25 +16,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  getAgeGroupLabel,
-  getFirstPersonLabel,
-  getGenderLabel,
-  getHonorificLabel,
-  getOccupationLabel,
-  getSecondPersonLabel,
-  getSpeechStyleLabel
-} from '@/lib/character-options'
 import type { Character } from '@/lib/characters'
 import { useCharacterMutations, useSuspenseCharacters } from '@/lib/characters'
-
-const metadataSummary = (character: Character): readonly string[] =>
-  [
-    getSpeechStyleLabel(character.speechStyle),
-    getFirstPersonLabel(character.firstPerson),
-    character.honorific !== 'none' ? getHonorificLabel(character.honorific) : null,
-    character.secondPerson ? getSecondPersonLabel(character.secondPerson) : null
-  ].filter((value): value is string => value !== null && value.length > 0)
 
 const CharacterAvatar = ({ character, firstChar }: { character: Character; firstChar: string }) => {
   if (character.imageUrl) {
@@ -56,7 +39,6 @@ const CharacterAvatar = ({ character, firstChar }: { character: Character; first
 
 const CharacterCard = ({ character, onDelete }: { character: Character; onDelete: (character: Character) => void }) => {
   const firstChar = character.name.charAt(0) || '?'
-  const summaryItems = metadataSummary(character)
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:bg-muted/20">
@@ -68,10 +50,6 @@ const CharacterCard = ({ character, onDelete }: { character: Character; onDelete
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="truncate text-base font-semibold tracking-tight">{character.name}</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {getAgeGroupLabel(character.ageGroup)} ・ {getGenderLabel(character.gender)} ・{' '}
-                  {getOccupationLabel(character.occupation)}
-                </p>
               </div>
 
               <div className="flex shrink-0 items-center gap-1">
@@ -86,14 +64,11 @@ const CharacterCard = ({ character, onDelete }: { character: Character; onDelete
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              {character.speaker && <Badge>{character.speaker.name}</Badge>}
-              {summaryItems.map((item) => (
-                <Badge key={item} variant="outline" className="text-xs">
-                  {item}
-                </Badge>
-              ))}
-            </div>
+            {character.speaker && (
+              <div className="flex flex-wrap gap-1.5">
+                <Badge>{character.speaker.name}</Badge>
+              </div>
+            )}
           </div>
         </div>
       </div>
