@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "dev": "vite",
+    "dev": "bunx --bun vite",
     "start": "bun --env-file=.env --watch src/index.ts",
     "build": "vite build",
     "knip": "knip"
