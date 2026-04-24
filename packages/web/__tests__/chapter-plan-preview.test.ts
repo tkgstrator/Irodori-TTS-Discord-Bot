@@ -15,7 +15,8 @@ const previewFixture = {
     scenario: {
       title: '夏の約束',
       genres: ['学園', '恋愛'],
-      tone: 'ほろ苦い'
+      tone: 'ほろ苦い',
+      promptNote: ''
     },
     characters: [
       {
@@ -33,7 +34,8 @@ const previewFixture = {
         backgroundTags: [],
         sampleQuotes: ['会えてうれしい'],
         memo: '明るく真っ直ぐ。',
-        speakerId: null
+        speakerId: null,
+        caption: '明るい女子高生。素直で親しみやすい声。'
       }
     ],
     completedChapters: [],
@@ -81,7 +83,7 @@ describe('chapter plan preview storage', () => {
       storedValue: JSON.stringify(previewFixture)
     })
 
-    expect(parsedValue?.plan.chapter.title).toBe('出会い')
+    expect(parsedValue?.plan?.chapter.title).toBe('出会い')
   })
 
   test('scenarioId が一致しない保存文字列は破棄する', () => {

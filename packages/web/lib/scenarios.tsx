@@ -24,12 +24,18 @@ export interface PauseCue {
   readonly duration: number
 }
 
-export type Cue = SpeechCue | PauseCue
+export interface SceneCue {
+  readonly kind: 'scene'
+  readonly name: string
+}
+
+export type Cue = SpeechCue | PauseCue | SceneCue
 
 export interface Speaker {
   readonly alias: string
   readonly name: string
   readonly speakerId: string | null
+  readonly caption: string | null
   readonly initial: string
   readonly imageUrl?: string | null
   readonly colorClass: string
@@ -197,18 +203,50 @@ const shouldPollScenarios = (scenarios: readonly Scenario[] | undefined): boolea
   scenarios?.some(
     (scenario) =>
       scenario.status === 'generating' || scenario.chapters.some((chapter) => chapter.status === 'generating')
-  )
+  ) ?? false
+
+// 指定シナリオだけを監視してポーリング継続要否を判定する。
+const shouldPollScenarioById = ({
+  scenarioId,
+  scenarios
+}: {
+  scenarioId: string | null | undefined
+  scenarios: readonly Scenario[] | undefined
+}): boolean => {
+  if (!scenarioId || !scenarios) {
+    return false
+  }
+
+  const scenario = scenarios.find((item) => item.id === scenarioId)
+
+  if (!scenario) {
+    return false
+  }
+
+  return scenario.status === 'generating' || scenario.chapters.some((chapter) => chapter.status === 'generating')
+}
 
 // 生成中のシナリオがある間だけ一定間隔で再取得する。
 const useScenarioPolling = ({
+  mode,
   refetch,
+  scenarioId,
   scenarios
 }: {
+  mode: 'all' | 'scenario' | 'off'
   refetch: () => Promise<unknown>
+  scenarioId?: string | null
   scenarios: readonly Scenario[]
 }) => {
   useEffect(() => {
-    if (!shouldPollScenarios(scenarios)) {
+    const isPolling =
+      mode === 'all'
+        ? shouldPollScenarios(scenarios)
+        : mode === 'scenario'
+          ? shouldPollScenarioById({ scenarioId, scenarios })
+          : false
+
+    if (!isPolling) {
       return
     }
 
@@ -219,7 +257,7 @@ const useScenarioPolling = ({
     return () => {
       window.clearInterval(timerId)
     }
-  }, [refetch, scenarios])
+  }, [mode, refetch, scenarioId, scenarios])
 }
 
 // 章配列から表示用のセリフ数を再計算する。
@@ -283,10 +321,18 @@ export const scenariosQueryOptions = queryOptions({
 /**
  * 生の scenarios 一覧を Suspense で取得する。
  */
-export const useSuspenseScenarios = () => {
+export const useSuspenseScenarios = ({
+  pollMode = 'off',
+  pollScenarioId = null
+}: {
+  pollMode?: 'all' | 'scenario' | 'off'
+  pollScenarioId?: string | null
+} = {}) => {
   const query = useSuspenseQuery(scenariosQueryOptions)
   useScenarioPolling({
+    mode: pollMode,
     refetch: query.refetch,
+    scenarioId: pollScenarioId,
     scenarios: query.data
   })
 
@@ -300,13 +346,24 @@ export const useSuspenseScenarios = () => {
 /**
  * character 情報を反映した scenarios 一覧を Suspense で取得する。
  */
-export const useSuspenseResolvedScenarios = (characters: readonly Character[] = []) => {
+export const useSuspenseResolvedScenarios = (
+  characters: readonly Character[] = [],
+  {
+    pollMode = 'off',
+    pollScenarioId = null
+  }: {
+    pollMode?: 'all' | 'scenario' | 'off'
+    pollScenarioId?: string | null
+  } = {}
+) => {
   const query = useSuspenseQuery({
     ...scenariosQueryOptions,
     select: (rows: readonly Scenario[]) => rows.map((scenario) => resolveScenarioState({ scenario, characters }))
   })
   useScenarioPolling({
+    mode: pollMode,
     refetch: query.refetch,
+    scenarioId: pollScenarioId,
     scenarios: query.data
   })
 

@@ -6,6 +6,8 @@ const validScenarioInput = {
   title: '夏の約束',
   genres: ['学園', '恋愛'],
   tone: 'ほろ苦い',
+  editorModel: 'gemini-2.5-flash',
+  writerModel: 'gemini-2.5-flash',
   plotCharacterIds: ['3d0f8e53-45f0-4c18-a1ce-2ff8c0668ea3'],
   promptNote: '放課後の屋上シーンを含める'
 }

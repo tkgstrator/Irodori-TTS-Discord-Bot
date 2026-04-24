@@ -12,6 +12,7 @@ export const ScenarioApiSpeakerSchema = z.object({
   alias: z.string().nonempty(),
   name: z.string().nonempty(),
   speakerId: z.string().uuid().nullable(),
+  caption: z.string().nullable(),
   initial: z.string().nonempty(),
   imageUrl: z.string().nullable().optional(),
   colorClass: z.string().nonempty(),
@@ -38,10 +39,17 @@ export const ScenarioApiPauseCueSchema = z.object({
   duration: z.number().positive()
 })
 
+// 章内の scene cue を定義する
+export const ScenarioApiSceneCueSchema = z.object({
+  kind: z.literal('scene'),
+  name: z.string().nonempty()
+})
+
 // 章内 cue の union を定義する
 export const ScenarioApiCueSchema = z.discriminatedUnion('kind', [
   ScenarioApiSpeechCueSchema,
-  ScenarioApiPauseCueSchema
+  ScenarioApiPauseCueSchema,
+  ScenarioApiSceneCueSchema
 ])
 
 // 章レスポンスを定義する

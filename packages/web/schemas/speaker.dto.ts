@@ -1,11 +1,11 @@
 import { z } from 'zod'
-import { CharacterFormSchema, SpeakerLinkSchema } from './character.dto'
+import { CharacterFormFieldsSchema, SpeakerLinkSchema } from './character.dto'
 
 // 話者 API の識別子形式を定義する
 export const SpeakerIdSchema = z.string().uuid()
 
 // 話者取り込み時にフォームへ反映する値を定義する
-export const SpeakerImportValuesSchema = CharacterFormSchema.omit({
+export const SpeakerImportValuesSchema = CharacterFormFieldsSchema.omit({
   name: true,
   speakerId: true
 })

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { mergeImportedValues } from '../lib/speaker-import'
+import type { CharacterFormValues } from '../schemas/character.dto'
 
-const currentValues = {
+const currentValues: CharacterFormValues = {
   name: '既存キャラクター',
   ageGroup: 'adult',
   gender: 'male',
@@ -15,6 +16,7 @@ const currentValues = {
   backgroundTags: ['天才'],
   sampleQuotes: ['任せてください'],
   memo: '既存メモ',
+  caption: '低めで落ち着いた男性の声。',
   speakerId: '46a72407-2c4d-57d1-8c07-7d0cac36d01d'
 }
 
@@ -32,7 +34,8 @@ describe('speaker import helpers', () => {
       attributeTags: [],
       backgroundTags: [],
       sampleQuotes: [],
-      memo: ''
+      memo: '',
+      caption: null
     })
 
     expect(result.name).toBe('既存キャラクター')
@@ -41,6 +44,7 @@ describe('speaker import helpers', () => {
     expect(result.backgroundTags).toEqual(['天才'])
     expect(result.sampleQuotes).toEqual(['任せてください'])
     expect(result.memo).toBe('既存メモ')
+    expect(result.caption).toBe(currentValues.caption)
     expect(result.secondPerson).toBe('anata')
     expect(result.speakerId).toBe(currentValues.speakerId)
   })

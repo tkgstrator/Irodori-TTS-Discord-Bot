@@ -36,6 +36,8 @@ export const defaultValues: ScenarioCreateFormValues = {
   title: '',
   genres: [],
   tone: 'ほろ苦い',
+  editorModel: 'gemini-2.5-flash',
+  writerModel: 'gemini-2.5-flash',
   plotCharacterIds: [],
   promptNote: ''
 }
@@ -180,11 +182,19 @@ const ScenarioNewPageContent = () => {
   const navigate = useNavigate()
   const { addScenario } = useScenarioMutations()
   const { characters } = useSuspenseCharacters()
-  const { llmSettings, setEditorModel, setWriterModel } = useLlmSettings()
+  const { llmSettings } = useLlmSettings()
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewRequest, setPreviewRequest] = useState<ScenarioGenerateRequest | null>(null)
+  const formDefaults = useMemo(
+    () => ({
+      ...defaultValues,
+      editorModel: llmSettings.editor,
+      writerModel: llmSettings.writer
+    }),
+    [llmSettings.editor, llmSettings.writer]
+  )
 
   const {
     control,
@@ -194,7 +204,7 @@ const ScenarioNewPageContent = () => {
     watch
   } = useForm<ScenarioCreateFormValues>({
     resolver: zodResolver(ScenarioCreateFormSchema),
-    defaultValues
+    defaultValues: formDefaults
   })
 
   const selectedGenres = watch('genres')
@@ -202,6 +212,8 @@ const ScenarioNewPageContent = () => {
   const title = watch('title')
   const tone = watch('tone')
   const promptNote = watch('promptNote')
+  const editorModel = watch('editorModel')
+  const writerModel = watch('writerModel')
 
   const selectedCharacters = useMemo(
     () => characters.filter((character) => selectedCharacterIds.includes(character.id)),
@@ -216,8 +228,8 @@ const ScenarioNewPageContent = () => {
   const buildPreviewRequest = (values: ScenarioCreateFormValues) => {
     const requestResult = ScenarioGenerateRequestSchema.safeParse({
       model: {
-        editor: llmSettings.editor,
-        writer: llmSettings.writer
+        editor: values.editorModel,
+        writer: values.writerModel
       },
       plot: {
         title: values.title.trim(),
@@ -241,7 +253,8 @@ const ScenarioNewPageContent = () => {
           attributeTags: character.attributeTags,
           backgroundTags: character.backgroundTags,
           memo: character.memo,
-          speakerId: character.speakerId
+          speakerId: character.speakerId,
+          caption: character.caption
         }))
     })
 
@@ -277,6 +290,9 @@ const ScenarioNewPageContent = () => {
         title: previewRequest.plot.title,
         genres: previewRequest.plot.genres,
         tone: previewRequest.plot.tone,
+        promptNote: previewRequest.plot.promptNote,
+        editorModel: previewRequest.model.editor,
+        writerModel: previewRequest.model.writer,
         characterIds: previewRequest.characters.map((character) => character.id)
       })
 
@@ -461,40 +477,52 @@ const ScenarioNewPageContent = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="editorModel">Editor</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.editor)}</span>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(editorModel)}</span>
                 </div>
-                <Select value={llmSettings.editor} onValueChange={setEditorModel}>
-                  <SelectTrigger id="editorModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {geminiModelCatalog.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="editorModel"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="editorModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {geminiModelCatalog.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 <p className="text-xs text-muted-foreground">構成整理や整合性確認に使うモデルです。</p>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="writerModel">Writer</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(llmSettings.writer)}</span>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(writerModel)}</span>
                 </div>
-                <Select value={llmSettings.writer} onValueChange={setWriterModel}>
-                  <SelectTrigger id="writerModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {geminiModelCatalog.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="writerModel"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="writerModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {geminiModelCatalog.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 <p className="text-xs text-muted-foreground">本文やセリフ生成に使うモデルです。</p>
               </div>
             </div>
@@ -592,12 +620,17 @@ const ScenarioNewPageContent = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Editor</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.editor)}</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(editorModel)}</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Writer</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(llmSettings.writer)}</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(writerModel)}</p>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">補足メモ</p>
+              <p className="text-sm text-foreground">{promptNote.trim() || '未入力'}</p>
             </div>
 
             <div className="space-y-2">

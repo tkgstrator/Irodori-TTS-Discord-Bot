@@ -30,7 +30,7 @@ const STEPS = [
 ] as const
 
 const STEP_FIELDS: readonly (readonly string[])[] = [
-  ['name', 'ageGroup', 'gender', 'occupation'],
+  ['name', 'caption', 'ageGroup', 'gender', 'occupation'],
   ['personalityTags', 'speechStyle', 'firstPerson', 'secondPerson', 'honorific', 'sampleQuotes'],
   ['attributeTags', 'backgroundTags', 'memo']
 ]
@@ -86,7 +86,8 @@ export const DEFAULT_VALUES: CharacterFormValues = {
   backgroundTags: [],
   sampleQuotes: [],
   memo: '',
-  speakerId: null
+  speakerId: null,
+  caption: null
 }
 
 // 生成した blob URL だけを安全に解放する
@@ -158,7 +159,7 @@ function StepProgress({ current, total }: { current: number; total: number }) {
                 {done ? <Check className="size-3.5" /> : step}
               </div>
               <span className={cn('text-xs', active ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
-                {STEPS[i].label}
+                {STEPS[i]?.label}
               </span>
             </div>
           </div>
@@ -305,6 +306,32 @@ function Step1({
           />
           {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>
+          caption <span className="text-destructive">*</span>
+          <span className="text-xs font-normal text-muted-foreground"> 話者連携しない場合に必須</span>
+        </Label>
+        <Controller
+          name="caption"
+          control={control}
+          render={({ field }) => (
+            <Textarea
+              placeholder="例: 落ち着いた女性ナレーション。低めで柔らかく、説明調。"
+              rows={3}
+              className={cn(errors.caption && 'border-destructive')}
+              value={field.value ?? ''}
+              onChange={(event) => field.onChange(event.target.value)}
+            />
+          )}
+        />
+        {errors.caption ? (
+          <p className="text-xs text-destructive">{errors.caption.message}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            音声話者を連携しないキャラクターは、この caption をもとに声色を決めます。
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-3">
         <Controller
@@ -570,7 +597,8 @@ export function CharacterWizard({
     handleSubmit,
     formState: { errors }
   } = useForm<CharacterFormValues>({
-    resolver: zodResolver(CharacterFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(CharacterFormSchema) as any,
     defaultValues
   })
 
@@ -582,7 +610,8 @@ export function CharacterWizard({
     reset({
       ...mergedValues,
       speakerId: template.speaker.id
-    })
+    } as CharacterFormValues)
+    void trigger(['speakerId', 'caption'])
     setLinkedSpeaker(template.speaker)
   }
 
@@ -592,6 +621,7 @@ export function CharacterWizard({
       shouldDirty: true,
       shouldTouch: true
     })
+    void trigger(['speakerId', 'caption'])
     setLinkedSpeaker(null)
   }
 
@@ -606,7 +636,7 @@ export function CharacterWizard({
       await handleSubmit(async (data) => {
         setIsSubmitting(true)
         try {
-          await onSubmit(data, imageUrl)
+          await onSubmit(data as CharacterFormValues, imageUrl)
         } finally {
           setIsSubmitting(false)
         }
@@ -660,21 +690,31 @@ export function CharacterWizard({
               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Step {step + 1} / {STEPS.length}
               </p>
-              <h2 className="text-lg font-semibold">{stepInfo.label}</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo.description}</p>
+              <h2 className="text-lg font-semibold">{stepInfo?.label}</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">{stepInfo?.description}</p>
             </div>
 
             {step === 0 && (
               <Step1
-                control={control}
+                control={control as unknown as import('react-hook-form').Control<CharacterFormValues>}
                 errors={errors}
                 imageUrl={imageUrl}
                 onImageChange={handleImageChange}
                 actions={stepOneActionNodes}
               />
             )}
-            {step === 1 && <Step2 control={control} errors={errors} />}
-            {step === 2 && <Step3 control={control} errors={errors} />}
+            {step === 1 && (
+              <Step2
+                control={control as unknown as import('react-hook-form').Control<CharacterFormValues>}
+                errors={errors}
+              />
+            )}
+            {step === 2 && (
+              <Step3
+                control={control as unknown as import('react-hook-form').Control<CharacterFormValues>}
+                errors={errors}
+              />
+            )}
           </div>
         </form>
       </div>

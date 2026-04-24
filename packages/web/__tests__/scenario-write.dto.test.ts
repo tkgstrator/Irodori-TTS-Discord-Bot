@@ -7,6 +7,9 @@ describe('ScenarioCreateApiSchema', () => {
       title: '夏の約束',
       genres: ['学園', '恋愛'],
       tone: 'ほろ苦い',
+      promptNote: '放課後の屋上シーンを含める',
+      editorModel: 'gemini-2.5-flash',
+      writerModel: 'gemini-2.5-flash',
       characterIds: ['11111111-1111-4111-8111-111111111111']
     })
 
@@ -18,6 +21,9 @@ describe('ScenarioCreateApiSchema', () => {
       title: '夏の約束',
       genres: [],
       tone: 'ほろ苦い',
+      promptNote: '',
+      editorModel: 'gemini-2.5-flash',
+      writerModel: 'gemini-2.5-flash',
       characterIds: []
     })
 

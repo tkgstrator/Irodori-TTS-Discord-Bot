@@ -44,8 +44,47 @@ export const CharacterSampleQuotesSchema = z.preprocess(
   z.array(CharacterSampleQuoteSchema).max(5, 'セリフサンプルは5件までです')
 )
 
+// caption 入力を正規化してから検証する
+const normalizeCharacterCaption = (value: unknown) => {
+  if (value === undefined || value === null) {
+    return null
+  }
+
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  const normalizedValue = value.trim()
+  return normalizedValue.length > 0 ? normalizedValue : null
+}
+
+// speaker 未連携時の caption 文字列を定義する
+export const CharacterCaptionSchema = z.preprocess(
+  normalizeCharacterCaption,
+  z.string().trim().nonempty('caption を入力してください').max(120, 'caption は120文字以内です').nullable()
+)
+
+// speakerId または caption の必須条件を追加する
+const addVoiceSourceIssue = (
+  value: {
+    speakerId: string | null
+    caption: string | null
+  },
+  ctx: z.RefinementCtx
+) => {
+  if (value.speakerId !== null || value.caption !== null) {
+    return
+  }
+
+  ctx.addIssue({
+    code: 'custom',
+    path: ['caption'],
+    message: '話者連携または caption のどちらかは必須です'
+  })
+}
+
 // キャラクター入力の共通項目を定義する
-const CharacterBaseSchema = z.object({
+export const CharacterCoreSchema = z.object({
   name: z.string().nonempty('名前は必須です'),
   imageUrl: z.string().nullable(),
   ageGroup: AgeGroupSchema,
@@ -60,23 +99,33 @@ const CharacterBaseSchema = z.object({
   backgroundTags: z.array(z.string()),
   sampleQuotes: CharacterSampleQuotesSchema,
   memo: z.string(),
-  speakerId: z.string().uuid().nullable()
+  speakerId: z.string().uuid().nullable(),
+  caption: CharacterCaptionSchema
 })
 
-// フォーム入力用スキーマを定義する
-export const CharacterFormSchema = CharacterBaseSchema.omit({
+// フォーム入力の共通フィールドを定義する
+export const CharacterFormFieldsSchema = CharacterCoreSchema.omit({
   imageUrl: true
 })
 
+// フォーム入力用スキーマを定義する
+export const CharacterFormSchema = CharacterFormFieldsSchema.superRefine((value, ctx) => {
+  addVoiceSourceIssue(value, ctx)
+})
+
 // API リクエスト用スキーマを定義する
-export const CharacterInputSchema = CharacterBaseSchema
+export const CharacterInputSchema = CharacterCoreSchema.superRefine((value, ctx) => {
+  addVoiceSourceIssue(value, ctx)
+})
 
 // 永続化済みキャラクターのレスポンス形式を定義する
-export const CharacterSchema = CharacterBaseSchema.extend({
+export const CharacterSchema = CharacterCoreSchema.extend({
   id: z.string().uuid(),
   createdAt: z.string().nonempty(),
   updatedAt: z.string().nonempty(),
   speaker: SpeakerLinkSchema.nullable()
+}).superRefine((value, ctx) => {
+  addVoiceSourceIssue(value, ctx)
 })
 
 // 一覧レスポンスの形式を定義する

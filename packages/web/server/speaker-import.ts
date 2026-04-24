@@ -96,7 +96,8 @@ const speakerCharacterDefaults = {
   honorific: 'san',
   attributeTags: [],
   backgroundTags: [],
-  sampleQuotes: []
+  sampleQuotes: [],
+  caption: null
 } as const
 
 // 環境変数から irodori-tts のベース URL を取得する
@@ -197,7 +198,8 @@ export const buildSeedSpeakerCharacter = async (speaker: SpeakerLink) => {
     name: speaker.name,
     imageUrl: await fetchCharacterImageUrl(speaker.name),
     memo: '',
-    speakerId: speaker.id
+    speakerId: speaker.id,
+    caption: null
   })
 
   if (!characterResult.success) {

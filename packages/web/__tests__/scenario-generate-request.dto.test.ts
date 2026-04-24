@@ -30,7 +30,8 @@ describe('ScenarioGenerateRequestSchema', () => {
           backgroundTags: ['library-club'],
           sampleQuotes: ['そうなんだ', 'うれしいな'],
           memo: '感情が顔に出やすい',
-          speakerId: null
+          speakerId: null,
+          caption: '明るい女子高生。素直で少し高めの声。'
         }
       ]
     })

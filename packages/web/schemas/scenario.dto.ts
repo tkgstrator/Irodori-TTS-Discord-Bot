@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { GeminiModelSchema } from './llm-settings.dto'
 
 // 登場キャラクターの最大選択数を定義する
 export const scenarioCharacterLimit = 5
@@ -42,6 +43,8 @@ export const ScenarioCreateFormSchema = z.object({
     .nonempty('ジャンルを1つ以上選択してください')
     .max(3, 'ジャンルは3つまで選択できます'),
   tone: ScenarioToneSchema,
+  editorModel: GeminiModelSchema,
+  writerModel: GeminiModelSchema,
   plotCharacterIds: z
     .array(z.string().uuid())
     .max(scenarioCharacterLimit, `キャラクターは${scenarioCharacterLimit}人まで選択できます`),

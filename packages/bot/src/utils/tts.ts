@@ -1,50 +1,46 @@
 import type { SpeakerInfo, SynthRequest } from '@irodori-tts/shared/irodori-api'
 import type { SpeakerConfig } from '../schemas/user-settings.dto'
-import { irodoriClient } from './client'
+import { IRODORI_TTS_BASE_URL, irodoriClient } from './client'
 
-/**
- * 話者一覧を取得する
- * @returns 話者一覧
- */
+export interface PcmAudio {
+  buffer: Buffer
+  sampleRate: number
+}
+
 export const getSpeakers = async (): Promise<SpeakerInfo[]> => {
   const res = await irodoriClient.get('/speakers')
   return res.speakers
 }
 
-/**
- * 指定話者でテキストを音声合成する
- * @param text 合成するテキスト
- * @param speakerId 話者UUID
- * @param params 追加のサンプリングパラメータ（任意）
- * @returns WAV音声データ
- */
 export const synthesize = async (
   text: string,
   speakerId: string,
   params: Omit<SynthRequest, 'speaker_id' | 'text'> = {}
-): Promise<Buffer> => {
-  const response = await irodoriClient.post(
-    '/synth',
-    { speaker_id: speakerId, text, ...params },
-    { responseType: 'arraybuffer' }
-  )
+): Promise<PcmAudio> => {
+  const response = await fetch(`${IRODORI_TTS_BASE_URL}/synth`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'audio/pcm'
+    },
+    body: JSON.stringify({ speaker_id: speakerId, text, ...params })
+  })
 
-  return Buffer.from(response)
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '')
+    throw new Error(`TTS synthesis failed: ${response.status} ${response.statusText} ${detail}`)
+  }
+
+  const sampleRate = Number(response.headers.get('X-TTS-Sample-Rate') ?? '24000')
+  const arrayBuffer = await response.arrayBuffer()
+
+  return { buffer: Buffer.from(arrayBuffer), sampleRate }
 }
 
-/**
- * テキストから直接音声を合成する
- * @param text 合成するテキスト
- * @param speakerId 話者UUID
- * @returns WAV音声データ
- */
-export const textToSpeech = async (text: string, speakerId: string): Promise<Buffer> => {
+export const textToSpeech = async (text: string, speakerId: string): Promise<PcmAudio> => {
   return await synthesize(text, speakerId)
 }
 
-/**
- * ユーザー設定を `/synth` のオプションへ展開する
- */
 const toSynthParams = (cfg: SpeakerConfig): Omit<SynthRequest, 'speaker_id' | 'text'> => ({
   seed: cfg.seed,
   num_steps: cfg.numSteps,
@@ -54,18 +50,11 @@ const toSynthParams = (cfg: SpeakerConfig): Omit<SynthRequest, 'speaker_id' | 't
   truncation_factor: cfg.truncationFactor
 })
 
-/**
- * ユーザー設定を適用してテキストを音声合成する
- * @param text 合成するテキスト
- * @param speakerId 話者UUID
- * @param speakerConfig 話者設定
- * @returns WAV音声データ
- */
 export const textToSpeechWithSettings = async (
   text: string,
   speakerId: string,
   speakerConfig: SpeakerConfig
-): Promise<Buffer> => {
+): Promise<PcmAudio> => {
   console.debug('TTS request:', { text, speakerId })
   return await synthesize(text, speakerId, toSynthParams(speakerConfig))
 }

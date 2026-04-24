@@ -37,7 +37,8 @@ describe('chapter episode writer', () => {
             backgroundTags: ['transfer_student'],
             sampleQuotes: ['はじめまして'],
             memo: '明るい',
-            speakerId: '11111111-1111-4111-8111-111111111111'
+            speakerId: '11111111-1111-4111-8111-111111111111',
+            caption: null
           }
         }
       ]
@@ -47,6 +48,15 @@ describe('chapter episode writer', () => {
     expect(prompt).toContain('出会い')
     expect(prompt).toContain('char1')
     expect(prompt).toContain('cheerful')
+    expect(prompt).toContain('はじめまして')
+    expect(prompt).toContain('優先順位:')
+    expect(prompt).toContain('`chapter` は今回の章で起こすべき内容と流れを表します')
+    expect(prompt).toContain('`cast` は各キャラクターが「誰で」「どう話すか」の参考です')
+    expect(prompt).toContain('一人称: 私')
+    expect(prompt).toContain('敬称: 〜さん')
+    expect(prompt).toContain('セリフサンプル: はじめまして')
+    expect(prompt).toContain('章プロットにない出来事や関係性を足さない')
+    expect(prompt).not.toContain('```json')
     expect(prompt).not.toContain('"speakerId"')
   })
 

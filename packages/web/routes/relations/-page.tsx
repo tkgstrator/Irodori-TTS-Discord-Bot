@@ -104,7 +104,7 @@ const getEdgeColor = (type: RelationType, dark: boolean): string => {
 }
 
 const getAvatarColor = (id: string): string => {
-  return AVATAR_COLORS[id] ?? NEW_NODE_COLORS[id.charCodeAt(0) % NEW_NODE_COLORS.length]
+  return AVATAR_COLORS[id] ?? NEW_NODE_COLORS[id.charCodeAt(0) % NEW_NODE_COLORS.length] ?? ''
 }
 
 type CharacterNodeData = {

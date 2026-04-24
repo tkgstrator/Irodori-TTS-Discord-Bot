@@ -17,7 +17,8 @@ const validCharacterInput = {
   backgroundTags: ['天才'],
   sampleQuotes: [],
   memo: 'テスト用メモ',
-  speakerId: null
+  speakerId: null,
+  caption: '落ち着いた少年。柔らかく自然体の声。'
 }
 
 describe('CharacterInputSchema', () => {
@@ -92,6 +93,25 @@ describe('CharacterInputSchema', () => {
     })
 
     expect(result.success).toBe(false)
+  })
+
+  test('speakerId と caption の両方が無いと失敗する', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      caption: null
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  test('speakerId があれば caption が無くても受け入れる', () => {
+    const result = CharacterInputSchema.safeParse({
+      ...validCharacterInput,
+      speakerId: '3d0f8e53-45f0-4c18-a1ce-2ff8c0668ea3',
+      caption: null
+    })
+
+    expect(result.success).toBe(true)
   })
 })
 

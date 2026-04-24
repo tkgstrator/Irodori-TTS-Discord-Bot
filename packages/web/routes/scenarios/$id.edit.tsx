@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useSuspenseCharacters } from '@/lib/characters'
 import { useScenarioMutations, useSuspenseResolvedScenarios } from '@/lib/scenarios'
+import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
 import {
   ScenarioCreateFormSchema,
   type ScenarioCreateFormValues,
@@ -23,20 +25,33 @@ import { CharacterAvatar, CharacterCard, characterBaseSummary, FieldHint, GenreC
 const createScenarioEditDefaults = ({
   characterIds,
   genres,
+  promptNote,
+  editorModel,
+  writerModel,
   title,
   tone
 }: {
   characterIds: readonly string[]
   genres: readonly string[]
+  promptNote: string
+  editorModel: string
+  writerModel: string
   title: string
-  tone: ScenarioCreateFormValues['tone']
+  tone: string
 }): ScenarioCreateFormValues => ({
   title,
-  genres: [...genres],
-  tone,
+  genres: genres.filter((g): g is ScenarioCreateFormValues['genres'][number] => true),
+  tone: tone as ScenarioCreateFormValues['tone'],
+  editorModel: editorModel as ScenarioCreateFormValues['editorModel'],
+  writerModel: writerModel as ScenarioCreateFormValues['writerModel'],
   plotCharacterIds: [...characterIds],
-  promptNote: ''
+  promptNote
 })
+
+// モデル名から表示ラベルを返す。
+const getGeminiModelLabel = (model: GeminiModel) => {
+  return geminiModelCatalog.find((item) => item.value === model)?.label ?? model
+}
 
 const ScenarioEditPageContent = () => {
   const navigate = useNavigate()
@@ -44,7 +59,7 @@ const ScenarioEditPageContent = () => {
   const { characters } = useSuspenseCharacters()
   const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
   const { updateScenario } = useScenarioMutations({ scenarios })
-  const scenario = getScenario(id)
+  const scenario = id ? getScenario(id) : undefined
   const [submitError, setSubmitError] = useState<string | null>(null)
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
   const selectedScenarioCharacterIds = useMemo(() => {
@@ -63,6 +78,9 @@ const ScenarioEditPageContent = () => {
       createScenarioEditDefaults({
         characterIds: selectedScenarioCharacterIds,
         genres: scenario?.genres ?? [],
+        promptNote: scenario?.promptNote ?? '',
+        editorModel: scenario?.editorModel ?? 'gemini-2.5-flash',
+        writerModel: scenario?.writerModel ?? 'gemini-2.5-flash',
         title: scenario?.title ?? '',
         tone: scenario?.tone ?? 'ほろ苦い'
       }),
@@ -88,6 +106,9 @@ const ScenarioEditPageContent = () => {
   const selectedCharacterIds = watch('plotCharacterIds')
   const title = watch('title')
   const tone = watch('tone')
+  const promptNote = watch('promptNote')
+  const editorModel = watch('editorModel')
+  const writerModel = watch('writerModel')
   const selectedCharacters = useMemo(
     () => characters.filter((character) => selectedCharacterIds.includes(character.id)),
     [characters, selectedCharacterIds]
@@ -118,6 +139,9 @@ const ScenarioEditPageContent = () => {
         title: result.data.title,
         genres: result.data.genres,
         tone: result.data.tone,
+        promptNote: result.data.promptNote,
+        editorModel: result.data.editorModel,
+        writerModel: result.data.writerModel,
         characterIds: result.data.plotCharacterIds
       })
       await navigate({ to: '/plots/$id', params: { id: scenario.id } })
@@ -143,7 +167,7 @@ const ScenarioEditPageContent = () => {
             <div className="min-w-0">
               <h1 className="text-2xl font-bold tracking-tight">プロット編集</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                タイトル、ジャンル、トーンを更新できます。章がある場合は登場キャラクターを固定します。
+                タイトル、ジャンル、トーン、補足メモ、利用モデルを更新できます。
               </p>
             </div>
           </div>
@@ -196,6 +220,95 @@ const ScenarioEditPageContent = () => {
                   )}
                 />
                 <FieldHint error={errors.tone?.message} />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-5 border-b border-border pb-8">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">生成モデル</h2>
+              <p className="text-sm text-muted-foreground">このプロットで使う Editor / Writer を保存します。</p>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="editorModel">Editor</Label>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(editorModel)}</span>
+                </div>
+                <Controller
+                  control={control}
+                  name="editorModel"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="editorModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {geminiModelCatalog.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldHint error={errors.editorModel?.message} hint="章計画や補完に使うモデルです。" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="writerModel">Writer</Label>
+                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(writerModel)}</span>
+                </div>
+                <Controller
+                  control={control}
+                  name="writerModel"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="writerModel" className="!h-11 w-full !py-1 !text-base md:!text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {geminiModelCatalog.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldHint error={errors.writerModel?.message} hint="本文やセリフ生成に使うモデルです。" />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-5 border-b border-border pb-8 xl:col-span-2">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">補足メモ</h2>
+              <p className="text-sm text-muted-foreground">
+                プロット全体の方向性や制約を保存できます。章計画時に Editor へ渡します。
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="promptNote">自由入力</Label>
+              <Textarea
+                id="promptNote"
+                rows={5}
+                placeholder="例: 全体は静かな青春もの。唐突な展開は避けたい。"
+                className="min-h-32"
+                aria-invalid={errors.promptNote ? 'true' : 'false'}
+                {...register('promptNote')}
+              />
+              <div className="flex items-center justify-between gap-3">
+                <FieldHint
+                  error={errors.promptNote?.message}
+                  hint="400文字以内。保存後は章計画時に Editor へ渡されます。"
+                />
+                <span className="shrink-0 text-xs text-muted-foreground">{promptNote.length}/400</span>
               </div>
             </div>
           </section>
@@ -331,6 +444,22 @@ const ScenarioEditPageContent = () => {
             <div className="space-y-2">
               <p className="text-xs font-medium tracking-wide text-muted-foreground">トーン</p>
               <p className="text-sm text-foreground">{tone}</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground">Editor</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(editorModel)}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground">Writer</p>
+                <p className="text-sm text-foreground">{getGeminiModelLabel(writerModel)}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">補足メモ</p>
+              <p className="text-sm text-foreground">{promptNote.trim() || '未入力'}</p>
             </div>
 
             <div className="space-y-2">

@@ -4,9 +4,10 @@ import {
   buildChapterPlanPrompt,
   buildChapterPlanRepairPrompt
 } from '../lib/chapter-plan-prompt'
+import type { ChapterPlanRequest } from '../schemas/chapter-plan-request.dto'
 import { parseChapterPlanText } from '../server/chapter-planner'
 
-const requestFixture = {
+const requestFixture: ChapterPlanRequest = {
   schemaVersion: 1,
   dramaId: '76150d2f-f27b-48d7-9550-893d76f66726',
   model: {
@@ -16,7 +17,8 @@ const requestFixture = {
   scenario: {
     title: '夏の約束',
     genres: ['学園', '恋愛'],
-    tone: 'ほろ苦い'
+    tone: 'ほろ苦い',
+    promptNote: ''
   },
   characters: [
     {
@@ -34,7 +36,8 @@ const requestFixture = {
       backgroundTags: [],
       sampleQuotes: ['きっと大丈夫'],
       memo: '明るく真っ直ぐ。',
-      speakerId: null
+      speakerId: null,
+      caption: '明るい女子高生。素直で少し高めの声。'
     }
   ],
   completedChapters: [
@@ -54,7 +57,7 @@ const requestFixture = {
     promptNote: '',
     focusCharacterIds: ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']
   }
-} as const
+}
 
 describe('chapter planner', () => {
   test('ChapterPlanRequest を Gemini 向けプロンプトへ整形できる', () => {

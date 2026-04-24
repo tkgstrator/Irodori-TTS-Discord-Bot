@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import type { ChapterEpisodeRequest } from '../schemas/chapter-episode-request.dto'
 import { db } from '../server/db'
 import { runScenarioEpisodeGeneration } from '../server/scenario-episode-generation'
 
@@ -10,7 +11,7 @@ const trackScenarioId = (id: string) => {
 }
 
 // 章生成テスト用の Writer リクエストを組み立てる。
-const createEpisodeRequest = () => ({
+const createEpisodeRequest = (): ChapterEpisodeRequest => ({
   model: 'gemini-2.5-flash',
   scenario: {
     title: '章生成テスト',
