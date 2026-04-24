@@ -1,0 +1,1 @@
+export { playVds } from './player'
