@@ -1,0 +1,10 @@
+node_modules
+.devcontainer
+.claude
+.git
+*.md
+__tests__
+e2e
+packages/web/dist
+packages/web/generated
+packages/bot/dist

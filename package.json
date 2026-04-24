@@ -1,7 +1,9 @@
 {
   "name": "irodori-tts",
   "private": true,
-  "workspaces": ["packages/*"],
+  "license": "MIT",
+  "packageManager": "bun@1.3.9",
+  "workspaces": ["packages/*", "workers/*"],
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "lint": "biome check packages/",

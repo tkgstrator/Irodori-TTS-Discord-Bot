@@ -1,0 +1,12 @@
+/dist/
+
+/generated/prisma
+
+/.tanstack/
+/node_modules/
+
+.dev.vars
+*.db
+*.tsbuildinfo
+
+!/src/lib/

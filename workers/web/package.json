@@ -5,16 +5,11 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "bun --env-file=.env --watch src/index.ts",
-    "db:export:characters": "bun ./prisma/export-character-seeds.ts",
-    "db:push": "bunx --bun prisma db push",
-    "db:seed": "bunx --bun prisma db seed",
-    "db:erd": "bunx --bun prisma generate --generator erd",
     "build": "vite build",
-    "start": "bun --env-file=.env src/index.ts",
     "knip": "knip"
   },
   "dependencies": {
-"@fontsource-variable/geist": "^5.2.8",
+    "@fontsource-variable/geist": "^5.2.8",
     "@fontsource/fraunces": "^5.2.9",
     "@google/genai": "^1.50.1",
     "@hono/node-server": "^2.0.0",

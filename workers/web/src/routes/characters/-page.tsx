@@ -57,7 +57,6 @@ const CharacterAvatar = ({ character, firstChar }: { character: Character; first
 const CharacterCard = ({ character, onDelete }: { character: Character; onDelete: (character: Character) => void }) => {
   const firstChar = character.name.charAt(0) || '?'
   const summaryItems = metadataSummary(character)
-  const hasDetailTags = character.attributeTags.length > 0 || character.backgroundTags.length > 0
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:bg-muted/20">
@@ -97,24 +96,6 @@ const CharacterCard = ({ character, onDelete }: { character: Character; onDelete
             </div>
           </div>
         </div>
-
-        {hasDetailTags && (
-          <section>
-            <p className="mb-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">属性・背景</p>
-            <div className="flex flex-wrap gap-1.5">
-              {character.attributeTags.map((tag) => (
-                <Badge key={`attribute-${tag}`} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-              {character.backgroundTags.map((tag) => (
-                <Badge key={`background-${tag}`} variant="outline" className="border-dashed text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </article>
   )
@@ -168,7 +149,7 @@ const CharactersPageContent = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {characters.map((character) => (
             <CharacterCard key={character.id} character={character} onDelete={setPendingDeleteCharacter} />
           ))}
