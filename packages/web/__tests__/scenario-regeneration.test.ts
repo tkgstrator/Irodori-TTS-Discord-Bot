@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { canGenerateNextChapter, canRegenerateChapter, createNextChapter, resolveScenarioState } from '../src/lib/scenarios'
+import {
+  canGenerateNextChapter,
+  canRegenerateChapter,
+  createNextChapter,
+  resolveScenarioState
+} from '../src/lib/scenarios'
 
 // 再生成判定用の最小章配列を返す。
 const createChapters = () =>

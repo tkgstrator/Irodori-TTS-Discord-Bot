@@ -4,7 +4,7 @@ import {
   estimateEpisodeDuration,
   parseChapterEpisodeText,
   validateEpisodeCues
-} from '../server/chapter-episode-writer'
+} from '../src/api/chapter-episode-writer'
 
 describe('chapter episode writer', () => {
   test('章プロットからエピソード用プロンプトを組み立てる', () => {

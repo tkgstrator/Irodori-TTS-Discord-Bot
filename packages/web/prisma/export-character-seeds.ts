@@ -1,8 +1,8 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
+import { db } from '../src/api/db'
 import { ScenarioSeedCharacterSchema } from '../src/schemas/scenario-seed.dto'
-import { db } from '../server/db'
 
 const characterSeedFilePath = fileURLToPath(new URL('./character-seeds.ts', import.meta.url))
 const ScenarioSeedCharacterListSchema = z.array(ScenarioSeedCharacterSchema)

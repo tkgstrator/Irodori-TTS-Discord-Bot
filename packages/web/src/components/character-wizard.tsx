@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ArrowRight, Camera, Check, ChevronLeft, Plus, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useCallback, useRef, useState } from 'react'
+import type { Resolver } from 'react-hook-form'
 import { Controller, useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -597,8 +598,7 @@ export function CharacterWizard({
     handleSubmit,
     formState: { errors }
   } = useForm<CharacterFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(CharacterFormSchema) as any,
+    resolver: zodResolver(CharacterFormSchema) as Resolver<CharacterFormValues>,
     defaultValues
   })
 
