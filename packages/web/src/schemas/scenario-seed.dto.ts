@@ -2,13 +2,13 @@ import { z } from 'zod'
 import { CharacterInputSchema } from './character.dto'
 
 // シナリオ seed で扱うステータスを定義する
-export const ScenarioSeedStatusSchema = z.enum(['draft', 'generating', 'completed', 'failed'])
+const ScenarioSeedStatusSchema = z.enum(['draft', 'generating', 'completed', 'failed'])
 
 // 章 seed で扱うステータスを定義する
-export const ScenarioSeedChapterStatusSchema = z.enum(['draft', 'generating', 'completed'])
+const ScenarioSeedChapterStatusSchema = z.enum(['draft', 'generating', 'completed'])
 
 // シナリオ cast の seed 形式を定義する
-export const ScenarioSeedCastSchema = z
+const ScenarioSeedCastSchema = z
   .object({
     alias: z.string().nonempty(),
     speakerId: z.uuid(),
@@ -18,7 +18,7 @@ export const ScenarioSeedCastSchema = z
   .strict()
 
 // 章内の speech cue seed を定義する
-export const ScenarioSeedSpeechCueSchema = z
+const ScenarioSeedSpeechCueSchema = z
   .object({
     kind: z.literal('speech'),
     speaker: z.string().nonempty(),
@@ -27,7 +27,7 @@ export const ScenarioSeedSpeechCueSchema = z
   .strict()
 
 // 章内の pause cue seed を定義する
-export const ScenarioSeedPauseCueSchema = z
+const ScenarioSeedPauseCueSchema = z
   .object({
     kind: z.literal('pause'),
     duration: z.number().positive()
@@ -35,10 +35,7 @@ export const ScenarioSeedPauseCueSchema = z
   .strict()
 
 // 章内 cue seed を定義する
-export const ScenarioSeedCueSchema = z.discriminatedUnion('kind', [
-  ScenarioSeedSpeechCueSchema,
-  ScenarioSeedPauseCueSchema
-])
+const ScenarioSeedCueSchema = z.discriminatedUnion('kind', [ScenarioSeedSpeechCueSchema, ScenarioSeedPauseCueSchema])
 
 // シナリオ章 seed 形式を定義する
 export const ScenarioSeedChapterSchema = z
@@ -139,13 +136,7 @@ export const ScenarioSeedSetSchema = z
   })
   .strict()
 
-export type ScenarioSeedStatus = z.infer<typeof ScenarioSeedStatusSchema>
-export type ScenarioSeedChapterStatus = z.infer<typeof ScenarioSeedChapterStatusSchema>
 export type ScenarioSeedCast = z.infer<typeof ScenarioSeedCastSchema>
-export type ScenarioSeedSpeechCue = z.infer<typeof ScenarioSeedSpeechCueSchema>
-export type ScenarioSeedPauseCue = z.infer<typeof ScenarioSeedPauseCueSchema>
 export type ScenarioSeedCue = z.infer<typeof ScenarioSeedCueSchema>
 export type ScenarioSeedChapter = z.infer<typeof ScenarioSeedChapterSchema>
 export type ScenarioSeedScenario = z.infer<typeof ScenarioSeedScenarioSchema>
-export type ScenarioSeedCharacter = z.infer<typeof ScenarioSeedCharacterSchema>
-export type ScenarioSeedSet = z.infer<typeof ScenarioSeedSetSchema>

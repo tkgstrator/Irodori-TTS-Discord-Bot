@@ -20,7 +20,7 @@ export interface RelationCharacter {
   readonly role: string
 }
 
-export type RelationCharacterInput = Omit<RelationCharacter, 'id'>
+type RelationCharacterInput = Omit<RelationCharacter, 'id'>
 
 export interface Relation {
   readonly id: string
@@ -30,7 +30,7 @@ export interface Relation {
   readonly label: string
 }
 
-export type RelationInput = Omit<Relation, 'id'>
+type RelationInput = Omit<Relation, 'id'>
 
 interface RelationsContextValue {
   readonly characters: readonly RelationCharacter[]

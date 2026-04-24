@@ -6,7 +6,7 @@ import { ScenarioGenreSchema, ScenarioToneSchema } from './scenario.dto'
 import { StoryCharacterContextSchema } from './story-character-context.dto'
 
 // 章計画時に参照するシナリオの固定情報を定義する。
-export const ChapterPlanRequestScenarioSchema = z.object({
+const ChapterPlanRequestScenarioSchema = z.object({
   title: z.string().trim().nonempty(),
   genres: z.array(ScenarioGenreSchema).nonempty(),
   tone: ScenarioToneSchema,
@@ -15,7 +15,7 @@ export const ChapterPlanRequestScenarioSchema = z.object({
 
 // v1 の章計画入力を定義する。
 // cast / alias 編集は未対応のため、character id ベースでフォーカス対象を渡す。
-export const ChapterPlanRequestInputSchema = z.object({
+const ChapterPlanRequestInputSchema = z.object({
   mode: ChapterGenerateModeSchema,
   nextChapterNumber: z.number().int().positive(),
   requestedTitle: z.string().trim().max(60, '章タイトルは60文字以内で入力してください'),

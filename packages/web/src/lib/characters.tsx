@@ -2,19 +2,19 @@ import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@ta
 import type { Character, CharacterInput } from '@/schemas/character.dto'
 import { backendApi, toApiError } from './backend-api'
 
-export type { Character, CharacterInput } from '@/schemas/character.dto'
+export type { Character } from '@/schemas/character.dto'
 
 /**
  * characters 一覧の query key を定義する。
  */
-export const characterKeys = {
+const characterKeys = {
   all: ['characters'] as const
 }
 
 /**
  * characters 一覧取得の query options を定義する。
  */
-export const charactersQueryOptions = queryOptions({
+const charactersQueryOptions = queryOptions({
   queryKey: characterKeys.all,
   queryFn: async () => {
     try {

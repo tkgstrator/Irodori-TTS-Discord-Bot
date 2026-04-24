@@ -112,7 +112,7 @@ const getIrodoriTtsBaseUrl = () => {
 }
 
 // irodori-tts から現在の話者一覧を取得する
-export const fetchSpeakerSourceList = async () => {
+const fetchSpeakerSourceList = async () => {
   const speakerUrl = new URL('/speakers', getIrodoriTtsBaseUrl())
   const response = await fetch(speakerUrl)
 
@@ -155,7 +155,7 @@ const fetchCharacterImageUrl = async (speakerName: string) => {
 }
 
 // seed 用の話者レコードを組み立てる
-export const buildSeedSpeakerRecord = (speaker: z.infer<typeof SpeakerSourceSchema>) => {
+const buildSeedSpeakerRecord = (speaker: z.infer<typeof SpeakerSourceSchema>) => {
   const speakerResult = SpeakerLinkSchema.safeParse({
     id: speaker.uuid,
     name: speaker.name
@@ -192,7 +192,7 @@ const buildSpeakerImportTemplate = (speaker: SpeakerLink) => {
 }
 
 // seed 用の CharacterInput を組み立てる
-export const buildSeedSpeakerCharacter = async (speaker: SpeakerLink) => {
+const buildSeedSpeakerCharacter = async (speaker: SpeakerLink) => {
   const characterResult = CharacterInputSchema.safeParse({
     ...speakerCharacterDefaults,
     name: speaker.name,

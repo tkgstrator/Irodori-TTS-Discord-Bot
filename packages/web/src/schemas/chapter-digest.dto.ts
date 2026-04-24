@@ -8,5 +8,3 @@ export const ChapterDigestSchema = z.object({
   summary: z.string().trim().nonempty(),
   presentCharacterIds: z.array(z.string().uuid())
 })
-
-export type ChapterDigest = z.infer<typeof ChapterDigestSchema>

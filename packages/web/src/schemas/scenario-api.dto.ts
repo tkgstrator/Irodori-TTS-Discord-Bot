@@ -2,13 +2,13 @@ import { z } from 'zod'
 import { GeminiModelSchema } from './llm-settings.dto'
 
 // シナリオ API のステータス値を定義する
-export const ScenarioApiStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
+const ScenarioApiStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
 
 // 章 API のステータス値を定義する
-export const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
+const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
 
 // 章内の話者表示情報を定義する
-export const ScenarioApiSpeakerSchema = z.object({
+const ScenarioApiSpeakerSchema = z.object({
   alias: z.string().nonempty(),
   name: z.string().nonempty(),
   speakerId: z.string().uuid().nullable(),
@@ -20,40 +20,40 @@ export const ScenarioApiSpeakerSchema = z.object({
 })
 
 // 章で使うキャラクター参照情報を定義する
-export const ScenarioApiChapterCharacterSchema = z.object({
+const ScenarioApiChapterCharacterSchema = z.object({
   name: z.string().nonempty(),
   imageUrl: z.string().nullable(),
   speakerId: z.string().uuid().nullable()
 })
 
 // 章内のセリフ cue を定義する
-export const ScenarioApiSpeechCueSchema = z.object({
+const ScenarioApiSpeechCueSchema = z.object({
   kind: z.literal('speech'),
   speaker: z.string().nonempty(),
   text: z.string().nonempty()
 })
 
 // 章内の pause cue を定義する
-export const ScenarioApiPauseCueSchema = z.object({
+const ScenarioApiPauseCueSchema = z.object({
   kind: z.literal('pause'),
   duration: z.number().positive()
 })
 
 // 章内の scene cue を定義する
-export const ScenarioApiSceneCueSchema = z.object({
+const ScenarioApiSceneCueSchema = z.object({
   kind: z.literal('scene'),
   name: z.string().nonempty()
 })
 
 // 章内 cue の union を定義する
-export const ScenarioApiCueSchema = z.discriminatedUnion('kind', [
+const ScenarioApiCueSchema = z.discriminatedUnion('kind', [
   ScenarioApiSpeechCueSchema,
   ScenarioApiPauseCueSchema,
   ScenarioApiSceneCueSchema
 ])
 
 // 章レスポンスを定義する
-export const ScenarioApiChapterSchema = z.object({
+const ScenarioApiChapterSchema = z.object({
   id: z.string().nonempty(),
   number: z.number().int().positive(),
   title: z.string().nonempty(),
@@ -90,6 +90,5 @@ export const ScenarioApiSchema = z.object({
 export const ScenarioApiListSchema = z.array(ScenarioApiSchema)
 
 export type ScenarioApi = z.infer<typeof ScenarioApiSchema>
-export type ScenarioApiList = z.infer<typeof ScenarioApiListSchema>
 export type ScenarioApiSpeaker = z.infer<typeof ScenarioApiSpeakerSchema>
 export type ScenarioApiChapter = z.infer<typeof ScenarioApiChapterSchema>

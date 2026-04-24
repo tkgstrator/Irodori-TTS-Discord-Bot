@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // 設定画面から選択できる Gemini の文章生成モデルを定義する。
-export const GeminiModelValues = [
+const GeminiModelValues = [
   'gemini-3.1-pro-preview',
   'gemini-3-pro-preview',
   'gemini-3-flash-preview',
@@ -142,5 +142,4 @@ if (!defaultLlmSettingsResult.success) {
 export const defaultLlmSettings = defaultLlmSettingsResult.data
 
 export type GeminiModel = z.infer<typeof GeminiModelSchema>
-export type LlmRequestModel = z.infer<typeof LlmRequestModelSchema>
 export type LlmSettings = z.infer<typeof LlmSettingsSchema>

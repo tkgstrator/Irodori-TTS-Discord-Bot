@@ -34,5 +34,3 @@ export const StoryCharacterContextSchema = CharacterCoreSchema.extend({
       message: '話者連携または caption のどちらかは必須です'
     })
   })
-
-export type StoryCharacterContext = z.infer<typeof StoryCharacterContextSchema>
