@@ -6,6 +6,7 @@ import {
   getCurrentSpeakerId,
   getGuildSettings,
   preprocessForTts,
+  preprocessMessageForTts,
   textToSpeechWithSettings
 } from './utils'
 import { notifyError } from './utils/notifier'
@@ -238,8 +239,8 @@ client.on(Events.MessageCreate, async (message) => {
     }
   }
 
-  // 改行で分割して各行を前処理
-  const lines = message.content
+  // マルチライン構造（コードブロック / スポイラー）を先に除去してから行ごとに前処理
+  const lines = preprocessMessageForTts(message.content)
     .split('\n')
     .map((line) => preprocessForTts(line))
     .filter((line): line is string => line !== null)
