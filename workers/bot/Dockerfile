@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build from the repository root:
-#   docker build -f workers/bot/Dockerfile -t tkgling/plotmaker-bot:latest .
+#   docker build -f workers/bot/Dockerfile -t tkgling/irodori-tts-discord-bot:latest .
 
 FROM oven/bun:1-alpine AS deps
 WORKDIR /app
