@@ -2,7 +2,7 @@
 # Build from the repository root:
 #   docker build -f workers/bot/Dockerfile -t tkgling/plotmaker-bot:latest .
 
-FROM oven/bun:1 AS deps
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=bun.lock,target=bun.lock,readonly \
@@ -17,7 +17,7 @@ COPY packages/shared packages/shared
 COPY workers/bot workers/bot
 RUN bun run --filter @irodori-tts/bot build
 
-FROM oven/bun:1 AS prod-deps
+FROM oven/bun:1-alpine AS prod-deps
 WORKDIR /app
 RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=bun.lock,target=bun.lock,readonly \
@@ -26,11 +26,9 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
     bun install --frozen-lockfile --ignore-scripts --omit=dev --filter @irodori-tts/bot
 
-FROM oven/bun:1-slim AS runtime
+FROM oven/bun:1-alpine AS runtime
 WORKDIR /app/workers/bot
-RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends ffmpeg
+RUN apk add --no-cache ffmpeg
 ENV NODE_ENV=production
 
 COPY --from=build /app/workers/bot/dist dist
