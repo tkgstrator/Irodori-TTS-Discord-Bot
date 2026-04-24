@@ -11,8 +11,9 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
 FROM deps AS build
 COPY package.json tsconfig.base.json tsconfig.json ./
 COPY packages/shared packages/shared
-COPY packages/bot packages/bot
-RUN bun run --filter @irodori-tts/bot build
+COPY packages/web packages/web
+RUN bunx prisma generate --schema=packages/web/prisma/schema.prisma --generator client && \
+    bun run --filter @irodori-tts/web build
 
 FROM oven/bun:1 AS prod-deps
 WORKDIR /app
@@ -27,16 +28,17 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
 FROM oven/bun:1-slim
 WORKDIR /app
 
-RUN \
-  --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  apt-get update && apt-get install -y --no-install-recommends ffmpeg
-
 ENV NODE_ENV=production
 
 COPY --from=prod-deps /app/node_modules node_modules
 COPY --from=build /app/packages/shared packages/shared
 RUN mkdir -p node_modules/@irodori-tts && ln -s /app/packages/shared node_modules/@irodori-tts/shared
-COPY --from=build /app/packages/bot/dist packages/bot/dist
+COPY --from=build /app/tsconfig.base.json tsconfig.base.json
+COPY --from=build /app/packages/web/tsconfig.json packages/web/tsconfig.json
+COPY --from=build /app/packages/web/generated packages/web/generated
+COPY --from=build /app/packages/web/dist packages/web/dist
+COPY --from=build /app/packages/web/src packages/web/src
+COPY --from=build /app/packages/web/prisma/schema.prisma packages/web/prisma/schema.prisma
 
-CMD ["bun", "run", "packages/bot/dist/index.js"]
+EXPOSE 3000
+CMD ["bun", "run", "packages/web/src/index.ts"]
