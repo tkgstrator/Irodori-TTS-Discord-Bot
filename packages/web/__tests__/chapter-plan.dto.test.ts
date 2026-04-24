@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ChapterPlanSchema } from '../schemas/chapter-plan.dto'
+import { ChapterPlanSchema } from '../src/schemas/chapter-plan.dto'
 
 describe('ChapterPlanSchema', () => {
   test('章設計の JSON を受け入れる', () => {

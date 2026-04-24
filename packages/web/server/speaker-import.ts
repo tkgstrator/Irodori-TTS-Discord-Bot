@@ -1,13 +1,13 @@
 import { Buffer } from 'node:buffer'
 import { z } from 'zod'
-import type { SpeakerLink } from '../schemas/character.dto'
-import { CharacterInputSchema, SpeakerLinkSchema } from '../schemas/character.dto'
+import type { SpeakerLink } from '../src/schemas/character.dto'
+import { CharacterInputSchema, SpeakerLinkSchema } from '../src/schemas/character.dto'
 import {
   SpeakerIdSchema,
   SpeakerImportListSchema,
   SpeakerImportTemplateSchema,
   SpeakerImportValuesSchema
-} from '../schemas/speaker.dto'
+} from '../src/schemas/speaker.dto'
 import { db } from './db'
 
 const DefaultIrodoriTtsBaseUrl = 'http://irodori-tts:8765'

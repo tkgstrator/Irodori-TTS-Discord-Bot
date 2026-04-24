@@ -12,9 +12,9 @@ import {
   getOccupationLabel,
   getSecondPersonLabel,
   getSpeechStyleLabel
-} from '../lib/character-options'
-import type { Cue } from '../lib/scenarios'
-import type { ChapterEpisodeRequest } from '../schemas/chapter-episode-request.dto'
+} from '../src/lib/character-options'
+import type { Cue } from '../src/lib/scenarios'
+import type { ChapterEpisodeRequest } from '../src/schemas/chapter-episode-request.dto'
 
 const GeminiEnvSchema = z.object({
   GEMINI_API_KEY: z.string().nonempty()

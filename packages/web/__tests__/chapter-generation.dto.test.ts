@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ChapterGenerateFormSchema } from '../schemas/chapter-generation.dto'
+import { ChapterGenerateFormSchema } from '../src/schemas/chapter-generation.dto'
 
 describe('ChapterGenerateFormSchema', () => {
   test('有効な入力を受け入れる', () => {

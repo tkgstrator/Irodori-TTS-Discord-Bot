@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { plotSeedIds, plotSpeakerSeedIds } from '../lib/plot-seed-ids'
+import { plotSeedIds, plotSpeakerSeedIds } from '../src/lib/plot-seed-ids'
 import { scenarioSeedSet } from '../prisma/scenario-seeds'
-import { ScenarioSeedSetSchema } from '../schemas/scenario-seed.dto'
+import { ScenarioSeedSetSchema } from '../src/schemas/scenario-seed.dto'
 
 describe('Scenario seed data', () => {
   test('シナリオ管理ページ向け seed が DTO を満たす', () => {

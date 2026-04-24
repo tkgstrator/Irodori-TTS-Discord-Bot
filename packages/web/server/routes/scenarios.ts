@@ -1,20 +1,20 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { Prisma } from '../../generated/prisma/client'
-import { ChapterEpisodeRequestSchema } from '../../schemas/chapter-episode-request.dto'
-import { ChapterPlanRequestSchema } from '../../schemas/chapter-plan-request.dto'
+import { ChapterEpisodeRequestSchema } from '../../src/schemas/chapter-episode-request.dto'
+import { ChapterPlanRequestSchema } from '../../src/schemas/chapter-plan-request.dto'
 import {
   type ScenarioApi,
   type ScenarioApiChapter,
   ScenarioApiListSchema,
   ScenarioApiSchema,
   type ScenarioApiSpeaker
-} from '../../schemas/scenario-api.dto'
+} from '../../src/schemas/scenario-api.dto'
 import {
   ScenarioAppendChapterApiSchema,
   ScenarioCreateApiSchema,
   ScenarioUpdateApiSchema
-} from '../../schemas/scenario-write.dto'
+} from '../../src/schemas/scenario-write.dto'
 import { planChapter } from '../chapter-planner'
 import { db } from '../db'
 import { runScenarioEpisodeGeneration } from '../scenario-episode-generation'

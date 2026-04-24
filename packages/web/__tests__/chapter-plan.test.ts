@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { buildChapterPlanRequest, createChapterPlan, resolveChapterPlanCharacterNames } from '../lib/chapter-plan'
-import type { Scenario } from '../lib/scenarios'
-import type { Character } from '../schemas/character.dto'
+import { buildChapterPlanRequest, createChapterPlan, resolveChapterPlanCharacterNames } from '../src/lib/chapter-plan'
+import type { Scenario } from '../src/lib/scenarios'
+import type { Character } from '../src/schemas/character.dto'
 
 const scenarioFixture: Scenario = {
   id: '76150d2f-f27b-48d7-9550-893d76f66726',

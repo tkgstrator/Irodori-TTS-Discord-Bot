@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ScenarioSeedCharacterSchema } from '../schemas/scenario-seed.dto'
+import { ScenarioSeedCharacterSchema } from '../src/schemas/scenario-seed.dto'
 
 const ScenarioSeedCharacterListSchema = z.array(ScenarioSeedCharacterSchema)
 

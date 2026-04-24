@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseStoredChapterPlanPreview } from '../lib/chapter-plan-preview'
+import { parseStoredChapterPlanPreview } from '../src/lib/chapter-plan-preview'
 
 const previewFixture = {
   scenarioId: '76150d2f-f27b-48d7-9550-893d76f66726',

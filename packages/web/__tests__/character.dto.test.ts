@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CharacterInputSchema, CharacterSchema } from '../schemas/character.dto'
+import { CharacterInputSchema, CharacterSchema } from '../src/schemas/character.dto'
 
 // テスト用の有効なキャラクター入力を組み立てる
 const validCharacterInput = {

@@ -1,7 +1,7 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
-import { ScenarioSeedCharacterSchema } from '../schemas/scenario-seed.dto'
+import { ScenarioSeedCharacterSchema } from '../src/schemas/scenario-seed.dto'
 import { db } from '../server/db'
 
 const characterSeedFilePath = fileURLToPath(new URL('./character-seeds.ts', import.meta.url))
@@ -47,7 +47,7 @@ const createCharacterSeedRows = async () => {
 const createCharacterSeedFileContent = (
   seedRows: z.infer<typeof ScenarioSeedCharacterListSchema>
 ) => `import { z } from 'zod'
-import { ScenarioSeedCharacterSchema } from '../schemas/scenario-seed.dto'
+import { ScenarioSeedCharacterSchema } from '../src/schemas/scenario-seed.dto'
 
 const ScenarioSeedCharacterListSchema = z.array(ScenarioSeedCharacterSchema)
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ScenarioCreateFormSchema, scenarioCharacterLimit } from '../schemas/scenario.dto'
+import { ScenarioCreateFormSchema, scenarioCharacterLimit } from '../src/schemas/scenario.dto'
 
 // テスト用の有効なプロット作成入力を組み立てる
 const validScenarioInput = {

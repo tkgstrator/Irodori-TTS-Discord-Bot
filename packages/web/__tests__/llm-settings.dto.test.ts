@@ -4,7 +4,7 @@ import {
   GeminiModelSchema,
   geminiModelCatalog,
   LlmSettingsSchema
-} from '../schemas/llm-settings.dto'
+} from '../src/schemas/llm-settings.dto'
 
 describe('LlmSettingsSchema', () => {
   test('Gemini モデルの既定値を受け入れる', () => {
