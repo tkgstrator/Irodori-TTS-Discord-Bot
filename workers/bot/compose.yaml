@@ -1,8 +1,8 @@
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: workers/bot/Dockerfile
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
     depends_on:
