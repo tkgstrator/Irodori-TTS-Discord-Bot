@@ -30,6 +30,7 @@
     "clsx": "^2.1.1",
     "handlebars": "^4.7.9",
     "hono": "^4.12.14",
+    "hono-rate-limiter": "^0.5.3",
     "lucide-react": "^1.8.0",
     "pg": "^8.20.0",
     "radix-ui": "^1.4.3",
