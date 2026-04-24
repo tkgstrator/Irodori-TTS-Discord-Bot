@@ -14,7 +14,7 @@ const characterKeys = {
 /**
  * characters 一覧取得の query options を定義する。
  */
-const charactersQueryOptions = queryOptions({
+export const charactersQueryOptions = queryOptions({
   queryKey: characterKeys.all,
   queryFn: async () => {
     try {
