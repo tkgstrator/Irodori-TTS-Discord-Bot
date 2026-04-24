@@ -14,7 +14,7 @@ const SpeakersResponse = z.object({ speakers: z.array(SpeakerInfo) }).passthroug
 const SynthRequest = z
   .object({
     speaker_id: z.string(),
-    text: z.string().nonempty(),
+    text: z.string().min(1),
     seed: z.union([z.number(), z.null()]).optional(),
     num_steps: z.union([z.number(), z.null()]).optional(),
     cfg_scale_text: z.union([z.number(), z.null()]).optional(),
@@ -94,6 +94,6 @@ const endpoints = makeApi([
 
 export const api = new Zodios(endpoints)
 
-export const createApiClient = (baseUrl: string, options?: ZodiosOptions) => {
+export function createApiClient(baseUrl: string, options?: ZodiosOptions) {
   return new Zodios(baseUrl, endpoints, options)
 }
