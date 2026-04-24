@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
+import type { Prisma } from '../../generated/prisma/client'
 import { ChapterEpisodeRequestSchema } from '../../schemas/chapter-episode-request.dto'
 import { ChapterPlanRequestSchema } from '../../schemas/chapter-plan-request.dto'
 import {
@@ -45,7 +46,8 @@ const speakerStylePalette = [
 ] as const
 
 // 話者 alias ごとの色設定を返す
-const resolveSpeakerStyle = (index: number) => speakerStylePalette[index % speakerStylePalette.length]
+const resolveSpeakerStyle = (index: number) =>
+  speakerStylePalette[index % speakerStylePalette.length] ?? speakerStylePalette[0]
 
 // シナリオ集計用のステータスを章群から再計算する
 const resolveScenarioStatus = ({
@@ -75,14 +77,19 @@ const resolveScenarioStatus = ({
 }
 
 // DB の cue 行を API 形式へ変換する
-const buildCueResponse = (
-  cue: Awaited<ReturnType<typeof db.scenario.findMany>>[number]['chapters'][number]['cues'][number]
-) => {
+const buildCueResponse = (cue: ScenarioCueRow) => {
   if (cue.kind === 'speech') {
     return {
       kind: 'speech',
       speaker: cue.speakerAlias ?? '',
       text: cue.text ?? ''
+    } as const
+  }
+
+  if (cue.kind === 'scene') {
+    return {
+      kind: 'scene',
+      name: cue.sceneName ?? ''
     } as const
   }
 
@@ -93,9 +100,7 @@ const buildCueResponse = (
 }
 
 // DB の章行を API 形式へ変換する
-const buildChapterResponse = (
-  chapter: Awaited<ReturnType<typeof db.scenario.findMany>>[number]['chapters'][number]
-): ScenarioApiChapter => ({
+const buildChapterResponse = (chapter: ScenarioChapterRow): ScenarioApiChapter => ({
   id: chapter.id,
   number: chapter.number,
   title: chapter.title,
@@ -143,6 +148,10 @@ const scenarioInclude = {
   }
 } as const
 
+type ScenarioRow = Prisma.ScenarioGetPayload<{ include: typeof scenarioInclude }>
+type ScenarioCueRow = ScenarioRow['chapters'][number]['cues'][number]
+type ScenarioChapterRow = ScenarioRow['chapters'][number]
+
 // キャラクター数から簡易 alias を割り当てる。
 const createCastAlias = (index: number) => `char${index + 1}`
 
@@ -155,7 +164,7 @@ const findCharactersByIds = async (characterIds: readonly string[]) => {
   return db.character.findMany({
     where: {
       id: {
-        in: characterIds
+        in: [...characterIds]
       }
     },
     orderBy: {
@@ -182,7 +191,7 @@ const resolveCastChanges = ({
 }
 
 // シナリオ取得結果を API スキーマで検証して返す。
-const toScenarioApi = (row: Awaited<ReturnType<typeof db.scenario.findUnique>>): ScenarioApi => {
+const toScenarioApi = (row: ScenarioRow | null): ScenarioApi => {
   if (row === null) {
     throw new Error('Scenario not found')
   }
@@ -196,8 +205,8 @@ const toScenarioApi = (row: Awaited<ReturnType<typeof db.scenario.findUnique>>):
   return responseResult.data
 }
 
-// DB のシナリオ行を API レスポンスへ変換する
-const buildScenarioResponse = (row: Awaited<ReturnType<typeof db.scenario.findMany>>[number]): ScenarioApi => {
+// DB のシナリオ行を API レスポンスへ変換する (検証は toScenarioApi / safeParse に委ねる)
+const buildScenarioResponse = (row: ScenarioRow) => {
   const speakers: ScenarioApiSpeaker[] = row.cast.map((cast, index) => {
     const style = resolveSpeakerStyle(index)
 
@@ -205,6 +214,7 @@ const buildScenarioResponse = (row: Awaited<ReturnType<typeof db.scenario.findMa
       alias: cast.alias,
       name: cast.character.name,
       speakerId: cast.character.speakerId,
+      caption: cast.character.caption,
       initial: cast.character.name.charAt(0) || '?',
       imageUrl: cast.character.imageUrl,
       colorClass: style.colorClass,

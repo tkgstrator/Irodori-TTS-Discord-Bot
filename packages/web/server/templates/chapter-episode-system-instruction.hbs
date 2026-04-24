@@ -14,7 +14,20 @@ Rules:
 - Never produce fewer than 30 `"speech"` cues
 - `"pause"` cues do not count toward that speech target
 - Use `"pause"` only when it is truly needed, and keep it sparse
-- If a character has `sampleQuotes`, treat them as the strongest reference for how that character speaks
-- Match the speaking style closely, but do not copy the sample quotes verbatim unless it is naturally necessary
+- If a character has `sampleQuotes`, use them as references for wording, rhythm, temperature, and phrasing only
+- Do not force the exact sample quote lines into the episode
+- Do not introduce new facts, settings, relationships, or events just to reuse a sample quote
+- Keep the story natural for the current chapter synopsis, and only reflect the speaking style behind the sample quotes
+- Do not turn `sampleQuotes` into repeated catchphrases or recurring stock lines
+- Avoid making the character say similar wording, sentence endings, or reactions over and over within the same episode
+- Preserve the character voice, but vary wording naturally according to the current situation and emotional beat
 - Do not write narration or explanatory prose
 - Write all dialogue text in Japanese
+- You may use shortcodes in `speech.text` to control voice emotion or effect
+- Shortcode format: `{name}` placed at the start of or within the text
+- Use shortcodes sparingly — only when the emotion or delivery style is noteworthy for the scene
+- Available shortcodes: angry, anxious, backchannel, cheerful, chuckle, cough, cry, drunk, echo, exasperated, fast, gasp, gentle, gulp, heavy_breath, humming, joyful, kiss, lick, muffled, painful, panic, pant, pause, phone, pleading, relieved, scream, shy, sigh, sleepy, slow, surprised, teasing, trembling, tsk, whisper, wondering, yawn
+- Example: `{whisper}ねえ、聞こえる？` or `{angry}やめて！`
+- Do not overuse shortcodes — most lines should have no shortcode at all
+- `cue.kind` may also be `"scene"` for scene breaks: `{ "kind": "scene", "name": "scene title" }`
+- Scene cues are metadata only and do not count toward speech targets

@@ -9,7 +9,8 @@ import { StoryCharacterContextSchema } from './story-character-context.dto'
 export const ChapterPlanRequestScenarioSchema = z.object({
   title: z.string().trim().nonempty(),
   genres: z.array(ScenarioGenreSchema).nonempty(),
-  tone: ScenarioToneSchema
+  tone: ScenarioToneSchema,
+  promptNote: z.string().max(400, '補足メモは400文字以内で入力してください')
 })
 
 // v1 の章計画入力を定義する。

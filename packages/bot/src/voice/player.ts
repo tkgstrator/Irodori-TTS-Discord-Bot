@@ -9,43 +9,60 @@ import {
   VoiceConnectionStatus
 } from '@discordjs/voice'
 import { notifyError } from '../utils/notifier'
+import type { PcmAudio } from '../utils/tts'
 
-/**
- * ギルドごとのAudioPlayerとキューを管理するマップ
- */
+const createWavHeader = (sampleRate: number): Buffer => {
+  const header = Buffer.alloc(44)
+  const channels = 1
+  const bitsPerSample = 16
+  const byteRate = sampleRate * channels * (bitsPerSample / 8)
+  const blockAlign = channels * (bitsPerSample / 8)
+  // FFmpeg reads until EOF regardless of declared size
+  const dataSize = 0x7fffffff
+
+  header.write('RIFF', 0)
+  header.writeUInt32LE(dataSize + 36, 4)
+  header.write('WAVE', 8)
+  header.write('fmt ', 12)
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(1, 20)
+  header.writeUInt16LE(channels, 22)
+  header.writeUInt32LE(sampleRate, 24)
+  header.writeUInt32LE(byteRate, 28)
+  header.writeUInt16LE(blockAlign, 32)
+  header.writeUInt16LE(bitsPerSample, 34)
+  header.write('data', 36)
+  header.writeUInt32LE(dataSize, 40)
+
+  return header
+}
+
 const guildPlayers = new Map<
   string,
   {
     player: ReturnType<typeof createAudioPlayer>
-    queue: Buffer[]
+    queue: PcmAudio[]
     isPlaying: boolean
   }
 >()
 
-/**
- * ギルドのプレイヤーを取得または作成する
- * @param guildId ギルドID
- * @param connection VoiceConnection
- */
 const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
   const existing = guildPlayers.get(guildId)
   if (existing) return existing
 
   const player = createAudioPlayer()
 
-  // 全ての状態変化をログ出力
   player.on('stateChange', (oldState, newState) => {
     console.debug(`Player state changed: ${oldState.status} -> ${newState.status}`)
   })
 
-  // 再生完了時に次のキューを処理
   player.on(AudioPlayerStatus.Idle, () => {
     console.debug('Player became idle')
     const gp = guildPlayers.get(guildId)
     if (gp && gp.queue.length > 0) {
-      const nextBuffer = gp.queue.shift()
-      if (nextBuffer) {
-        void playBuffer(guildId, nextBuffer, connection)
+      const next = gp.queue.shift()
+      if (next) {
+        void playAudio(guildId, next, connection)
       }
     } else if (gp) {
       gp.isPlaying = false
@@ -58,11 +75,10 @@ const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
     const gp = guildPlayers.get(guildId)
     if (gp) {
       gp.isPlaying = false
-      // エラー時は次のキューを試行
       if (gp.queue.length > 0) {
-        const nextBuffer = gp.queue.shift()
-        if (nextBuffer) {
-          void playBuffer(guildId, nextBuffer, connection)
+        const next = gp.queue.shift()
+        if (next) {
+          void playAudio(guildId, next, connection)
         }
       }
     }
@@ -72,28 +88,22 @@ const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
 
   const guildPlayer = {
     player,
-    queue: [] as Buffer[],
+    queue: [] as PcmAudio[],
     isPlaying: false
   }
   guildPlayers.set(guildId, guildPlayer)
   return guildPlayer
 }
 
-/**
- * Bufferを再生する（内部用）
- * 接続がDestroyed状態の場合はスキップする
- */
-const playBuffer = async (guildId: string, buffer: Buffer, connection: VoiceConnection): Promise<void> => {
-  console.debug('Playing buffer for guild:', guildId, 'size:', buffer.length)
+const playAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConnection): Promise<void> => {
+  console.debug('Playing audio for guild:', guildId, 'size:', audio.buffer.length, 'sampleRate:', audio.sampleRate)
 
-  // 接続が破棄済みの場合はスキップ
   if (connection.state.status === VoiceConnectionStatus.Destroyed) {
     console.warn(`Skipping playback: connection destroyed in guild ${guildId}`)
     destroyPlayer(guildId)
     return
   }
 
-  // VoiceConnectionがReadyになるまで待機
   if (connection.state.status !== VoiceConnectionStatus.Ready) {
     console.debug('Waiting for connection to be ready...')
     try {
@@ -105,7 +115,8 @@ const playBuffer = async (guildId: string, buffer: Buffer, connection: VoiceConn
   }
 
   const guildPlayer = getOrCreatePlayer(guildId, connection)
-  const stream = Readable.from(buffer)
+  const wavHeader = createWavHeader(audio.sampleRate)
+  const stream = Readable.from(Buffer.concat([wavHeader, audio.buffer]))
   const resource = createAudioResource(stream, {
     inputType: StreamType.Arbitrary,
     inlineVolume: false
@@ -114,28 +125,16 @@ const playBuffer = async (guildId: string, buffer: Buffer, connection: VoiceConn
   guildPlayer.isPlaying = true
 }
 
-/**
- * 音声をキューに追加して再生する
- * @param guildId ギルドID
- * @param buffer 音声バッファ
- * @param connection VoiceConnection
- */
-export const enqueueAudio = async (guildId: string, buffer: Buffer, connection: VoiceConnection): Promise<void> => {
+export const enqueueAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConnection): Promise<void> => {
   const guildPlayer = getOrCreatePlayer(guildId, connection)
 
   if (guildPlayer.isPlaying) {
-    // 再生中ならキューに追加
-    guildPlayer.queue.push(buffer)
+    guildPlayer.queue.push(audio)
   } else {
-    // 再生中でなければ即座に再生
-    await playBuffer(guildId, buffer, connection)
+    await playAudio(guildId, audio, connection)
   }
 }
 
-/**
- * ギルドの再生キューをクリアする
- * @param guildId ギルドID
- */
 export const clearQueue = (guildId: string): void => {
   const guildPlayer = guildPlayers.get(guildId)
   if (guildPlayer) {
@@ -145,10 +144,6 @@ export const clearQueue = (guildId: string): void => {
   }
 }
 
-/**
- * ギルドのプレイヤーを破棄する
- * @param guildId ギルドID
- */
 export const destroyPlayer = (guildId: string): void => {
   const guildPlayer = guildPlayers.get(guildId)
   if (guildPlayer) {

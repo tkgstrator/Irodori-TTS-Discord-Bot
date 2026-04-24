@@ -25,7 +25,8 @@ const createCharacterInput = (): CharacterInput => {
     backgroundTags: ['天才'],
     sampleQuotes: ['よろしくな'],
     memo: `db-test:${token}`,
-    speakerId: null
+    speakerId: null,
+    caption: '穏やかな青年。自然で聞き取りやすい声。'
   }
 }
 

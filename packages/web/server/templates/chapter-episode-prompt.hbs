@@ -1,16 +1,40 @@
-次の章プロットからエピソードを作成してください。
+次の章プロットから、会話主体の自然なエピソードを作成してください。
+
+このプロンプトでは、内容と話し方の役割を分けて解釈してください。
+
+優先順位:
+1. `chapter` は今回の章で起こすべき内容と流れを表します。まずこれに従ってください。
+2. `scenario` は作品全体のジャンル・トーン・空気感の参考です。
+3. `cast` は各キャラクターが「誰で」「どう話すか」の参考です。内容そのものを決めるためではありません。
+
+キャラクター情報の読み方:
+- `cast[].alias`: 出力 JSON の `speaker` にそのまま使う識別子
+- `cast[].character.name`: キャラクター名
+- `cast[].character.personalityTags`: 性格の要点
+- `cast[].character.speechStyle`: 口調や話し方の傾向
+- `cast[].character.firstPerson`: そのキャラクターが自分を呼ぶ一人称
+- `cast[].character.secondPerson`: 相手を呼ぶときの二人称
+- `cast[].character.honorific`: 相手の名前に付ける敬称
+- `cast[].character.attributeTags`: 目立つ属性や特徴
+- `cast[].character.backgroundTags`: 背景設定や立場
+- `cast[].character.sampleQuotes`: 話し方の参考。語彙、リズム、温度感、言い回しの傾向を見るためのもの
+- `cast[].character.memo`: 補足メモ
+- `cast[].character.caption`: speakerId が無い場合の声質・話者説明
+
+執筆時の重要ルール:
+- 章の出来事、感情の流れ、会話の進行は `chapter.synopsis` を基準に組み立てる
+- キャラクターらしさは `sampleQuotes`、`speechStyle`、`firstPerson`、`secondPerson`、`honorific` から反映する
+- `sampleQuotes` は話し方の参考であり、その台詞や状況を再利用するためのものではない
+- `sampleQuotes` を決まり文句のように毎回繰り返さない
+- 同じ語尾、同じ反応、同じ言い回しを続けず、場面と感情に応じて自然に変化させる
+- キャラクターらしさを出すために、章プロットにない出来事や関係性を足さない
+- ありがちな挨拶や定型句の反復だけで会話を進めず、その場で意味のあるやり取りを書く
 
 シナリオ:
-```json
-{{{scenarioJson}}}
-```
+{{{scenarioSummary}}}
 
 章:
-```json
-{{{chapterJson}}}
-```
+{{{chapterSummary}}}
 
 登場人物:
-```json
-{{{castJson}}}
-```
+{{{characterProfiles}}}

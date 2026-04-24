@@ -31,7 +31,8 @@ describe('Speaker DTO', () => {
         attributeTags: [],
         backgroundTags: [],
         sampleQuotes: [],
-        memo: ''
+        memo: '',
+        caption: null
       }
     })
 
@@ -56,7 +57,8 @@ describe('Speaker DTO', () => {
         attributeTags: [],
         backgroundTags: [],
         sampleQuotes: [],
-        memo: ''
+        memo: '',
+        caption: null
       }
     })
 

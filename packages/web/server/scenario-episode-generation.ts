@@ -20,25 +20,39 @@ const persistCompletedEpisodeGeneration = async ({
     })
 
     await tx.scenarioCue.createMany({
-      data: cues.map((cue, index) =>
-        cue.kind === 'speech'
-          ? {
-              chapterId,
-              order: index + 1,
-              kind: 'speech',
-              speakerAlias: cue.speaker,
-              text: cue.text,
-              pauseDuration: null
-            }
-          : {
-              chapterId,
-              order: index + 1,
-              kind: 'pause',
-              speakerAlias: null,
-              text: null,
-              pauseDuration: cue.duration
-            }
-      )
+      data: cues.map((cue, index) => {
+        if (cue.kind === 'speech') {
+          return {
+            chapterId,
+            order: index + 1,
+            kind: 'speech' as const,
+            speakerAlias: cue.speaker,
+            text: cue.text,
+            pauseDuration: null,
+            sceneName: null
+          }
+        }
+        if (cue.kind === 'scene') {
+          return {
+            chapterId,
+            order: index + 1,
+            kind: 'scene' as const,
+            speakerAlias: null,
+            text: null,
+            pauseDuration: null,
+            sceneName: cue.name
+          }
+        }
+        return {
+          chapterId,
+          order: index + 1,
+          kind: 'pause' as const,
+          speakerAlias: null,
+          text: null,
+          pauseDuration: cue.duration,
+          sceneName: null
+        }
+      })
     })
 
     await tx.scenarioChapter.update({

@@ -13,7 +13,8 @@ describe('ChapterPlanRequestSchema', () => {
       scenario: {
         title: '星降る夜に',
         genres: ['恋愛', '日常'],
-        tone: 'メランコリック'
+        tone: 'メランコリック',
+        promptNote: '会話の余白を大事にする。'
       },
       characters: [
         {
@@ -31,7 +32,8 @@ describe('ChapterPlanRequestSchema', () => {
           backgroundTags: [],
           sampleQuotes: ['星がきれいだね'],
           memo: '星を見ると落ち着く。',
-          speakerId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+          speakerId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          caption: null
         }
       ],
       completedChapters: [
@@ -66,7 +68,8 @@ describe('ChapterPlanRequestSchema', () => {
       scenario: {
         title: '星降る夜に',
         genres: ['恋愛'],
-        tone: 'メランコリック'
+        tone: 'メランコリック',
+        promptNote: ''
       },
       characters: [
         {
@@ -84,7 +87,8 @@ describe('ChapterPlanRequestSchema', () => {
           backgroundTags: [],
           sampleQuotes: [],
           memo: '',
-          speakerId: null
+          speakerId: null,
+          caption: '落ち着いた女性ナレーション。静かな説明調。'
         }
       ],
       completedChapters: [

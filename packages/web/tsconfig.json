@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["react", "react-dom"],
+    "types": ["react", "react-dom", "bun"],
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {

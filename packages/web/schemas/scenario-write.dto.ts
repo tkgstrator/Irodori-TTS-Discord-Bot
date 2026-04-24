@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { GeminiModelSchema } from './llm-settings.dto'
 import { ScenarioGenreSchema, ScenarioToneSchema, scenarioCharacterLimit } from './scenario.dto'
 
 // シナリオ作成 API の入力を定義する。
@@ -9,6 +10,9 @@ export const ScenarioCreateApiSchema = z.object({
     .nonempty('ジャンルを1つ以上選択してください')
     .max(3, 'ジャンルは3つまで選択できます'),
   tone: ScenarioToneSchema,
+  promptNote: z.string().max(400, '補足メモは400文字以内で入力してください').default(''),
+  editorModel: GeminiModelSchema.default('gemini-2.5-flash'),
+  writerModel: GeminiModelSchema.default('gemini-2.5-flash'),
   characterIds: z
     .array(z.string().uuid())
     .max(scenarioCharacterLimit, `キャラクターは${scenarioCharacterLimit}人まで選択できます`)

@@ -70,7 +70,7 @@ const ChapterDetailPageContent = () => {
   const { characters } = useSuspenseCharacters()
   const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
   const { createEpisodeFromChapter, deleteEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
-  const scenario = getScenario(id)
+  const scenario = id ? getScenario(id) : undefined
   const isPlotsRoute = pathname.startsWith('/plots')
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -158,7 +158,7 @@ const ChapterDetailPageContent = () => {
         <div className="w-full">
           <Link
             to={isPlotsRoute ? '/plots/$id' : '/scenarios/$id'}
-            params={{ id }}
+            params={{ id: id ?? '' }}
             className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ChevronLeft className="size-3.5" />
@@ -188,12 +188,15 @@ const ChapterDetailPageContent = () => {
                 {prevChapter ? (
                   <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
                     {isPlotsRoute ? (
-                      <Link to="/plots/$id/chapters/$chapterId" params={{ id, chapterId: prevChapter.id }}>
+                      <Link to="/plots/$id/chapters/$chapterId" params={{ id: id ?? '', chapterId: prevChapter.id }}>
                         <ChevronLeft className="size-3" />
                         前の章
                       </Link>
                     ) : (
-                      <Link to="/scenarios/$id/chapters/$chapterId" params={{ id, chapterId: prevChapter.id }}>
+                      <Link
+                        to="/scenarios/$id/chapters/$chapterId"
+                        params={{ id: id ?? '', chapterId: prevChapter.id }}
+                      >
                         <ChevronLeft className="size-3" />
                         前の章
                       </Link>
@@ -208,12 +211,15 @@ const ChapterDetailPageContent = () => {
                 {nextChapter ? (
                   <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" asChild>
                     {isPlotsRoute ? (
-                      <Link to="/plots/$id/chapters/$chapterId" params={{ id, chapterId: nextChapter.id }}>
+                      <Link to="/plots/$id/chapters/$chapterId" params={{ id: id ?? '', chapterId: nextChapter.id }}>
                         次の章
                         <ChevronRight className="size-3" />
                       </Link>
                     ) : (
-                      <Link to="/scenarios/$id/chapters/$chapterId" params={{ id, chapterId: nextChapter.id }}>
+                      <Link
+                        to="/scenarios/$id/chapters/$chapterId"
+                        params={{ id: id ?? '', chapterId: nextChapter.id }}
+                      >
                         次の章
                         <ChevronRight className="size-3" />
                       </Link>
@@ -353,6 +359,13 @@ const ChapterDetailPageContent = () => {
               if (cue.kind === 'pause') {
                 return <PauseCueRow key={key} duration={cue.duration} />
               }
+              if (cue.kind === 'scene') {
+                return (
+                  <p key={key} className="text-xs font-medium text-muted-foreground">
+                    @scene: {cue.name}
+                  </p>
+                )
+              }
               const speaker = scenario.speakers.find((s) => s.alias === cue.speaker)
               const character = chapter.characters.find((item) => item.name === speaker?.name)
               return <SpeechCueCard key={key} cue={cue} speaker={speaker} character={character} />
@@ -376,12 +389,12 @@ const ChapterDetailPageContent = () => {
           {prevChapter ? (
             <Button variant="outline" className="gap-2" asChild>
               {isPlotsRoute ? (
-                <Link to="/plots/$id/chapters/$chapterId" params={{ id, chapterId: prevChapter.id }}>
+                <Link to="/plots/$id/chapters/$chapterId" params={{ id: id ?? '', chapterId: prevChapter.id }}>
                   <ChevronLeft className="size-3.5" />
                   前の章
                 </Link>
               ) : (
-                <Link to="/scenarios/$id/chapters/$chapterId" params={{ id, chapterId: prevChapter.id }}>
+                <Link to="/scenarios/$id/chapters/$chapterId" params={{ id: id ?? '', chapterId: prevChapter.id }}>
                   <ChevronLeft className="size-3.5" />
                   前の章
                 </Link>
@@ -396,12 +409,12 @@ const ChapterDetailPageContent = () => {
           {nextChapter ? (
             <Button variant="outline" className="gap-2" asChild>
               {isPlotsRoute ? (
-                <Link to="/plots/$id/chapters/$chapterId" params={{ id, chapterId: nextChapter.id }}>
+                <Link to="/plots/$id/chapters/$chapterId" params={{ id: id ?? '', chapterId: nextChapter.id }}>
                   次の章: {nextChapter.title}
                   <ChevronRight className="size-3.5" />
                 </Link>
               ) : (
-                <Link to="/scenarios/$id/chapters/$chapterId" params={{ id, chapterId: nextChapter.id }}>
+                <Link to="/scenarios/$id/chapters/$chapterId" params={{ id: id ?? '', chapterId: nextChapter.id }}>
                   次の章: {nextChapter.title}
                   <ChevronRight className="size-3.5" />
                 </Link>

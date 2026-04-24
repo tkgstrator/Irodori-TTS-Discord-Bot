@@ -52,14 +52,18 @@ const formatSynthOptions = (options: VdsSynthOptions | undefined): string => {
   return optionText.length > 0 ? ` [${optionText}]` : ''
 }
 
-// 話者 UUID に対応する VDS 話者定義を解決する。
-const resolveSpeakerRef = ({ scenario, speakerId }: { scenario: Scenario; speakerId: string }) => {
-  const speaker = scenario.speakers.find((item) => item.speakerId === speakerId)
+// speakerId 未連携時に使う caption を組み立てる。
+const buildSpeakerCaption = ({ name, caption }: { name: string; caption: string | null | undefined }): string =>
+  caption ?? name
+
+// 話者 alias に対応する VDS 話者定義を解決する。
+const resolveSpeakerRef = ({ scenario, speakerAlias }: { scenario: Scenario; speakerAlias: string }) => {
+  const speaker = scenario.speakers.find((item) => item.alias === speakerAlias)
 
   if (!speaker) {
     return {
       ok: false,
-      reason: `話者UUID「${speakerId}」が見つからないため VDS を出力できません`
+      reason: `話者エイリアス「${speakerAlias}」が見つからないため VDS を出力できません`
     } as const
   }
 
@@ -67,7 +71,15 @@ const resolveSpeakerRef = ({ scenario, speakerId }: { scenario: Scenario; speake
     ok: true,
     data: {
       alias: speaker.alias,
-      speakerRef: { uuid: speakerId }
+      speakerRef: speaker.speakerId
+        ? { type: 'lora' as const, uuid: speaker.speakerId }
+        : {
+            type: 'caption' as const,
+            caption: buildSpeakerCaption({
+              name: speaker.name,
+              caption: speaker.caption
+            })
+          }
     }
   } as const
 }
@@ -86,12 +98,12 @@ const buildVdsJson = ({
   const normalizedCues: VoiceDramaCue[] = []
 
   for (const cue of cues) {
-    if (cue.kind === 'pause') {
+    if (cue.kind === 'pause' || cue.kind === 'scene') {
       normalizedCues.push(cue)
       continue
     }
 
-    const speakerRef = resolveSpeakerRef({ scenario, speakerId: cue.speaker })
+    const speakerRef = resolveSpeakerRef({ scenario, speakerAlias: cue.speaker })
 
     if (!speakerRef.ok) {
       return speakerRef
@@ -129,7 +141,7 @@ const buildVdsJson = ({
 
 // VDS の話者定義行を組み立てる。
 const serializeSpeakerDirective = ({ alias, speaker }: { alias: string; speaker: SpeakerRef }): string =>
-  'uuid' in speaker
+  speaker.type === 'lora'
     ? `@speaker ${alias} = ${speaker.uuid}`
     : `@speaker ${alias} = caption "${escapeQuotedText(speaker.caption)}"`
 
@@ -137,6 +149,9 @@ const serializeSpeakerDirective = ({ alias, speaker }: { alias: string; speaker:
 const serializeCue = (cue: VoiceDramaCue): string => {
   if (cue.kind === 'pause') {
     return `(pause ${cue.duration})`
+  }
+  if (cue.kind === 'scene') {
+    return `@scene: ${normalizeVdsText(cue.name)}`
   }
 
   return `${cue.speaker}${formatSynthOptions(cue.options)}: ${normalizeVdsText(cue.text)}`

@@ -1,4 +1,5 @@
 import type { PrismaClient } from '../generated/prisma/client'
+import { Prisma } from '../generated/prisma/client'
 import { plotSeedIds, plotSpeakerSeedIds } from '../lib/plot-seed-ids'
 import type {
   ScenarioSeedCast,
@@ -335,7 +336,7 @@ const upsertScenario = async (
       ending: scenario.ending,
       status: scenario.status,
       narratorId: scenario.narratorSpeakerId ? (characterMap.get(scenario.narratorSpeakerId) ?? null) : null,
-      vdsJson: scenario.vdsJson
+      vdsJson: scenario.vdsJson ?? Prisma.JsonNull
     },
     update: {
       title: scenario.title,
@@ -344,7 +345,7 @@ const upsertScenario = async (
       ending: scenario.ending,
       status: scenario.status,
       narratorId: scenario.narratorSpeakerId ? (characterMap.get(scenario.narratorSpeakerId) ?? null) : null,
-      vdsJson: scenario.vdsJson
+      vdsJson: scenario.vdsJson ?? Prisma.JsonNull
     }
   })
 }
@@ -433,7 +434,7 @@ const syncScenarioChapterCues = async (client: SeedDbDelegate, chapterId: string
       speakerAlias: cue.kind === 'speech' ? cue.speaker : null,
       text: cue.kind === 'speech' ? cue.text : null,
       pauseDuration: cue.kind === 'pause' ? cue.duration : null,
-      synthOptions: null
+      synthOptions: Prisma.JsonNull
     }))
   })
 }

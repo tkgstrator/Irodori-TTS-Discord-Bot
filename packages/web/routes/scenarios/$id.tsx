@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils'
 import { createScenarioVdsExport, createScenarioVdsJsonExport } from '@/lib/vds'
 import type { ChapterGenerateMode } from '@/schemas/chapter-generate-request.dto'
 import { ChapterGenerateFormSchema, type ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
+import type { GeminiModel } from '@/schemas/llm-settings.dto'
 
 const GENRE_COLORS: Record<string, string> = {
   学園: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -366,9 +367,12 @@ const ScenarioDetailPageContent = () => {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { characters } = useSuspenseCharacters()
-  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
+  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters, {
+    pollMode: 'scenario',
+    pollScenarioId: id
+  })
   const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
-  const scenario = getScenario(id)
+  const scenario = id ? getScenario(id) : undefined
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
   const [isChapterPlanning, setIsChapterPlanning] = useState(false)
   const [isChapterCreating, setIsChapterCreating] = useState(false)
@@ -485,8 +489,8 @@ const ScenarioDetailPageContent = () => {
     buildChapterPlanRequest({
       input,
       llmSettings: {
-        editor: scenario.editorModel,
-        writer: scenario.writerModel
+        editor: scenario.editorModel as GeminiModel,
+        writer: scenario.writerModel as GeminiModel
       },
       mode,
       scenario,

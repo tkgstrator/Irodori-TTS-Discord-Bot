@@ -23,6 +23,10 @@ const hasValidSpeaker = async (speakerId: string | null) => {
   return speaker !== null
 }
 
+// 発話可能な入力条件を満たしているかを確認する
+const hasVoiceSource = ({ speakerId, caption }: { speakerId: string | null; caption: string | null }) =>
+  speakerId !== null || caption !== null
+
 characters.get('/', async (c) => {
   const rows = await db.character.findMany({
     include: characterInclude,
@@ -63,6 +67,10 @@ characters.post('/', async (c) => {
     return c.json({ error: 'Invalid speaker id' }, 400)
   }
 
+  if (!hasVoiceSource(bodyResult.data)) {
+    return c.json({ error: 'Character requires speakerId or caption' }, 400)
+  }
+
   const row = await db.character.create({
     data: bodyResult.data,
     include: characterInclude
@@ -85,6 +93,10 @@ characters.put('/:id', async (c) => {
 
   if (!(await hasValidSpeaker(bodyResult.data.speakerId))) {
     return c.json({ error: 'Invalid speaker id' }, 400)
+  }
+
+  if (!hasVoiceSource(bodyResult.data)) {
+    return c.json({ error: 'Character requires speakerId or caption' }, 400)
   }
 
   const existing = await db.character.findUnique({ where: { id: idResult.data } })

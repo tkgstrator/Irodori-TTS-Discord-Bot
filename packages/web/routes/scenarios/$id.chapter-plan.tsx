@@ -20,10 +20,10 @@ const ChapterPlanPreviewPageContent = () => {
   const { appendNextChapter } = useScenarioMutations({ characters, scenarios })
   const [isChapterGenerating, setIsChapterGenerating] = useState(false)
   const [preview, setPreview] = useState<ChapterPlanPreviewState | null>(() =>
-    loadChapterPlanPreview({ scenarioId: id })
+    loadChapterPlanPreview({ scenarioId: id ?? '' })
   )
   const requestKeyRef = useRef<string | null>(null)
-  const scenario = getScenario(id)
+  const scenario = id ? getScenario(id) : undefined
   const isPlotsRoute = pathname.startsWith('/plots')
   const backTo = isPlotsRoute ? '/plots/$id' : '/scenarios/$id'
 

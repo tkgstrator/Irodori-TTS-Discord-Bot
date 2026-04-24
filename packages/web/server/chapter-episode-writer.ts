@@ -4,8 +4,17 @@ import { fileURLToPath } from 'node:url'
 import { GoogleGenAI } from '@google/genai'
 import Handlebars from 'handlebars'
 import { z } from 'zod'
+import {
+  getAgeGroupLabel,
+  getFirstPersonLabel,
+  getGenderLabel,
+  getHonorificLabel,
+  getOccupationLabel,
+  getSecondPersonLabel,
+  getSpeechStyleLabel
+} from '../lib/character-options'
 import type { Cue } from '../lib/scenarios'
-import type { StoryCharacterContext } from '../schemas/story-character-context.dto'
+import type { ChapterEpisodeRequest } from '../schemas/chapter-episode-request.dto'
 
 const GeminiEnvSchema = z.object({
   GEMINI_API_KEY: z.string().nonempty()
@@ -27,6 +36,10 @@ const EpisodeCueSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('pause'),
     duration: z.number().positive().max(3)
+  }),
+  z.object({
+    kind: z.literal('scene'),
+    name: z.string().trim().nonempty()
   })
 ])
 
@@ -55,28 +68,61 @@ const EpisodeScriptSchema = z
     }
   })
 
-export type ChapterEpisodeRequest = {
-  model: string
-  scenario: {
-    title: string
-    genres: readonly string[]
-    tone: string
-  }
-  chapter: {
-    title: string
-    synopsis: string
-  }
-  cast: ReadonlyArray<{
-    alias: string
-    character: StoryCharacterContext
-  }>
-}
-
 // Handlebars テンプレートを読み込み、描画関数を返す。
 const loadTemplate = (fileName: string) => Handlebars.compile(readFileSync(join(templateDir, fileName), 'utf8'))
 
 const renderEpisodeSystemInstruction = loadTemplate('chapter-episode-system-instruction.hbs')
 const renderChapterEpisodePrompt = loadTemplate('chapter-episode-prompt.hbs')
+
+// 空配列を Writer 向けの読みやすい文字列へ整形する。
+const formatPromptList = (values: readonly string[], emptyLabel = 'なし') => {
+  return values.length > 0 ? values.join('、') : emptyLabel
+}
+
+// 空文字や null を Writer 向けの読みやすい文字列へ整形する。
+const formatPromptValue = (value: string | null, emptyLabel = 'なし') => {
+  if (value === null) {
+    return emptyLabel
+  }
+
+  return value.trim().length > 0 ? value : emptyLabel
+}
+
+// 作品全体の前提を Writer 向けの文章へ整形する。
+const buildScenarioSummary = (request: ChapterEpisodeRequest) =>
+  [
+    `- タイトル: ${request.scenario.title}`,
+    `- ジャンル: ${request.scenario.genres.join('、')}`,
+    `- トーン: ${request.scenario.tone}`
+  ].join('\n')
+
+// 今回の章で扱う内容を Writer 向けの文章へ整形する。
+const buildChapterSummary = (request: ChapterEpisodeRequest) =>
+  [`- 章タイトル: ${request.chapter.title}`, `- この章で扱う内容: ${request.chapter.synopsis}`].join('\n')
+
+// 登場人物ごとの情報を Writer が読みやすい形へ整形する。
+const buildCharacterProfiles = (request: ChapterEpisodeRequest) =>
+  request.cast
+    .map((item) =>
+      [
+        `- 話者ID: ${item.alias}`,
+        `  - 名前: ${item.character.name}`,
+        `  - 年齢層: ${getAgeGroupLabel(item.character.ageGroup)}`,
+        `  - 性別: ${getGenderLabel(item.character.gender)}`,
+        `  - 職業: ${getOccupationLabel(item.character.occupation)}`,
+        `  - 性格: ${formatPromptList(item.character.personalityTags)}`,
+        `  - 口調: ${getSpeechStyleLabel(item.character.speechStyle)}`,
+        `  - 一人称: ${getFirstPersonLabel(item.character.firstPerson)}`,
+        `  - 二人称: ${item.character.secondPerson ? getSecondPersonLabel(item.character.secondPerson) : 'なし'}`,
+        `  - 敬称: ${getHonorificLabel(item.character.honorific)}`,
+        `  - 属性: ${formatPromptList(item.character.attributeTags)}`,
+        `  - 背景: ${formatPromptList(item.character.backgroundTags)}`,
+        `  - セリフサンプル: ${formatPromptList(item.character.sampleQuotes)}`,
+        `  - 補足メモ: ${formatPromptValue(item.character.memo)}`,
+        `  - 声の説明: ${formatPromptValue(item.character.caption)}`
+      ].join('\n')
+    )
+    .join('\n\n')
 
 // 話者 alias の整合も含めた cue 検証スキーマを組み立てる。
 const buildEpisodeCueSchema = (speakerAliases: readonly string[]) =>
@@ -165,33 +211,12 @@ const buildEpisodeSystemInstruction = (speakerAliases: readonly string[]) =>
     speakerAliases: speakerAliases.map((speakerAlias) => `"${speakerAlias}"`).join(' | ')
   }).trim()
 
-// プロンプトには話者 alias を見せ、内部 speakerId は含めない。
-const toPromptCast = (request: ChapterEpisodeRequest) =>
-  request.cast.map((item) => ({
-    alias: item.alias,
-    character: {
-      id: item.character.id,
-      name: item.character.name,
-      ageGroup: item.character.ageGroup,
-      gender: item.character.gender,
-      occupation: item.character.occupation,
-      personalityTags: item.character.personalityTags,
-      speechStyle: item.character.speechStyle,
-      firstPerson: item.character.firstPerson,
-      secondPerson: item.character.secondPerson,
-      honorific: item.character.honorific,
-      attributeTags: item.character.attributeTags,
-      backgroundTags: item.character.backgroundTags,
-      memo: item.character.memo
-    }
-  }))
-
 // 章プロットからエピソード生成用プロンプトを組み立てる。
 export const buildChapterEpisodePrompt = (request: ChapterEpisodeRequest) =>
   renderChapterEpisodePrompt({
-    scenarioJson: JSON.stringify(request.scenario, null, 2),
-    chapterJson: JSON.stringify(request.chapter, null, 2),
-    castJson: JSON.stringify(toPromptCast(request), null, 2)
+    scenarioSummary: buildScenarioSummary(request),
+    chapterSummary: buildChapterSummary(request),
+    characterProfiles: buildCharacterProfiles(request)
   }).trim()
 
 // Gemini の JSON 文字列を cue 配列として検証する。

@@ -36,7 +36,8 @@ const CharacterEditPageContent = () => {
     backgroundTags: [...character.backgroundTags],
     sampleQuotes: [...character.sampleQuotes],
     memo: character.memo,
-    speakerId: character.speakerId
+    speakerId: character.speakerId,
+    caption: character.caption
   }
 
   return (
