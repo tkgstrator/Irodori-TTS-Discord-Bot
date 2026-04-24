@@ -77,7 +77,7 @@ describe('runScenarioEpisodeGeneration', () => {
     const scenario = await db.scenario.create({
       data: {
         title: '成功テスト',
-        genres: JSON.stringify(['学園']),
+        genres: ['学園'],
         tone: 'ほろ苦い',
         promptNote: '',
         editorModel: 'gemini-2.5-flash',
@@ -147,7 +147,7 @@ describe('runScenarioEpisodeGeneration', () => {
     const scenario = await db.scenario.create({
       data: {
         title: '失敗テスト',
-        genres: JSON.stringify(['学園']),
+        genres: ['学園'],
         tone: 'ほろ苦い',
         promptNote: '',
         editorModel: 'gemini-2.5-flash',

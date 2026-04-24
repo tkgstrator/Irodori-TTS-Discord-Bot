@@ -284,7 +284,7 @@ scenarios.post('/', async (c) => {
   const row = await db.scenario.create({
     data: {
       title: bodyResult.data.title,
-      genres: JSON.stringify(bodyResult.data.genres),
+      genres: bodyResult.data.genres,
       tone: bodyResult.data.tone,
       promptNote: bodyResult.data.promptNote,
       editorModel: bodyResult.data.editorModel,
@@ -368,7 +368,7 @@ scenarios.put('/:id', async (c) => {
       },
       data: {
         title: bodyResult.data.title,
-        genres: JSON.stringify(bodyResult.data.genres),
+        genres: bodyResult.data.genres,
         tone: bodyResult.data.tone,
         promptNote: bodyResult.data.promptNote,
         editorModel: bodyResult.data.editorModel,
