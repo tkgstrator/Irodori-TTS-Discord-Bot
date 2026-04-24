@@ -1,13 +1,8 @@
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import type { Character, CharacterInput } from '@/schemas/character.dto'
-import { backendApi, readApiErrorMessage } from './backend-api'
+import { backendApi, toApiError } from './backend-api'
 
 export type { Character, CharacterInput } from '@/schemas/character.dto'
-
-/**
- * Query error を UI 向けの Error へ正規化する。
- */
-const toApiError = (error: unknown, fallback: string) => new Error(readApiErrorMessage(error, fallback))
 
 /**
  * characters 一覧の query key を定義する。

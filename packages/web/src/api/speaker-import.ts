@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { z } from 'zod'
-import type { CharacterInput, SpeakerLink } from '@/schemas/character.dto'
+import type { SpeakerLink } from '@/schemas/character.dto'
 import { CharacterInputSchema, SpeakerLinkSchema } from '@/schemas/character.dto'
 import {
   SpeakerIdSchema,

@@ -7,6 +7,7 @@ import {
 } from '@/lib/chapter-plan-prompt'
 import { type ChapterPlan, ChapterPlanSchema } from '@/schemas/chapter-plan.dto'
 import type { ChapterPlanRequest } from '@/schemas/chapter-plan-request.dto'
+import { formatZodIssues, parseJsonText } from './gemini-utils'
 
 // Gemini 利用時に必要な環境変数を定義する。
 const GeminiEnvSchema = z.object({
@@ -99,24 +100,6 @@ export const planChapter = async (request: ChapterPlanRequest): Promise<ChapterP
     })
   }
 }
-
-// JSON テキストを安全に parse する。
-const parseJsonText = (text: string): unknown => {
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new Error('Gemini returned invalid JSON')
-  }
-}
-
-// Zod の issue 群を短い 1 行メッセージへ整形する。
-const formatZodIssues = (error: z.ZodError): string =>
-  error.issues
-    .map((issue) => {
-      const path = issue.path.length > 0 ? issue.path.join('.') : 'root'
-      return `${path}: ${issue.message}`
-    })
-    .join('; ')
 
 // Gemini に JSON mode で章計画を生成させる。
 const generateChapterPlanText = async ({
