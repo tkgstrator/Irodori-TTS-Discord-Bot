@@ -32,7 +32,7 @@ export default defineConfig({
       entry: 'src/app.ts',
       adapter: nodeAdapter,
       exclude: [/^(?!\/api).*/, ...defaultOptions.exclude]
-    }),
+    }) as Plugin,
     tanstackRouter({
       quoteStyle: 'single',
       routesDirectory: './src/routes',
