@@ -294,7 +294,8 @@ export const resolveScenarioState = ({
  * scenarios 一覧の query key を定義する。
  */
 const scenarioKeys = {
-  all: ['scenarios'] as const
+  all: ['scenarios'] as const,
+  detail: (id: string) => ['scenarios', id] as const
 }
 
 /**
@@ -310,6 +311,49 @@ const scenariosQueryOptions = queryOptions({
     }
   }
 })
+
+export const scenarioQueryOptions = (id: string) =>
+  queryOptions({
+    queryKey: scenarioKeys.detail(id),
+    queryFn: async () => {
+      try {
+        return await backendApi.getScenario({ params: { id } })
+      } catch (error) {
+        throw toApiError(error, 'Failed to load scenario')
+      }
+    }
+  })
+
+/**
+ * 単一シナリオを character 情報を反映して Suspense で取得する。
+ */
+export const useSuspenseResolvedScenario = (id: string, characters: readonly Character[] = []) => {
+  const queryClient = useQueryClient()
+  const query = useSuspenseQuery({
+    ...scenarioQueryOptions(id),
+    select: (scenario: Scenario) => resolveScenarioState({ scenario, characters })
+  })
+
+  const isGenerating = query.data.chapters.some((c) => c.status === 'generating')
+
+  useEffect(() => {
+    if (!isGenerating) return
+
+    const timerId = window.setInterval(() => {
+      void query.refetch()
+    }, 3000)
+
+    return () => {
+      window.clearInterval(timerId)
+    }
+  }, [isGenerating, query.refetch])
+
+  return {
+    ...query,
+    scenario: query.data,
+    invalidate: () => queryClient.invalidateQueries({ queryKey: scenarioKeys.detail(id) })
+  }
+}
 
 /**
  * 生の scenarios 一覧を Suspense で取得する。
@@ -388,6 +432,7 @@ export const useScenarioMutations = ({
     },
     onSuccess: (scenario) => {
       queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) => [scenario, ...prev])
+      queryClient.setQueryData<Scenario>(scenarioKeys.detail(scenario.id), scenario)
     }
   })
   const updateScenarioMutation = useMutation({
@@ -406,6 +451,7 @@ export const useScenarioMutations = ({
       queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
         prev.map((item) => (item.id === variables.id ? scenario : item))
       )
+      queryClient.setQueryData<Scenario>(scenarioKeys.detail(variables.id), scenario)
     }
   })
   const appendNextChapterMutation = useMutation({
@@ -455,10 +501,19 @@ export const useScenarioMutations = ({
       queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
         prev.map((item) => (item.id === variables.id ? scenario : item))
       )
+      queryClient.setQueryData<Scenario>(scenarioKeys.detail(variables.id), scenario)
     }
   })
   const createEpisodeFromChapterMutation = useMutation({
-    mutationFn: async ({ scenarioId, chapterId }: { scenarioId: string; chapterId: string }) => {
+    mutationFn: async ({
+      scenarioId,
+      chapterId,
+      userDirection
+    }: {
+      scenarioId: string
+      chapterId: string
+      userDirection?: string
+    }) => {
       const scenario = scenarios.find((item) => item.id === scenarioId)
 
       if (!scenario) {
@@ -468,7 +523,8 @@ export const useScenarioMutations = ({
       const request = buildChapterEpisodeRequest({
         scenario,
         chapterId,
-        characters
+        characters,
+        userDirection
       })
 
       try {
@@ -486,6 +542,7 @@ export const useScenarioMutations = ({
       queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
         prev.map((item) => (item.id === variables.scenarioId ? scenario : item))
       )
+      queryClient.setQueryData<Scenario>(scenarioKeys.detail(variables.scenarioId), scenario)
     }
   })
   const deleteEpisodeFromChapterMutation = useMutation({
@@ -505,6 +562,7 @@ export const useScenarioMutations = ({
       queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) =>
         prev.map((item) => (item.id === variables.scenarioId ? scenario : item))
       )
+      queryClient.setQueryData<Scenario>(scenarioKeys.detail(variables.scenarioId), scenario)
     }
   })
 
@@ -513,8 +571,8 @@ export const useScenarioMutations = ({
     updateScenario: (id: string, input: ScenarioUpdateApiInput) => updateScenarioMutation.mutateAsync({ id, input }),
     appendNextChapter: (id: string, input?: ChapterGenerateFormValues) =>
       appendNextChapterMutation.mutateAsync({ id, input }),
-    createEpisodeFromChapter: (scenarioId: string, chapterId: string) =>
-      createEpisodeFromChapterMutation.mutateAsync({ scenarioId, chapterId }),
+    createEpisodeFromChapter: (scenarioId: string, chapterId: string, userDirection?: string) =>
+      createEpisodeFromChapterMutation.mutateAsync({ scenarioId, chapterId, userDirection }),
     deleteEpisodeFromChapter: (scenarioId: string, chapterId: string) =>
       deleteEpisodeFromChapterMutation.mutateAsync({ scenarioId, chapterId }),
     deleteScenario: (id: string) => {

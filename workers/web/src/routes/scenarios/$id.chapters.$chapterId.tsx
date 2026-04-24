@@ -4,11 +4,20 @@ import { useState } from 'react'
 import { PageSuspense } from '@/components/page-suspense'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
 import { useSuspenseCharacters } from '@/lib/characters'
 import type { ChapterCharacter, Cue, Speaker } from '@/lib/scenarios'
-import { canRegenerateChapter, useScenarioMutations, useSuspenseResolvedScenarios } from '@/lib/scenarios'
+import { canRegenerateChapter, useScenarioMutations, useSuspenseResolvedScenario } from '@/lib/scenarios'
 import { createChapterVdsExport, createChapterVdsJsonExport } from '@/lib/vds'
 
 const CharacterAvatar = ({ character, size = 'md' }: { character: ChapterCharacter; size?: 'sm' | 'md' }) => {
@@ -67,14 +76,19 @@ const PauseCueRow = ({ duration }: { duration: number }) => {
 const ChapterDetailPageContent = () => {
   const { id, chapterId } = useParams({ strict: false })
   const { pathname } = useLocation()
+  const scenarioId = id ?? ''
   const { characters } = useSuspenseCharacters()
-  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters)
-  const { createEpisodeFromChapter, deleteEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
-  const scenario = id ? getScenario(id) : undefined
+  const { scenario } = useSuspenseResolvedScenario(scenarioId, characters)
+  const { createEpisodeFromChapter, deleteEpisodeFromChapter } = useScenarioMutations({
+    characters,
+    scenarios: scenario ? [scenario] : []
+  })
   const isPlotsRoute = pathname.startsWith('/plots')
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [regenError, setRegenError] = useState<string | null>(null)
+  const [regenDialogOpen, setRegenDialogOpen] = useState(false)
+  const [userDirection, setUserDirection] = useState('')
 
   if (!scenario) {
     return (
@@ -129,13 +143,16 @@ const ChapterDetailPageContent = () => {
   const handleRegenerate = async () => {
     setIsRegenerating(true)
     setRegenError(null)
+    setRegenDialogOpen(false)
 
     try {
-      await createEpisodeFromChapter(scenario.id, chapter.id)
+      const direction = userDirection.trim() || undefined
+      await createEpisodeFromChapter(scenario.id, chapter.id, direction)
     } catch (error) {
       setRegenError(error instanceof Error ? error.message : 'Failed to regenerate chapter')
     } finally {
       setIsRegenerating(false)
+      setUserDirection('')
     }
   }
 
@@ -240,7 +257,7 @@ const ChapterDetailPageContent = () => {
                   variant="outline"
                   size="sm"
                   className="w-full gap-1.5 text-xs sm:w-auto"
-                  onClick={() => void handleRegenerate()}
+                  onClick={() => setRegenDialogOpen(true)}
                   disabled={isRegenerating}
                 >
                   {isRegenerating ? (
@@ -428,6 +445,31 @@ const ChapterDetailPageContent = () => {
           )}
         </div>
       </div>
+
+      <Dialog open={regenDialogOpen} onOpenChange={setRegenDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{chapter.status === 'failed' ? 'この章を再試行' : 'この章を再生成'}</DialogTitle>
+            <DialogDescription>LLM への追加指示があれば入力してください（任意）</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="例: もっとコミカルな雰囲気にして"
+            value={userDirection}
+            onChange={(e) => setUserDirection(e.target.value)}
+            maxLength={500}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegenDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={() => void handleRegenerate()}>
+              <RefreshCw className="size-3" />
+              {chapter.status === 'failed' ? '再試行' : '再生成'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

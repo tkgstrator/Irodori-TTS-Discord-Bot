@@ -217,7 +217,8 @@ export const buildChapterEpisodePrompt = (request: ChapterEpisodeRequest) =>
   renderChapterEpisodePrompt({
     scenarioSummary: buildScenarioSummary(request),
     chapterSummary: buildChapterSummary(request),
-    characterProfiles: buildCharacterProfiles(request)
+    characterProfiles: buildCharacterProfiles(request),
+    userDirection: request.userDirection
   }).trim()
 
 // Gemini の JSON 文字列を cue 配列として検証する。

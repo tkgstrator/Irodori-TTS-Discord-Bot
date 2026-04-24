@@ -37,7 +37,7 @@ import {
   canGenerateNextChapter,
   canRegenerateChapter,
   useScenarioMutations,
-  useSuspenseResolvedScenarios
+  useSuspenseResolvedScenario
 } from '@/lib/scenarios'
 import { cn } from '@/lib/utils'
 import { createScenarioVdsExport, createScenarioVdsJsonExport } from '@/lib/vds'
@@ -366,13 +366,11 @@ const ScenarioDetailPageContent = () => {
   const { id } = useParams({ strict: false })
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const scenarioId = id ?? ''
   const { characters } = useSuspenseCharacters()
-  const { getScenario, scenarios } = useSuspenseResolvedScenarios(characters, {
-    pollMode: 'scenario',
-    pollScenarioId: id
-  })
+  const { scenario } = useSuspenseResolvedScenario(scenarioId, characters)
+  const scenarios = useMemo(() => (scenario ? [scenario] : []), [scenario])
   const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ characters, scenarios })
-  const scenario = id ? getScenario(id) : undefined
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
   const [isChapterPlanning, setIsChapterPlanning] = useState(false)
   const [isChapterCreating, setIsChapterCreating] = useState(false)

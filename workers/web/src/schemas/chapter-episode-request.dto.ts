@@ -25,7 +25,8 @@ export const ChapterEpisodeRequestSchema = z.object({
   model: z.string().trim().nonempty(),
   scenario: ChapterEpisodeScenarioSchema,
   chapter: ChapterEpisodeChapterSchema,
-  cast: z.array(ChapterEpisodeCastSchema).nonempty()
+  cast: z.array(ChapterEpisodeCastSchema).nonempty(),
+  userDirection: z.string().trim().max(500).optional()
 })
 
 export type ChapterEpisodeRequest = z.infer<typeof ChapterEpisodeRequestSchema>
