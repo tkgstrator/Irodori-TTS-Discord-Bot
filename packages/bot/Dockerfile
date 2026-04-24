@@ -5,7 +5,6 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=bun.lock,target=bun.lock,readonly \
     --mount=type=bind,source=packages/shared/package.json,target=packages/shared/package.json,readonly \
     --mount=type=bind,source=packages/bot/package.json,target=packages/bot/package.json,readonly \
-    --mount=type=bind,source=packages/web/package.json,target=packages/web/package.json,readonly \
     bun install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
@@ -21,7 +20,6 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=bun.lock,target=bun.lock,readonly \
     --mount=type=bind,source=packages/shared/package.json,target=packages/shared/package.json,readonly \
     --mount=type=bind,source=packages/bot/package.json,target=packages/bot/package.json,readonly \
-    --mount=type=bind,source=packages/web/package.json,target=packages/web/package.json,readonly \
     bun install --frozen-lockfile --ignore-scripts --omit=dev
 
 FROM oven/bun:1-slim
