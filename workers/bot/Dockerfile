@@ -24,7 +24,7 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=packages/shared/package.json,target=packages/shared/package.json,readonly \
     --mount=type=bind,source=workers/bot/package.json,target=workers/bot/package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
-    bun install --frozen-lockfile --ignore-scripts --omit=dev
+    bun install --frozen-lockfile --ignore-scripts --omit=dev --filter @irodori-tts/bot
 
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app/workers/bot
