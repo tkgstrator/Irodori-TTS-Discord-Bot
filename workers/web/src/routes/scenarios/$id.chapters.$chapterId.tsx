@@ -18,6 +18,7 @@ import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
 import { useSuspenseCharacters } from '@/lib/characters'
 import type { ChapterCharacter, Cue, Speaker } from '@/lib/scenarios'
 import { canRegenerateChapter, useScenarioMutations, useSuspenseResolvedScenario } from '@/lib/scenarios'
+import { stripTtsShortcodes } from '@/lib/utils'
 import { createChapterVdsExport, createChapterVdsJsonExport } from '@/lib/vds'
 
 const CharacterAvatar = ({ character, size = 'md' }: { character: ChapterCharacter; size?: 'sm' | 'md' }) => {
@@ -53,7 +54,7 @@ const SpeechCueCard = ({
           <p className={`mb-1 text-xs font-semibold ${speaker?.nameColor ?? 'text-muted-foreground'}`}>
             {character?.name ?? speaker?.name ?? cue.speaker}
           </p>
-          <p className="text-sm leading-relaxed">{cue.text}</p>
+          <p className="text-sm leading-relaxed">{stripTtsShortcodes(cue.text)}</p>
         </div>
       </div>
     </div>
