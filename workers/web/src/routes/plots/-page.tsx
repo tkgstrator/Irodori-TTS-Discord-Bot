@@ -131,7 +131,7 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
 
 // プロット管理ページを表示する
 const PlotsPageContent = () => {
-  const { scenarios } = useSuspenseResolvedScenarios([], { pollMode: 'all' })
+  const { scenarios } = useSuspenseResolvedScenarios()
 
   return (
     <PageContainer>

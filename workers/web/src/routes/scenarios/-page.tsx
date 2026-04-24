@@ -192,7 +192,7 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
 
 // プロット管理ページを表示する
 const ScenariosPageContent = () => {
-  const { scenarios } = useSuspenseResolvedScenarios([], { pollMode: 'all' })
+  const { scenarios } = useSuspenseResolvedScenarios()
   const completedCount = scenarios.filter((scenario) => scenario.status === 'completed').length
   const generatingCount = scenarios.filter((scenario) => scenario.status === 'generating').length
   const failedCount = scenarios.filter((scenario) => scenario.status === 'failed').length
