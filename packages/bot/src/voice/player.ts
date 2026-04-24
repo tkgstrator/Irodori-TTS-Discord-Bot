@@ -135,6 +135,64 @@ export const enqueueAudio = async (guildId: string, audio: PcmAudio, connection:
   }
 }
 
+export const playStream = async (
+  guildId: string,
+  pcmStream: import('node:stream').Readable,
+  sampleRate: number,
+  connection: VoiceConnection
+): Promise<void> => {
+  if (connection.state.status === VoiceConnectionStatus.Destroyed) {
+    destroyPlayer(guildId)
+    return
+  }
+
+  if (connection.state.status !== VoiceConnectionStatus.Ready) {
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, 5_000)
+    } catch {
+      throw new Error('Connection failed to become ready')
+    }
+  }
+
+  const guildPlayer = getOrCreatePlayer(guildId, connection)
+  const wavHeader = createWavHeader(sampleRate)
+
+  const { PassThrough } = await import('node:stream')
+  const passThrough = new PassThrough()
+  passThrough.write(wavHeader)
+  pcmStream.pipe(passThrough)
+
+  const resource = createAudioResource(passThrough, {
+    inputType: StreamType.Arbitrary,
+    inlineVolume: false
+  })
+
+  return new Promise<void>((resolve, reject) => {
+    guildPlayer.player.play(resource)
+    guildPlayer.isPlaying = true
+
+    const onIdle = () => {
+      cleanup()
+      guildPlayer.isPlaying = false
+      resolve()
+    }
+
+    const onError = (error: Error) => {
+      cleanup()
+      guildPlayer.isPlaying = false
+      reject(error)
+    }
+
+    const cleanup = () => {
+      guildPlayer.player.removeListener(AudioPlayerStatus.Idle, onIdle)
+      guildPlayer.player.removeListener('error', onError)
+    }
+
+    guildPlayer.player.on(AudioPlayerStatus.Idle, onIdle)
+    guildPlayer.player.on('error', onError)
+  })
+}
+
 export const clearQueue = (guildId: string): void => {
   const guildPlayer = guildPlayers.get(guildId)
   if (guildPlayer) {
