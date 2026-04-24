@@ -1,6 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { z } from 'zod'
-import { PrismaClient } from '../generated/prisma/client'
+import { PrismaClient } from '../../generated/prisma/client'
 
 // PostgreSQL 接続文字列の必須チェックを行う
 const envSchema = z.object({

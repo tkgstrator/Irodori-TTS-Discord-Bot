@@ -1,6 +1,15 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
-import { api } from '../server/api'
-import { db } from '../server/db'
+import { api } from '../src/api/api'
+import { db } from '../src/api/db'
+
+// キャラクター入力の配列フィールドを Prisma 用の JSON 文字列へ変換する
+const toCharacterPrismaData = (input: ReturnType<typeof createCharacterInput>) => ({
+  ...input,
+  personalityTags: JSON.stringify(input.personalityTags),
+  attributeTags: JSON.stringify(input.attributeTags),
+  backgroundTags: JSON.stringify(input.backgroundTags),
+  sampleQuotes: JSON.stringify(input.sampleQuotes)
+})
 
 const createdScenarioIds = new Set<string>()
 const createdCharacterIds = new Set<string>()
@@ -42,7 +51,7 @@ const trackCharacterId = (id: string) => {
 // テスト用キャラクターを DB に作成する。
 const createCharacter = async (label: string) => {
   const row = await db.character.create({
-    data: createCharacterInput(label)
+    data: toCharacterPrismaData(createCharacterInput(label))
   })
 
   trackCharacterId(row.id)
@@ -284,7 +293,7 @@ describe('Scenario DB operations', () => {
     })
 
     expect(row?.title).toBe('更新後タイトル')
-    expect(row?.genres).toEqual(['学園', '恋愛'])
+    expect(row?.genres).toEqual(JSON.stringify(['学園', '恋愛']))
     expect(row?.tone).toBe('軽快')
     expect(row?.cast.map((cast) => cast.characterId)).toEqual([yuki.id])
   })

@@ -1,6 +1,15 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { db } from '../src/api/db'
 import type { CharacterInput } from '../src/schemas/character.dto'
-import { db } from '../server/db'
+
+// CharacterInput の配列フィールドを Prisma 用の JSON 文字列へ変換する
+const toCharacterPrismaData = (input: CharacterInput) => ({
+  ...input,
+  personalityTags: JSON.stringify(input.personalityTags),
+  attributeTags: JSON.stringify(input.attributeTags),
+  backgroundTags: JSON.stringify(input.backgroundTags),
+  sampleQuotes: JSON.stringify(input.sampleQuotes)
+})
 
 // テストで作成したレコードの ID を保持する
 const createdIds = new Set<string>()
@@ -93,7 +102,7 @@ afterAll(async () => {
 describe('Character DB operations', () => {
   test('create したキャラクターを DB から取得できる', async () => {
     const input = createCharacterInput()
-    const created = await db.character.create({ data: input })
+    const created = await db.character.create({ data: toCharacterPrismaData(input) })
     trackId(created.id)
 
     const row = await db.character.findUnique({
@@ -106,12 +115,12 @@ describe('Character DB operations', () => {
     expect(row?.id).toBe(created.id)
     expect(row?.name).toBe(input.name)
     expect(row?.memo).toBe(input.memo)
-    expect(row?.sampleQuotes).toEqual(input.sampleQuotes)
+    expect(row?.sampleQuotes).toEqual(JSON.stringify(input.sampleQuotes))
   })
 
   test('delete したキャラクターは DB から取得できない', async () => {
     const input = createCharacterInput()
-    const created = await db.character.create({ data: input })
+    const created = await db.character.create({ data: toCharacterPrismaData(input) })
 
     await db.character.delete({
       where: {
@@ -138,7 +147,7 @@ describe('Character DB operations', () => {
       ...createCharacterInput(),
       speakerId: speaker.id
     }
-    const created = await db.character.create({ data: input })
+    const created = await db.character.create({ data: toCharacterPrismaData(input) })
     trackId(created.id)
 
     const row = await db.character.findUnique({

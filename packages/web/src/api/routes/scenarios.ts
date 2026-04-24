@@ -1,20 +1,20 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { Prisma } from '../../generated/prisma/client'
-import { ChapterEpisodeRequestSchema } from '../../src/schemas/chapter-episode-request.dto'
-import { ChapterPlanRequestSchema } from '../../src/schemas/chapter-plan-request.dto'
+import { ChapterEpisodeRequestSchema } from '@/schemas/chapter-episode-request.dto'
+import { ChapterPlanRequestSchema } from '@/schemas/chapter-plan-request.dto'
 import {
   type ScenarioApi,
   type ScenarioApiChapter,
   ScenarioApiListSchema,
   ScenarioApiSchema,
   type ScenarioApiSpeaker
-} from '../../src/schemas/scenario-api.dto'
+} from '@/schemas/scenario-api.dto'
 import {
   ScenarioAppendChapterApiSchema,
   ScenarioCreateApiSchema,
   ScenarioUpdateApiSchema
-} from '../../src/schemas/scenario-write.dto'
+} from '@/schemas/scenario-write.dto'
+import type { Prisma } from '../../../generated/prisma/client'
 import { planChapter } from '../chapter-planner'
 import { db } from '../db'
 import { runScenarioEpisodeGeneration } from '../scenario-episode-generation'
@@ -104,7 +104,7 @@ const buildChapterResponse = (chapter: ScenarioChapterRow): ScenarioApiChapter =
   id: chapter.id,
   number: chapter.number,
   title: chapter.title,
-  status: chapter.status,
+  status: chapter.status as ScenarioApiChapter['status'],
   cueCount: chapter.cueCount,
   durationMinutes: chapter.durationMinutes,
   synopsis: chapter.synopsis,
@@ -228,7 +228,7 @@ const buildScenarioResponse = (row: ScenarioRow) => {
     title: row.title,
     status: resolveScenarioStatus({
       chapterStatuses: chapters.map((chapter) => chapter.status),
-      fallback: row.status
+      fallback: row.status as ScenarioApi['status']
     }),
     genres: row.genres,
     tone: row.tone,
@@ -284,7 +284,7 @@ scenarios.post('/', async (c) => {
   const row = await db.scenario.create({
     data: {
       title: bodyResult.data.title,
-      genres: bodyResult.data.genres,
+      genres: JSON.stringify(bodyResult.data.genres),
       tone: bodyResult.data.tone,
       promptNote: bodyResult.data.promptNote,
       editorModel: bodyResult.data.editorModel,
@@ -368,7 +368,7 @@ scenarios.put('/:id', async (c) => {
       },
       data: {
         title: bodyResult.data.title,
-        genres: bodyResult.data.genres,
+        genres: JSON.stringify(bodyResult.data.genres),
         tone: bodyResult.data.tone,
         promptNote: bodyResult.data.promptNote,
         editorModel: bodyResult.data.editorModel,

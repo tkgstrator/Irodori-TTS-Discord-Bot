@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
+import { db } from '../src/api/db'
+import { runScenarioEpisodeGeneration } from '../src/api/scenario-episode-generation'
 import type { ChapterEpisodeRequest } from '../src/schemas/chapter-episode-request.dto'
-import { db } from '../server/db'
-import { runScenarioEpisodeGeneration } from '../server/scenario-episode-generation'
 
 const createdScenarioIds = new Set<string>()
 
@@ -77,7 +77,7 @@ describe('runScenarioEpisodeGeneration', () => {
     const scenario = await db.scenario.create({
       data: {
         title: '成功テスト',
-        genres: ['学園'],
+        genres: JSON.stringify(['学園']),
         tone: 'ほろ苦い',
         promptNote: '',
         editorModel: 'gemini-2.5-flash',
@@ -147,7 +147,7 @@ describe('runScenarioEpisodeGeneration', () => {
     const scenario = await db.scenario.create({
       data: {
         title: '失敗テスト',
-        genres: ['学園'],
+        genres: JSON.stringify(['学園']),
         tone: 'ほろ苦い',
         promptNote: '',
         editorModel: 'gemini-2.5-flash',

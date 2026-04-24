@@ -1,4 +1,4 @@
-import type { ChapterEpisodeRequest } from '../src/schemas/chapter-episode-request.dto'
+import type { ChapterEpisodeRequest } from '@/schemas/chapter-episode-request.dto'
 import { estimateEpisodeDuration, validateEpisodeCues, writeChapterEpisode } from './chapter-episode-writer'
 import { db } from './db'
 

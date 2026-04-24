@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { SpeakerIdSchema } from '../../src/schemas/speaker.dto'
+import { SpeakerIdSchema } from '@/schemas/speaker.dto'
 import { getSpeakerImportTemplate, listSpeakerImports } from '../speaker-import'
 
 export const speakers = new Hono()

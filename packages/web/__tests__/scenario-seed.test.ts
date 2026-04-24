@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { plotSeedIds, plotSpeakerSeedIds } from '../src/lib/plot-seed-ids'
 import { scenarioSeedSet } from '../prisma/scenario-seeds'
+import { plotSeedIds, plotSpeakerSeedIds } from '../src/lib/plot-seed-ids'
 import { ScenarioSeedSetSchema } from '../src/schemas/scenario-seed.dto'
 
 describe('Scenario seed data', () => {

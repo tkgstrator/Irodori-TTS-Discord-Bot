@@ -1,14 +1,23 @@
 import { Buffer } from 'node:buffer'
 import { z } from 'zod'
-import type { SpeakerLink } from '../src/schemas/character.dto'
-import { CharacterInputSchema, SpeakerLinkSchema } from '../src/schemas/character.dto'
+import type { CharacterInput, SpeakerLink } from '@/schemas/character.dto'
+import { CharacterInputSchema, SpeakerLinkSchema } from '@/schemas/character.dto'
 import {
   SpeakerIdSchema,
   SpeakerImportListSchema,
   SpeakerImportTemplateSchema,
   SpeakerImportValuesSchema
-} from '../src/schemas/speaker.dto'
+} from '@/schemas/speaker.dto'
 import { db } from './db'
+
+// CharacterInput の配列フィールドを Prisma 用の JSON 文字列へ変換する
+const toCharacterPrismaData = (input: CharacterInput) => ({
+  ...input,
+  personalityTags: JSON.stringify(input.personalityTags),
+  attributeTags: JSON.stringify(input.attributeTags),
+  backgroundTags: JSON.stringify(input.backgroundTags),
+  sampleQuotes: JSON.stringify(input.sampleQuotes)
+})
 
 const DefaultIrodoriTtsBaseUrl = 'http://irodori-tts:8765'
 
@@ -303,7 +312,7 @@ const ensureSeedCharacter = async (speaker: SpeakerLink) => {
 
   const character = await buildSeedSpeakerCharacter(speaker)
   await db.character.create({
-    data: character
+    data: toCharacterPrismaData(character)
   })
 
   console.log(`Created seed character: ${speaker.name}`)

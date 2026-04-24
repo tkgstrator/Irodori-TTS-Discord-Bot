@@ -1,5 +1,5 @@
-import { db } from '../server/db'
-import { syncSpeakerSeeds } from '../server/speaker-import'
+import { db } from '../src/api/db'
+import { syncSpeakerSeeds } from '../src/api/speaker-import'
 import { characterSeedRows } from './character-seeds'
 import { syncScenarioSeeds } from './scenario-seeds'
 

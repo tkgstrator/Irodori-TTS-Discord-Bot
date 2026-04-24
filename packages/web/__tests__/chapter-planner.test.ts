@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
+import { parseChapterPlanText } from '../src/api/chapter-planner'
 import {
   buildChapterPlanDebugPayload,
   buildChapterPlanPrompt,
   buildChapterPlanRepairPrompt
 } from '../src/lib/chapter-plan-prompt'
 import type { ChapterPlanRequest } from '../src/schemas/chapter-plan-request.dto'
-import { parseChapterPlanText } from '../server/chapter-planner'
 
 const requestFixture: ChapterPlanRequest = {
   schemaVersion: 1,
