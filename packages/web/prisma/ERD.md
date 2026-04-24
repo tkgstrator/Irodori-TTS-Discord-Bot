@@ -13,6 +13,7 @@ failed failed
         ChapterStatus {
             draft draft
 generating generating
+failed failed
 completed completed
         }
     
@@ -21,6 +22,7 @@ completed completed
         CueKind {
             speech speech
 pause pause
+scene scene
         }
     
   "characters" {
@@ -42,6 +44,7 @@ pause pause
     String sample_quotes 
     String memo 
     String speaker_id "nullable"
+    String caption "nullable"
     }
   
 
@@ -70,6 +73,9 @@ pause pause
     String title 
     String genres 
     String tone 
+    String prompt_note 
+    String editor_model 
+    String writer_model 
     String ending 
     ScenarioStatus status 
     Json vds_json "nullable"
@@ -99,6 +105,7 @@ pause pause
     Int cue_count 
     Float duration_minutes 
     String synopsis 
+    String generation_error "nullable"
     }
   
 
@@ -120,6 +127,7 @@ pause pause
     String speaker_alias "nullable"
     String text "nullable"
     Float pause_duration "nullable"
+    String scene_name "nullable"
     Json synth_options "nullable"
     }
   

@@ -31,6 +31,7 @@ enum ChapterStatus {
 enum CueKind {
   speech
   pause
+  scene
 }
 
 model Character {
@@ -184,6 +185,7 @@ model ScenarioCue {
   speakerAlias  String? @map("speaker_alias")
   text          String?
   pauseDuration Float?  @map("pause_duration")
+  sceneName     String? @map("scene_name")
   synthOptions  Json?   @map("synth_options")
 
   chapter ScenarioChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)

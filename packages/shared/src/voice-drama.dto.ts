@@ -48,9 +48,9 @@ export const VdsSynthOptionsSchema = z
  *
  * 1エイリアスは UUID か caption のいずれか一方のみ（§3.4 排他制約）。
  */
-export const SpeakerRefSchema = z.union([
-  z.object({ uuid: z.uuid() }).strict(),
-  z.object({ caption: z.string().nonempty() }).strict()
+export const SpeakerRefSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('lora'), uuid: z.uuid() }).strict(),
+  z.object({ type: z.literal('caption'), caption: z.string().nonempty() }).strict()
 ])
 
 /**
@@ -79,10 +79,21 @@ export const PauseCueSchema = z
   })
   .strict()
 
+export const SceneCueSchema = z
+  .object({
+    kind: z.literal('scene'),
+    name: z.string().nonempty()
+  })
+  .strict()
+
 /**
  * cue（§4.1 `Cue`）。`kind` で判別する discriminated union。
  */
-export const CueSchema = z.discriminatedUnion('kind', [SpeechCueSchema, PauseCueSchema])
+export const CueSchema = z.discriminatedUnion('kind', [SpeechCueSchema, PauseCueSchema, SceneCueSchema])
+
+export const VdsDefaultsSchema = VdsSynthOptionsSchema.extend({
+  gap: z.number().nonnegative().optional()
+}).strict()
 
 /**
  * VDS-JSON のルート型（§4.1 `VdsJson`）。
@@ -94,7 +105,7 @@ export const VdsJsonSchema = z
   .object({
     version: z.literal(1),
     title: z.string().optional(),
-    defaults: VdsSynthOptionsSchema.optional(),
+    defaults: VdsDefaultsSchema.optional(),
     speakers: z.record(z.string().regex(ALIAS_PATTERN), SpeakerRefSchema),
     cues: z.array(CueSchema).nonempty()
   })
@@ -126,7 +137,7 @@ export const LooseSpeechCueSchema = z
   })
   .strict()
 
-export const LooseCueSchema = z.discriminatedUnion('kind', [LooseSpeechCueSchema, PauseCueSchema])
+export const LooseCueSchema = z.discriminatedUnion('kind', [LooseSpeechCueSchema, PauseCueSchema, SceneCueSchema])
 
 /**
  * `text` の max 200 字制約を外したゆるい VDS-JSON ルートスキーマ。
@@ -139,7 +150,7 @@ export const LooseVdsJsonSchema = z
   .object({
     version: z.literal(1),
     title: z.string().optional(),
-    defaults: VdsSynthOptionsSchema.optional(),
+    defaults: VdsDefaultsSchema.optional(),
     speakers: z.record(z.string().regex(ALIAS_PATTERN), SpeakerRefSchema),
     cues: z.array(LooseCueSchema).nonempty()
   })
@@ -161,7 +172,9 @@ export type VdsSynthOptions = z.infer<typeof VdsSynthOptionsSchema>
 export type SpeakerRef = z.infer<typeof SpeakerRefSchema>
 export type SpeechCue = z.infer<typeof SpeechCueSchema>
 export type PauseCue = z.infer<typeof PauseCueSchema>
+export type SceneCue = z.infer<typeof SceneCueSchema>
 export type Cue = z.infer<typeof CueSchema>
+export type VdsDefaults = z.infer<typeof VdsDefaultsSchema>
 export type VdsJson = z.infer<typeof VdsJsonSchema>
 export type LooseSpeechCue = z.infer<typeof LooseSpeechCueSchema>
 export type LooseCue = z.infer<typeof LooseCueSchema>

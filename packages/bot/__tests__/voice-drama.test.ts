@@ -11,8 +11,8 @@ describe('VdsJsonSchema', () => {
       title: '夜明けの対話',
       defaults: { num_steps: 40 },
       speakers: {
-        chieri: { uuid: CHIERI_UUID },
-        young_woman: { caption: '落ち着いた女性の声で、やわらかく自然に読み上げてください。' }
+        chieri: { type: 'lora', uuid: CHIERI_UUID },
+        young_woman: { type: 'caption', caption: '落ち着いた女性の声で、やわらかく自然に読み上げてください。' }
       },
       cues: [
         { kind: 'speech', speaker: 'chieri', text: 'おはよう、つむぎ。' },
@@ -34,7 +34,7 @@ describe('VdsJsonSchema', () => {
   test('UUID だけの最小構成でパースできる', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'こんにちは' }]
     })
     expect(result.success).toBe(true)
@@ -43,7 +43,7 @@ describe('VdsJsonSchema', () => {
   test('version が 1 以外の場合は拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 2,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
     })
     expect(result.success).toBe(false)
@@ -52,7 +52,7 @@ describe('VdsJsonSchema', () => {
   test('未定義 speaker エイリアスを参照する cue は拒否（§6.1）', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [
         { kind: 'speech', speaker: 'a', text: 'ok' },
         { kind: 'speech', speaker: 'unknown', text: 'ng' }
@@ -64,10 +64,10 @@ describe('VdsJsonSchema', () => {
     }
   })
 
-  test('SpeakerRef は UUID と caption を 1 エイリアスで両方持てない（§3.4 排他制約）', () => {
+  test('SpeakerRef は type: lora に caption フィールドを追加すると .strict() により拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID, caption: '女性の声' } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID, caption: '女性の声' } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
     })
     expect(result.success).toBe(false)
@@ -76,7 +76,7 @@ describe('VdsJsonSchema', () => {
   test('SpeakerRef が UUID 形式でない文字列は拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: 'not-a-uuid' } },
+      speakers: { a: { type: 'lora', uuid: 'not-a-uuid' } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
     })
     expect(result.success).toBe(false)
@@ -85,7 +85,7 @@ describe('VdsJsonSchema', () => {
   test('cues が空配列は拒否（1 つ以上必要）', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: []
     })
     expect(result.success).toBe(false)
@@ -94,7 +94,7 @@ describe('VdsJsonSchema', () => {
   test('cue.text が空文字列は拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: '' }]
     })
     expect(result.success).toBe(false)
@@ -103,7 +103,7 @@ describe('VdsJsonSchema', () => {
   test('cue.text が 200 字を超えるものは拒否（§3.3 30 秒上限の保険）', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'あ'.repeat(201) }]
     })
     expect(result.success).toBe(false)
@@ -112,7 +112,7 @@ describe('VdsJsonSchema', () => {
   test('options の num_steps が範囲外（>100）なら拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'x', options: { num_steps: 101 } }]
     })
     expect(result.success).toBe(false)
@@ -121,7 +121,7 @@ describe('VdsJsonSchema', () => {
   test('options の truncation_factor は (0, 1] の範囲内のみ許可', () => {
     const base = {
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } }
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } }
     }
     expect(
       VdsJsonSchema.safeParse({
@@ -146,7 +146,7 @@ describe('VdsJsonSchema', () => {
   test('pause.duration が 0 または負なら拒否', () => {
     const base = {
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } }
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } }
     }
     expect(
       VdsJsonSchema.safeParse({
@@ -171,7 +171,7 @@ describe('VdsJsonSchema', () => {
   test('未知のトップレベルフィールドは .strict() により拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'x' }],
       unknownField: 'boom'
     })
@@ -181,7 +181,7 @@ describe('VdsJsonSchema', () => {
   test('未知の cue フィールドは .strict() により拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { a: { uuid: CHIERI_UUID } },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: 'a', text: 'x', foo: 1 }]
     })
     expect(result.success).toBe(false)
@@ -190,7 +190,7 @@ describe('VdsJsonSchema', () => {
   test('エイリアス名が識別子パターンに合わない場合は拒否', () => {
     const result = VdsJsonSchema.safeParse({
       version: 1,
-      speakers: { '1invalid': { uuid: CHIERI_UUID } },
+      speakers: { '1invalid': { type: 'lora', uuid: CHIERI_UUID } },
       cues: [{ kind: 'speech', speaker: '1invalid', text: 'x' }]
     })
     expect(result.success).toBe(false)
@@ -202,8 +202,8 @@ describe('VdsJsonSchema', () => {
       title: '二人芝居',
       defaults: { num_steps: 40, cfg_scale_text: 3.2 },
       speakers: {
-        chieri: { uuid: CHIERI_UUID },
-        tsumugi: { uuid: TSUMUGI_UUID }
+        chieri: { type: 'lora', uuid: CHIERI_UUID },
+        tsumugi: { type: 'lora', uuid: TSUMUGI_UUID }
       },
       cues: [
         { kind: 'speech', speaker: 'chieri', text: '…今日、話しておきたいことがあるの。' },
@@ -219,5 +219,69 @@ describe('VdsJsonSchema', () => {
       ]
     })
     expect(result.success).toBe(true)
+  })
+
+  test('scene cue がパースできる', () => {
+    const result = VdsJsonSchema.safeParse({
+      version: 1,
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
+      cues: [
+        { kind: 'speech', speaker: 'a', text: 'こんにちは' },
+        { kind: 'scene', name: '第1幕' },
+        { kind: 'speech', speaker: 'a', text: 'さようなら' }
+      ]
+    })
+    expect(result.success).toBe(true)
+  })
+
+  test('scene cue の name が空文字列は拒否', () => {
+    const result = VdsJsonSchema.safeParse({
+      version: 1,
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
+      cues: [
+        { kind: 'speech', speaker: 'a', text: 'x' },
+        { kind: 'scene', name: '' }
+      ]
+    })
+    expect(result.success).toBe(false)
+  })
+
+  test('defaults に gap フィールドを指定できる', () => {
+    const result = VdsJsonSchema.safeParse({
+      version: 1,
+      defaults: { gap: 0.5 },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
+      cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
+    })
+    expect(result.success).toBe(true)
+  })
+
+  test('defaults.gap が負値なら拒否', () => {
+    const result = VdsJsonSchema.safeParse({
+      version: 1,
+      defaults: { gap: -1 },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
+      cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
+    })
+    expect(result.success).toBe(false)
+  })
+
+  test('defaults.gap が 0 なら許可（gap 無効化）', () => {
+    const result = VdsJsonSchema.safeParse({
+      version: 1,
+      defaults: { gap: 0 },
+      speakers: { a: { type: 'lora', uuid: CHIERI_UUID } },
+      cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
+    })
+    expect(result.success).toBe(true)
+  })
+
+  test('SpeakerRef に type フィールドがない旧形式は拒否', () => {
+    const result = VdsJsonSchema.safeParse({
+      version: 1,
+      speakers: { a: { uuid: CHIERI_UUID } },
+      cues: [{ kind: 'speech', speaker: 'a', text: 'x' }]
+    })
+    expect(result.success).toBe(false)
   })
 })
