@@ -65,9 +65,13 @@ export const handlePlayCommand = async (interaction: ChatInputCommandInteraction
     await interaction.editReply(`${vds.title ?? 'VDS'} を再生します（${cueCount} セリフ）...`)
 
     await playVds(vds, guildId, connection)
-    await interaction.followUp('再生完了')
+    await interaction.followUp('再生完了').catch(async () => {
+      if (interaction.channel?.isSendable()) await interaction.channel.send('再生完了')
+    })
   } catch (error) {
     console.error('VDS playback failed:', error)
-    await interaction.editReply('VDS の再生に失敗しました')
+    await interaction.editReply('VDS の再生に失敗しました').catch(async () => {
+      if (interaction.channel?.isSendable()) await interaction.channel.send('VDS の再生に失敗しました')
+    })
   }
 }

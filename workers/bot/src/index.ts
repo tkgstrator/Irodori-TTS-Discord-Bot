@@ -69,16 +69,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
       command: interaction.commandName,
       guildId: interaction.guildId ?? 'unknown'
     })
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: 'コマンドの実行中にエラーが発生しました',
-        flags: MessageFlags.Ephemeral
-      })
-    } else {
-      await interaction.reply({
-        content: 'コマンドの実行中にエラーが発生しました',
-        flags: MessageFlags.Ephemeral
-      })
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: 'コマンドの実行中にエラーが発生しました',
+          flags: MessageFlags.Ephemeral
+        })
+      } else {
+        await interaction.reply({
+          content: 'コマンドの実行中にエラーが発生しました',
+          flags: MessageFlags.Ephemeral
+        })
+      }
+    } catch {
+      // Interactionトークン期限切れ — notifyError で既に記録済み
     }
   }
 })
