@@ -2,7 +2,19 @@ import { db } from '../src/api/db'
 import { syncSpeakerSeeds } from '../src/api/speaker-import'
 import { characterSeedRows } from './character-seeds'
 import { rubyDictSeedRows } from './ruby-dict-seeds'
-import { syncScenarioSeeds } from './scenario-seeds'
+
+const syncCharacterSeeds = async () => {
+  await Promise.all(
+    characterSeedRows.map((row) =>
+      db.character.upsert({
+        where: { id: row.id },
+        create: { id: row.id, ...row.data },
+        update: row.data
+      })
+    )
+  )
+  console.log(`Synced ${characterSeedRows.length} character seeds.`)
+}
 
 const syncRubyDictSeeds = async () => {
   for (const dict of rubyDictSeedRows) {
@@ -30,17 +42,15 @@ const syncRubyDictSeeds = async () => {
   console.log(`Synced ${rubyDictSeedRows.length} ruby dict seeds.`)
 }
 
-// シード処理全体を実行する
 const main = async () => {
   await syncSpeakerSeeds()
-  await syncScenarioSeeds(db)
+  await syncCharacterSeeds()
   await syncRubyDictSeeds()
-  console.log(`Loaded ${characterSeedRows.length} character seeds.`)
 }
 
 main()
   .catch((error) => {
-    console.error('Seed failed.', error)
+    console.error('Init failed.', error)
     process.exitCode = 1
   })
   .finally(async () => {
