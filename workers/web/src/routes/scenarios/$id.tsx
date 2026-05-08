@@ -33,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
 import { buildChapterPlanRequest, requestChapterPlan } from '@/lib/chapter-plan'
 import { charactersQueryOptions } from '@/lib/characters'
+import { useSuspenseScenarioRubyDicts } from '@/lib/ruby-dict'
 import type { Chapter, ChapterCharacter, ChapterStatus, Scenario } from '@/lib/scenarios'
 import {
   canGenerateNextChapter,
@@ -370,6 +371,8 @@ const ScenarioDetailPageContent = () => {
   const scenarioId = id ?? ''
   const queryClient = useQueryClient()
   const { scenario } = useSuspenseResolvedScenario(scenarioId)
+  const { dicts: scenarioDicts } = useSuspenseScenarioRubyDicts(scenarioId)
+  const rubyEntries = scenarioDicts.flatMap((d) => d.entries)
   const scenarios = useMemo(() => (scenario ? [scenario] : []), [scenario])
   const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ scenarios })
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
@@ -438,8 +441,8 @@ const ScenarioDetailPageContent = () => {
       : latestChapter?.status === 'failed'
         ? '失敗した章を再試行するか削除してから次の章を作成してください'
         : '生成中の章が完了するまで次の章は作成できません'
-  const scenarioVdsExport = createScenarioVdsExport(scenario)
-  const scenarioVdsJsonExport = createScenarioVdsJsonExport(scenario)
+  const scenarioVdsExport = createScenarioVdsExport(scenario, rubyEntries)
+  const scenarioVdsJsonExport = createScenarioVdsJsonExport(scenario, rubyEntries)
   const scenarioVdsPreviewReason =
     !scenarioVdsExport.ok && !scenarioVdsJsonExport.ok
       ? scenarioVdsExport.reason
@@ -662,6 +665,10 @@ const ScenarioDetailPageContent = () => {
                   トーン: <span className="italic text-foreground">{scenario.tone}</span>
                 </span>
                 <span className="hidden text-border sm:inline">|</span>
+                <span>
+                  レーティング: <span className="font-medium text-foreground">{scenario.rating}</span>
+                </span>
+                <span className="hidden text-border sm:inline">|</span>
                 <span className="flex items-center gap-1">
                   <Users className="size-3" />
                   {scenario.plotCharacters.length}人 登場人物{' '}
@@ -740,6 +747,15 @@ const ScenarioDetailPageContent = () => {
                 {chapterPlanError}
               </p>
             )}
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <span>
+                レーティング: <span className="font-medium text-foreground">{scenario.rating}</span>
+              </span>
+              <span className="text-border">|</span>
+              <span>
+                トーン: <span className="italic text-foreground">{scenario.tone}</span>
+              </span>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="chapter-title">章タイトル</Label>
               <Input
