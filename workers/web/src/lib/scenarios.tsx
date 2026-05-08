@@ -169,15 +169,11 @@ const resolveChapterCharacters = (
   chapters: readonly Chapter[],
   characters: readonly Character[]
 ): readonly Chapter[] => {
-  const characterBySpeakerId = new Map(
-    characters.flatMap((character) => (character.speakerId ? [[character.speakerId, character] as const] : []))
-  )
+  const characterByName = new Map(characters.map((c) => [c.name, c] as const))
 
   return chapters.map((chapter) => ({
     ...chapter,
-    characters: chapter.characters.map((character) =>
-      character.speakerId ? (characterBySpeakerId.get(character.speakerId) ?? character) : character
-    )
+    characters: chapter.characters.map((character) => characterByName.get(character.name) ?? character)
   }))
 }
 
