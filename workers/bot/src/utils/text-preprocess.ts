@@ -43,6 +43,11 @@ const removeSpoilers = (text: string): string => {
 }
 
 /**
+ * ルビ記法 |word[reading] を reading に置き換える
+ */
+const resolveRubyAnnotations = (text: string): string => text.replace(/\|([^[]+)\[([^\]]+)\]/g, '$2')
+
+/**
  * 連続する空白を整理する
  */
 const normalizeWhitespace = (text: string): string => {
@@ -75,7 +80,13 @@ export const preprocessMessageForTts = (text: string): string => {
  */
 export const preprocessForTts = (text: string): string | null => {
   // 各種除去・変換処理を順に適用
-  const steps: Array<(s: string) => string> = [removeUrls, removeMentions, convertCustomEmoji, normalizeWhitespace]
+  const steps: Array<(s: string) => string> = [
+    removeUrls,
+    removeMentions,
+    convertCustomEmoji,
+    resolveRubyAnnotations,
+    normalizeWhitespace
+  ]
   const processed = steps.reduce((acc, step) => step(acc), text)
 
   // 空になった場合はnullを返す

@@ -85,6 +85,18 @@ describe('preprocessForTts', () => {
     const result = preprocessForTts(input)
     expect(result).toBe(input)
   })
+
+  test('ルビ記法を読みに置き換える', () => {
+    const input = '|酒寄[さかより]さんが来た'
+    const result = preprocessForTts(input)
+    expect(result).toBe('さかよりさんが来た')
+  })
+
+  test('複数のルビ記法をすべて読みに置き換える', () => {
+    const input = '|ぱとて君[ぱとてくん]は|君[きみ]だ'
+    const result = preprocessForTts(input)
+    expect(result).toBe('ぱとてくんはきみだ')
+  })
 })
 
 describe('message + line パイプライン', () => {

@@ -8,8 +8,8 @@ import {
   type ScenarioUpdateApiInput
 } from '@/schemas/scenario-write.dto'
 import { backendApi, toApiError } from './backend-api'
-import { charactersQueryOptions } from './characters'
 import { buildChapterEpisodeRequest } from './chapter-episode-request'
+import { charactersQueryOptions } from './characters'
 
 export type ScenarioStatus = 'draft' | 'generating' | 'failed' | 'completed'
 export type ChapterStatus = 'draft' | 'generating' | 'failed' | 'completed'
@@ -64,6 +64,7 @@ export interface Scenario {
   readonly status: ScenarioStatus
   readonly genres: readonly string[]
   readonly tone: string
+  readonly rating: string
   readonly promptNote: string
   readonly editorModel: string
   readonly writerModel: string
@@ -431,9 +432,10 @@ export const useScenarioMutations = ({
         throw toApiError(error, 'Failed to create scenario')
       }
     },
-    onSuccess: (scenario) => {
+    onSuccess: async (scenario) => {
       queryClient.setQueryData<readonly Scenario[]>(scenarioKeys.all, (prev = []) => [scenario, ...prev])
       queryClient.setQueryData<Scenario>(scenarioKeys.detail(scenario.id), scenario)
+      await queryClient.invalidateQueries({ queryKey: scenarioKeys.all })
     }
   })
   const updateScenarioMutation = useMutation({
@@ -465,9 +467,7 @@ export const useScenarioMutations = ({
 
       const resolvedCharacters =
         characters.length > 0 ? characters : await queryClient.fetchQuery(charactersQueryOptions)
-      const characterByName = new Map(
-        resolvedCharacters.map((character) => [character.name, character.id] as const)
-      )
+      const characterByName = new Map(resolvedCharacters.map((character) => [character.name, character.id] as const))
       const selectedCharacterIds =
         input && input.characterNames.length > 0
           ? input.characterNames.flatMap((name) => {
