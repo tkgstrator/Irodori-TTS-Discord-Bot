@@ -1,25 +1,87 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router'
-import { ChevronLeft, Loader2, Users } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Book, ChevronLeft, Loader2, Users } from 'lucide-react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { PageSuspense } from '@/components/page-suspense'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { useSuspenseCharacters } from '@/lib/characters'
+import { useScenarioRubyDictMutations, useSuspenseRubyDicts, useSuspenseScenarioRubyDicts } from '@/lib/ruby-dict'
 import { useScenarioMutations, useSuspenseResolvedScenario } from '@/lib/scenarios'
-import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
+import { type LlmModel, llmModelCatalog } from '@/schemas/llm-settings.dto'
 import {
   ScenarioCreateFormSchema,
   type ScenarioCreateFormValues,
   ScenarioGenreValues,
+  ScenarioRatingValues,
   ScenarioToneValues,
   scenarioCharacterLimit
 } from '@/schemas/scenario.dto'
 import { CharacterAvatar, CharacterCard, characterBaseSummary, FieldHint, GenreChip, toggleValue } from './new'
+
+const ScenarioRubyDictSectionInner = ({ scenarioId }: { scenarioId: string }) => {
+  const { dicts: allDicts } = useSuspenseRubyDicts()
+  const { dicts: associatedDicts } = useSuspenseScenarioRubyDicts(scenarioId)
+  const { associate, dissociate } = useScenarioRubyDictMutations(scenarioId)
+
+  const associatedIds = new Set(associatedDicts.map((d) => d.id))
+
+  const handleToggle = async (dictId: string) => {
+    if (associatedIds.has(dictId)) {
+      await dissociate(dictId)
+    } else {
+      await associate(dictId)
+    }
+  }
+
+  if (allDicts.length === 0) {
+    return (
+      <p className="py-4 text-center text-sm text-muted-foreground">
+        辞書が未作成です。辞書ページから先に辞書を作成してください。
+      </p>
+    )
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {allDicts.map((dict) => {
+        const active = associatedIds.has(dict.id)
+        return (
+          <button
+            key={dict.id}
+            type="button"
+            onClick={() => void handleToggle(dict.id)}
+            className={[
+              'flex flex-col gap-1 rounded-xl border p-4 text-left transition-colors',
+              active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border bg-card hover:bg-muted/50'
+            ].join(' ')}
+          >
+            <span className="flex items-center justify-between gap-2">
+              <span className="font-medium text-sm truncate">{dict.name}</span>
+              {active && (
+                <Badge variant="default" className="shrink-0 text-xs">
+                  選択中
+                </Badge>
+              )}
+            </span>
+            <span className="text-xs text-muted-foreground">{dict.entries.length} エントリ</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const ScenarioRubyDictSection = ({ scenarioId }: { scenarioId: string }) => (
+  <Suspense fallback={<p className="py-4 text-center text-sm text-muted-foreground">読み込み中...</p>}>
+    <ScenarioRubyDictSectionInner scenarioId={scenarioId} />
+  </Suspense>
+)
 
 // 編集フォームの初期値を現在のプロット情報から組み立てる。
 const createScenarioEditDefaults = ({
@@ -29,7 +91,8 @@ const createScenarioEditDefaults = ({
   editorModel,
   writerModel,
   title,
-  tone
+  tone,
+  rating
 }: {
   characterIds: readonly string[]
   genres: readonly string[]
@@ -38,10 +101,12 @@ const createScenarioEditDefaults = ({
   writerModel: string
   title: string
   tone: string
+  rating: string
 }): ScenarioCreateFormValues => ({
   title,
   genres: genres.filter((g): g is ScenarioCreateFormValues['genres'][number] => true),
   tone: tone as ScenarioCreateFormValues['tone'],
+  rating: rating as ScenarioCreateFormValues['rating'],
   editorModel: editorModel as ScenarioCreateFormValues['editorModel'],
   writerModel: writerModel as ScenarioCreateFormValues['writerModel'],
   plotCharacterIds: [...characterIds],
@@ -49,8 +114,8 @@ const createScenarioEditDefaults = ({
 })
 
 // モデル名から表示ラベルを返す。
-const getGeminiModelLabel = (model: GeminiModel) => {
-  return geminiModelCatalog.find((item) => item.value === model)?.label ?? model
+const getLlmModelLabel = (model: LlmModel) => {
+  return llmModelCatalog.find((item) => item.value === model)?.label ?? model
 }
 
 const ScenarioEditPageContent = () => {
@@ -59,14 +124,10 @@ const ScenarioEditPageContent = () => {
   const scenarioId = id ?? ''
   const { characters } = useSuspenseCharacters()
   const { scenario } = useSuspenseResolvedScenario(scenarioId, characters)
-  const { updateScenario } = useScenarioMutations({ scenarios: scenario ? [scenario] : [] })
+  const { updateScenario } = useScenarioMutations({ scenarios: [scenario] })
   const [submitError, setSubmitError] = useState<string | null>(null)
   const pagePaddingCls = 'sm:px-6 sm:pb-8'
   const selectedScenarioCharacterIds = useMemo(() => {
-    if (!scenario) {
-      return []
-    }
-
     const characterIdByName = new Map(characters.map((character) => [character.name, character.id] as const))
     return scenario.plotCharacters.flatMap((name) => {
       const characterId = characterIdByName.get(name)
@@ -77,12 +138,13 @@ const ScenarioEditPageContent = () => {
     () =>
       createScenarioEditDefaults({
         characterIds: selectedScenarioCharacterIds,
-        genres: scenario?.genres ?? [],
-        promptNote: scenario?.promptNote ?? '',
-        editorModel: scenario?.editorModel ?? 'gemini-2.5-flash',
-        writerModel: scenario?.writerModel ?? 'gemini-2.5-flash',
-        title: scenario?.title ?? '',
-        tone: scenario?.tone ?? 'ほろ苦い'
+        genres: scenario.genres,
+        promptNote: scenario.promptNote,
+        editorModel: scenario.editorModel,
+        writerModel: scenario.writerModel,
+        title: scenario.title,
+        tone: scenario.tone,
+        rating: scenario.rating
       }),
     [scenario, selectedScenarioCharacterIds]
   )
@@ -106,6 +168,7 @@ const ScenarioEditPageContent = () => {
   const selectedCharacterIds = watch('plotCharacterIds')
   const title = watch('title')
   const tone = watch('tone')
+  const rating = watch('rating')
   const promptNote = watch('promptNote')
   const editorModel = watch('editorModel')
   const writerModel = watch('writerModel')
@@ -113,14 +176,6 @@ const ScenarioEditPageContent = () => {
     () => characters.filter((character) => selectedCharacterIds.includes(character.id)),
     [characters, selectedCharacterIds]
   )
-
-  if (!scenario) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">プロットが見つかりません</p>
-      </div>
-    )
-  }
 
   const hasCreatedChapters = scenario.chapters.length > 0
 
@@ -139,6 +194,7 @@ const ScenarioEditPageContent = () => {
         title: result.data.title,
         genres: result.data.genres,
         tone: result.data.tone,
+        rating: result.data.rating,
         promptNote: result.data.promptNote,
         editorModel: result.data.editorModel,
         writerModel: result.data.writerModel,
@@ -221,6 +277,33 @@ const ScenarioEditPageContent = () => {
                 />
                 <FieldHint error={errors.tone?.message} />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rating">レーティング</Label>
+                <Controller
+                  control={control}
+                  name="rating"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger
+                        id="rating"
+                        className="!h-11 w-full !py-1 !text-base md:!text-sm"
+                        aria-invalid={errors.rating ? 'true' : 'false'}
+                      >
+                        <SelectValue placeholder="レーティングを選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ScenarioRatingValues.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldHint error={errors.rating?.message} />
+              </div>
             </div>
           </section>
 
@@ -234,7 +317,7 @@ const ScenarioEditPageContent = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="editorModel">Editor</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(editorModel)}</span>
+                  <span className="text-xs text-muted-foreground">{getLlmModelLabel(editorModel)}</span>
                 </div>
                 <Controller
                   control={control}
@@ -245,7 +328,7 @@ const ScenarioEditPageContent = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {geminiModelCatalog.map((item) => (
+                        {llmModelCatalog.map((item) => (
                           <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
@@ -260,7 +343,7 @@ const ScenarioEditPageContent = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="writerModel">Writer</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(writerModel)}</span>
+                  <span className="text-xs text-muted-foreground">{getLlmModelLabel(writerModel)}</span>
                 </div>
                 <Controller
                   control={control}
@@ -271,7 +354,7 @@ const ScenarioEditPageContent = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {geminiModelCatalog.map((item) => (
+                        {llmModelCatalog.map((item) => (
                           <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
@@ -446,14 +529,19 @@ const ScenarioEditPageContent = () => {
               <p className="text-sm text-foreground">{tone}</p>
             </div>
 
+            <div className="space-y-2">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">レーティング</p>
+              <p className="text-sm text-foreground">{rating}</p>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Editor</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(editorModel)}</p>
+                <p className="text-sm text-foreground">{getLlmModelLabel(editorModel)}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Writer</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(writerModel)}</p>
+                <p className="text-sm text-foreground">{getLlmModelLabel(writerModel)}</p>
               </div>
             </div>
 
@@ -490,6 +578,19 @@ const ScenarioEditPageContent = () => {
             </div>
           </section>
         </div>
+
+        <section className="space-y-5 border-b border-border pb-8">
+          <div className="space-y-1">
+            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+              <Book className="size-4" aria-hidden="true" />
+              ルビ辞書
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              このシナリオに紐付けるルビ辞書を選択します。複数選択できます。
+            </p>
+          </div>
+          <ScenarioRubyDictSection scenarioId={scenario.id} />
+        </section>
 
         {submitError ? <p className="text-sm text-destructive">{submitError}</p> : null}
 
