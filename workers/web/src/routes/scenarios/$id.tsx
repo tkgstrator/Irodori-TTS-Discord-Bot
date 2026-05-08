@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
@@ -46,6 +47,7 @@ import { createScenarioVdsExport, createScenarioVdsJsonExport } from '@/lib/vds'
 import type { ChapterGenerateMode } from '@/schemas/chapter-generate-request.dto'
 import { ChapterGenerateFormSchema, type ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
 import type { LlmModel } from '@/schemas/llm-settings.dto'
+import { ScenarioRatingValues, ScenarioToneValues } from '@/schemas/scenario.dto'
 
 const GENRE_COLORS: Record<string, string> = {
   学園: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -57,8 +59,6 @@ const GENRE_COLORS: Record<string, string> = {
   サスペンス: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   日常: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
 }
-
-const emptyCharacterNames: readonly string[] = []
 
 const characterAvatar = ({ character, dimmed }: { character: ChapterCharacter; dimmed?: boolean }) => {
   const initial = character.name.charAt(0) || '?'
@@ -121,10 +121,20 @@ const chapterRowCls = (status: ChapterStatus): string => {
 }
 
 // 章生成ダイアログで使う初期値を組み立てる。
-const createChapterGenerateDefaults = (characterNames: readonly string[]): ChapterGenerateFormValues => ({
+const createChapterGenerateDefaults = ({
+  characterNames,
+  rating,
+  tone
+}: {
+  characterNames: readonly string[]
+  rating: string
+  tone: string
+}): ChapterGenerateFormValues => ({
   title: '',
   promptNote: '',
-  characterNames: [...characterNames]
+  characterNames: [...characterNames],
+  rating: rating as ChapterGenerateFormValues['rating'],
+  tone: tone as ChapterGenerateFormValues['tone']
 })
 
 // 選択中の登場人物を切り替える。
@@ -373,7 +383,7 @@ const ScenarioDetailPageContent = () => {
   const { scenario } = useSuspenseResolvedScenario(scenarioId)
   const { dicts: scenarioDicts } = useSuspenseScenarioRubyDicts(scenarioId)
   const rubyEntries = scenarioDicts.flatMap((d) => d.entries)
-  const scenarios = useMemo(() => (scenario ? [scenario] : []), [scenario])
+  const scenarios = useMemo(() => [scenario], [scenario])
   const { appendNextChapter, createEpisodeFromChapter } = useScenarioMutations({ scenarios })
   const [isChapterDialogOpen, setIsChapterDialogOpen] = useState(false)
   const [isChapterPlanning, setIsChapterPlanning] = useState(false)
@@ -393,8 +403,16 @@ const ScenarioDetailPageContent = () => {
       match.routeId === '/scenarios/$id/edit' ||
       match.routeId === '/plots/$id/edit'
   )
-  const plotCharacterNames = scenario?.plotCharacters ?? emptyCharacterNames
-  const dialogDefaults = useMemo(() => createChapterGenerateDefaults(plotCharacterNames), [plotCharacterNames])
+  const plotCharacterNames = scenario.plotCharacters
+  const dialogDefaults = useMemo(
+    () =>
+      createChapterGenerateDefaults({
+        characterNames: plotCharacterNames,
+        rating: scenario.rating,
+        tone: scenario.tone
+      }),
+    [plotCharacterNames, scenario.rating, scenario.tone]
+  )
   const {
     control,
     handleSubmit,
@@ -414,14 +432,6 @@ const ScenarioDetailPageContent = () => {
 
   if (hasChildRoute) {
     return <Outlet />
-  }
-
-  if (!scenario) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-muted-foreground">シナリオが見つかりません</p>
-      </div>
-    )
   }
 
   const createdChapters = scenario.chapters.filter((chapter) => chapter.status !== 'draft')
@@ -528,7 +538,9 @@ const ScenarioDetailPageContent = () => {
         input: {
           title: '',
           promptNote: '',
-          characterNames: selectedCharacterNames.length > 0 ? selectedCharacterNames : [...scenario.plotCharacters]
+          characterNames: selectedCharacterNames.length > 0 ? selectedCharacterNames : [...scenario.plotCharacters],
+          rating: watch('rating'),
+          tone: watch('tone')
         },
         mode: 'auto'
       })
@@ -557,7 +569,13 @@ const ScenarioDetailPageContent = () => {
     try {
       await appendNextChapter(scenario.id, values)
       setIsChapterDialogOpen(false)
-      reset(createChapterGenerateDefaults(scenario.plotCharacters))
+      reset(
+        createChapterGenerateDefaults({
+          characterNames: scenario.plotCharacters,
+          rating: scenario.rating,
+          tone: scenario.tone
+        })
+      )
     } catch (error) {
       setChapterPlanError(error instanceof Error ? error.message : 'Failed to create chapter plot')
     } finally {
@@ -747,14 +765,49 @@ const ScenarioDetailPageContent = () => {
                 {chapterPlanError}
               </p>
             )}
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              <span>
-                レーティング: <span className="font-medium text-foreground">{scenario.rating}</span>
-              </span>
-              <span className="text-border">|</span>
-              <span>
-                トーン: <span className="italic text-foreground">{scenario.tone}</span>
-              </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="chapter-rating">レーティング</Label>
+                <Controller
+                  control={control}
+                  name="rating"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="chapter-rating" className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ScenarioRatingValues.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="chapter-tone">トーン</Label>
+                <Controller
+                  control={control}
+                  name="tone"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="chapter-tone" className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ScenarioToneValues.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="chapter-title">章タイトル</Label>
