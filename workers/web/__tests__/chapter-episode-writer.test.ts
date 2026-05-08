@@ -9,11 +9,12 @@ import {
 describe('chapter episode writer', () => {
   test('章プロットからエピソード用プロンプトを組み立てる', () => {
     const prompt = buildChapterEpisodePrompt({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       scenario: {
         title: '夏の約束',
         genres: ['学園', '恋愛'],
-        tone: 'ほろ苦い'
+        tone: 'ほろ苦い',
+        rating: '全年齢'
       },
       chapter: {
         title: '出会い',
@@ -36,9 +37,7 @@ describe('chapter episode writer', () => {
             attributeTags: ['kind'],
             backgroundTags: ['transfer_student'],
             sampleQuotes: ['はじめまして'],
-            memo: '明るい',
-            speakerId: '11111111-1111-4111-8111-111111111111',
-            caption: null
+            memo: '明るい'
           }
         }
       ]

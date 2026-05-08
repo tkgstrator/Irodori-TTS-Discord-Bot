@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { GoogleGenAI } from '@google/genai'
 import Handlebars from 'handlebars'
+import OpenAI from 'openai'
 import { z } from 'zod'
 import {
   getAgeGroupLabel,
@@ -15,13 +15,14 @@ import {
 } from '@/lib/character-options'
 import type { Cue } from '@/lib/scenarios'
 import type { ChapterEpisodeRequest } from '@/schemas/chapter-episode-request.dto'
-import { formatZodIssues, parseJsonText } from './gemini-utils'
+import { formatZodIssues, parseJsonText } from './llm-utils'
 
-const GeminiEnvSchema = z.object({
-  GEMINI_API_KEY: z.string().nonempty()
+const LlmEnvSchema = z.object({
+  LITELLM_BASE_URL: z.string().nonempty(),
+  LITELLM_MASTER_KEY: z.string().nonempty()
 })
 
-const clientCache = new Map<'default', GoogleGenAI>()
+const clientCache = new Map<'default', OpenAI>()
 const templateDir = join(dirname(fileURLToPath(import.meta.url)), 'templates')
 const minSpeechCueCount = 30
 const maxSpeechCueCount = 70
@@ -94,7 +95,8 @@ const buildScenarioSummary = (request: ChapterEpisodeRequest) =>
   [
     `- タイトル: ${request.scenario.title}`,
     `- ジャンル: ${request.scenario.genres.join('、')}`,
-    `- トーン: ${request.scenario.tone}`
+    `- トーン: ${request.scenario.tone}`,
+    `- レーティング: ${request.scenario.rating}`
   ].join('\n')
 
 // 今回の章で扱う内容を Writer 向けの文章へ整形する。
@@ -119,8 +121,7 @@ const buildCharacterProfiles = (request: ChapterEpisodeRequest) =>
         `  - 属性: ${formatPromptList(item.character.attributeTags)}`,
         `  - 背景: ${formatPromptList(item.character.backgroundTags)}`,
         `  - セリフサンプル: ${formatPromptList(item.character.sampleQuotes)}`,
-        `  - 補足メモ: ${formatPromptValue(item.character.memo)}`,
-        `  - 声の説明: ${formatPromptValue(item.character.caption)}`
+        `  - 補足メモ: ${formatPromptValue(item.character.memo)}`
       ].join('\n')
     )
     .join('\n\n')
@@ -190,10 +191,10 @@ export const validateEpisodeCues = ({
 }
 
 const getClient = () => {
-  const envResult = GeminiEnvSchema.safeParse(process.env)
+  const envResult = LlmEnvSchema.safeParse(process.env)
 
   if (!envResult.success) {
-    throw new Error('GEMINI_API_KEY is not set')
+    throw new Error('LITELLM_BASE_URL / LITELLM_MASTER_KEY is not set')
   }
 
   const cachedClient = clientCache.get('default')
@@ -202,7 +203,10 @@ const getClient = () => {
     return cachedClient
   }
 
-  const createdClient = new GoogleGenAI({ apiKey: envResult.data.GEMINI_API_KEY })
+  const createdClient = new OpenAI({
+    baseURL: envResult.data.LITELLM_BASE_URL,
+    apiKey: envResult.data.LITELLM_MASTER_KEY
+  })
   clientCache.set('default', createdClient)
   return createdClient
 }
@@ -221,7 +225,7 @@ export const buildChapterEpisodePrompt = (request: ChapterEpisodeRequest) =>
     userDirection: request.userDirection
   }).trim()
 
-// Gemini の JSON 文字列を cue 配列として検証する。
+// LLM の JSON 文字列を cue 配列として検証する。
 export const parseChapterEpisodeText = ({ text }: { text: string }): readonly Cue[] => {
   return parseEpisodeScript(text)
 }
@@ -230,20 +234,22 @@ export const parseChapterEpisodeText = ({ text }: { text: string }): readonly Cu
 export const writeChapterEpisode = async (request: ChapterEpisodeRequest): Promise<readonly Cue[]> => {
   const client = getClient()
   const speakerAliases = request.cast.map((item) => item.alias)
-  const response = await client.models.generateContent({
+  const response = await client.chat.completions.create({
     model: request.model,
-    contents: buildChapterEpisodePrompt(request),
-    config: {
-      systemInstruction: buildEpisodeSystemInstruction(speakerAliases),
-      responseMimeType: 'application/json'
-    }
+    messages: [
+      { role: 'system', content: buildEpisodeSystemInstruction(speakerAliases) },
+      { role: 'user', content: buildChapterEpisodePrompt(request) }
+    ],
+    response_format: { type: 'json_object' }
   })
 
-  if (!response.text) {
-    throw new Error('Gemini returned empty response')
+  const text = response.choices[0]?.message?.content
+
+  if (!text) {
+    throw new Error('LLM returned empty response')
   }
 
-  return parseChapterEpisodeText({ text: response.text })
+  return parseChapterEpisodeText({ text })
 }
 
 // cue 配列から再生時間を概算する。
