@@ -16,7 +16,8 @@ const createEpisodeRequest = (): ChapterEpisodeRequest => ({
   scenario: {
     title: '章生成テスト',
     genres: ['学園'],
-    tone: 'ほろ苦い'
+    tone: 'ほろ苦い',
+    rating: '全年齢'
   },
   chapter: {
     title: '第1章',
@@ -39,9 +40,7 @@ const createEpisodeRequest = (): ChapterEpisodeRequest => ({
         attributeTags: [],
         backgroundTags: [],
         sampleQuotes: ['よろしくね'],
-        memo: '',
-        speakerId: '11111111-1111-4111-8111-111111111111',
-        caption: null
+        memo: ''
       }
     }
   ]

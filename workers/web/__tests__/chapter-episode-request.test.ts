@@ -9,9 +9,10 @@ const scenarioFixture: Scenario = {
   status: 'completed',
   genres: ['学園', '恋愛'],
   tone: 'ほろ苦い',
+  rating: '全年齢',
   promptNote: '',
-  editorModel: 'gemini-2.5-flash',
-  writerModel: 'gemini-2.5-flash',
+  editorModel: 'gemini-3-flash-preview',
+  writerModel: 'gemini-3-flash-preview',
   plotCharacters: ['桜羽エマ', '二階堂ヒロ'],
   cueCount: 12,
   speakerCount: 2,
@@ -120,11 +121,10 @@ describe('chapter episode request builder', () => {
       characters: charactersFixture
     })
 
-    expect(request.model).toBe('gemini-2.5-flash')
+    expect(request.model).toBe('gemini-3-flash-preview')
     expect(request.chapter.title).toBe('出会い')
     expect(request.cast).toHaveLength(2)
     expect(request.cast[0]?.alias).toBe('char1')
     expect(request.cast[0]?.character.firstPerson).toBe('watashi')
-    expect(request.cast[1]?.character.caption).toBe('落ち着いた男子高校生。抑えめで低めの声。')
   })
 })

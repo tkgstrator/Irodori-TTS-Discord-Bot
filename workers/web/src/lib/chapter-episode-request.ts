@@ -17,9 +17,7 @@ const toStoryCharacterContext = (character: Character) => ({
   attributeTags: character.attributeTags,
   backgroundTags: character.backgroundTags,
   sampleQuotes: character.sampleQuotes,
-  memo: character.memo,
-  speakerId: character.speakerId,
-  caption: character.caption
+  memo: character.memo
 })
 
 // 章表示用キャラクターから現在の Character を引き当てる。
@@ -103,7 +101,8 @@ export const buildChapterEpisodeRequest = ({
     scenario: {
       title: scenario.title,
       genres: scenario.genres,
-      tone: scenario.tone
+      tone: scenario.tone,
+      rating: scenario.rating
     },
     chapter: {
       title: chapter.title,

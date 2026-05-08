@@ -9,9 +9,10 @@ const scenarioFixture: Scenario = {
   status: 'completed',
   genres: ['学園', '恋愛'],
   tone: 'ほろ苦い',
+  rating: '全年齢',
   promptNote: '放課後の静かな空気を大事にする。',
-  editorModel: 'gemini-2.5-flash',
-  writerModel: 'gemini-2.5-flash',
+  editorModel: 'gemini-3-flash-preview',
+  writerModel: 'gemini-3-flash-preview',
   plotCharacters: ['桜羽エマ', '二階堂ヒロ'],
   cueCount: 12,
   speakerCount: 2,
@@ -103,8 +104,8 @@ describe('chapter plan helpers', () => {
         characterNames: ['桜羽エマ']
       },
       llmSettings: {
-        editor: 'gemini-2.5-flash',
-        writer: 'gemini-2.5-flash'
+        editor: 'gemini-3-flash-preview',
+        writer: 'gemini-3-flash-preview'
       },
       mode: 'auto',
       scenario: scenarioFixture,
@@ -116,7 +117,6 @@ describe('chapter plan helpers', () => {
     expect(request.request.focusCharacterIds).toEqual(['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'])
     expect(request.scenario.promptNote).toBe('放課後の静かな空気を大事にする。')
     expect(request.characters[0]?.sampleQuotes).toEqual(['うん、行こう'])
-    expect(request.characters[1]?.caption).toBe('落ち着いた男子高校生。抑えめで低めの声。')
   })
 
   test('auto モードでは空の章タイトルと流れメモを許容する', () => {
@@ -127,8 +127,8 @@ describe('chapter plan helpers', () => {
         characterNames: ['桜羽エマ']
       },
       llmSettings: {
-        editor: 'gemini-2.5-flash',
-        writer: 'gemini-2.5-flash'
+        editor: 'gemini-3-flash-preview',
+        writer: 'gemini-3-flash-preview'
       },
       mode: 'auto',
       scenario: scenarioFixture,
@@ -147,8 +147,8 @@ describe('chapter plan helpers', () => {
         characterNames: ['桜羽エマ', '二階堂ヒロ']
       },
       llmSettings: {
-        editor: 'gemini-2.5-flash',
-        writer: 'gemini-2.5-flash'
+        editor: 'gemini-3-flash-preview',
+        writer: 'gemini-3-flash-preview'
       },
       mode: 'auto',
       scenario: scenarioFixture,
