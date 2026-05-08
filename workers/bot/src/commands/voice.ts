@@ -37,14 +37,20 @@ export const handleJoinCommand = async (interaction: ChatInputCommandInteraction
     return
   }
 
-  // 既に接続している場合
+  // 既に同じチャンネルに接続している場合
   const existingConnection = getConnection(guildId)
-  if (existingConnection) {
+  if (existingConnection?.joinConfig.channelId === voiceChannel.id) {
     await interaction.reply({
       content: '既にボイスチャンネルに接続しています',
       flags: MessageFlags.Ephemeral
     })
     return
+  }
+
+  // 別チャンネルに接続中なら切断してから再接続
+  if (existingConnection) {
+    destroyPlayer(guildId)
+    disconnectFromChannel(guildId)
   }
 
   try {

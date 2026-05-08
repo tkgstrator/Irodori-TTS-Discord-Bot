@@ -144,20 +144,37 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
     return
   }
 
-  // ユーザーがVCから離脱した場合
-  if (oldState.channel && !newState.channel) {
-    // 残っているメンバーをチェック（Bot除く） → 先にチェックして空なら即離脱
-    const remainingMembers = oldState.channel.members.filter((member) => !member.user.bot)
+  // ユーザーがVCから離脱、または別のVCに移動した場合
+  if (oldState.channel) {
+    const connection = getConnection(guildId)
+    const botChannelId = connection?.joinConfig.channelId
 
-    if (remainingMembers.size === 0) {
-      destroyPlayer(guildId)
-      disconnectFromChannel(guildId)
-      return
+    // Botがいるチャンネルから人がいなくなったかチェック
+    if (connection && botChannelId === oldState.channelId) {
+      const remainingMembers = oldState.channel.members.filter(
+        (member) => !member.user.bot && member.id !== newState.member?.id
+      )
+
+      if (remainingMembers.size === 0) {
+        // 移動先があればそこへ追従、なければ離脱
+        if (newState.channel && newState.channelId !== oldState.channelId) {
+          try {
+            destroyPlayer(guildId)
+            await connectToChannel(newState.channel)
+          } catch (error) {
+            await notifyError('Failed to move to new voice channel', error, { guildId })
+            disconnectFromChannel(guildId)
+          }
+        } else {
+          destroyPlayer(guildId)
+          disconnectFromChannel(guildId)
+        }
+        return
+      }
     }
 
-    // 離脱アナウンス
-    const connection = getConnection(guildId)
-    if (connection && guildSettings.announceLeave && newState.member) {
+    // 離脱アナウンス（完全退出のみ、チャンネル移動は除く）
+    if (!newState.channel && connection && guildSettings.announceLeave && newState.member) {
       try {
         const speakerId = await getCurrentSpeakerId(newState.member.user.id)
         const speakerConfig = await getCurrentSpeakerConfig(newState.member.user.id)
@@ -167,24 +184,6 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
         enqueueAudio(guildId, audioStream, connection)
       } catch (error) {
         await notifyError('Failed to announce leave', error, { guildId })
-      }
-    }
-    return
-  }
-
-  // ユーザーが別のVCに移動した場合
-  if (oldState.channel && newState.channel && oldState.channelId !== newState.channelId) {
-    // 元のチャンネルが空になったかチェック
-    const remainingInOld = oldState.channel.members.filter((member) => !member.user.bot)
-
-    if (remainingInOld.size === 0) {
-      // 新しいチャンネルに移動
-      try {
-        destroyPlayer(guildId)
-        await connectToChannel(newState.channel)
-      } catch (error) {
-        await notifyError('Failed to move to new voice channel', error, { guildId })
-        disconnectFromChannel(guildId)
       }
     }
   }
