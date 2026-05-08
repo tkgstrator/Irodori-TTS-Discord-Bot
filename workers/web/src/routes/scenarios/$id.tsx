@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils'
 import { createScenarioVdsExport, createScenarioVdsJsonExport } from '@/lib/vds'
 import type { ChapterGenerateMode } from '@/schemas/chapter-generate-request.dto'
 import { ChapterGenerateFormSchema, type ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
-import type { GeminiModel } from '@/schemas/llm-settings.dto'
+import type { LlmModel } from '@/schemas/llm-settings.dto'
 
 const GENRE_COLORS: Record<string, string> = {
   学園: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -238,7 +238,7 @@ const ChapterCard = ({
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>{chapter.cueCount} cues</span>
               <span>·</span>
-              <span>約{chapter.durationMinutes}分</span>
+              <span>約{Math.round(chapter.durationMinutes)}分</span>
             </div>
             <p className={`text-sm ${isDraft ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
               {chapter.synopsis}
@@ -506,8 +506,8 @@ const ScenarioDetailPageContent = () => {
     return buildChapterPlanRequest({
       input,
       llmSettings: {
-        editor: scenario.editorModel as GeminiModel,
-        writer: scenario.writerModel as GeminiModel
+        editor: scenario.editorModel as LlmModel,
+        writer: scenario.writerModel as LlmModel
       },
       mode,
       scenario,
@@ -673,7 +673,8 @@ const ScenarioDetailPageContent = () => {
                 </span>
                 <span className="hidden text-border sm:inline">|</span>
                 <span className="flex items-center gap-1">
-                  <Clock className="size-3" />約{scenario.durationMinutes ?? '—'}分
+                  <Clock className="size-3" />約
+                  {scenario.durationMinutes != null ? Math.round(scenario.durationMinutes) : '—'}分
                 </span>
               </div>
             </div>
@@ -716,7 +717,9 @@ const ScenarioDetailPageContent = () => {
             <span className="hidden text-border sm:inline">|</span>
             <span>
               推定再生時間:{' '}
-              <strong className="font-semibold text-foreground">約{scenario.durationMinutes ?? '—'}分</strong>
+              <strong className="font-semibold text-foreground">
+                約{scenario.durationMinutes != null ? Math.round(scenario.durationMinutes) : '—'}分
+              </strong>
             </span>
           </div>
         )}

@@ -192,7 +192,7 @@ const ChapterDetailPageContent = () => {
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                 <span>{chapter.cueCount} cues</span>
                 <span className="hidden text-border sm:inline">|</span>
-                <span>約{chapter.durationMinutes}分</span>
+                <span>約{Math.round(chapter.durationMinutes)}分</span>
                 <span className="hidden text-border sm:inline">|</span>
                 <div className="flex items-center gap-1.5">
                   {chapter.characters.map((character) => (
@@ -399,7 +399,7 @@ const ChapterDetailPageContent = () => {
             <span className="text-border">·</span>
             <span>第{chapter.number}章</span>
             <span className="text-border">·</span>
-            <span>推定再生時間: ~{chapter.durationMinutes}分</span>
+            <span>推定再生時間: ~{Math.round(chapter.durationMinutes)}分</span>
           </div>
         )}
 

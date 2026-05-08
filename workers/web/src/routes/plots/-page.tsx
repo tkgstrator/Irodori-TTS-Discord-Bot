@@ -82,7 +82,7 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
               </p>
               <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground">
                 <Clock className="size-3.5" aria-hidden="true" />
-                <span>{scenario.durationMinutes ?? '—'}分</span>
+                <span>{scenario.durationMinutes != null ? Math.round(scenario.durationMinutes) : '—'}分</span>
               </div>
             </div>
           </div>

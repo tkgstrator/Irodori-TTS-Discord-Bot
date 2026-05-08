@@ -172,7 +172,7 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
       <div className="flex items-center justify-between gap-2 border-t border-border px-3.5 py-2.5">
         <div className="flex items-center gap-1 text-[0.625rem] text-muted-foreground">
           <Clock className="size-3" aria-hidden="true" />
-          <span>{scenario.durationMinutes ?? '—'}分</span>
+          <span>{scenario.durationMinutes != null ? Math.round(scenario.durationMinutes) : '—'}分</span>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs" aria-label="再生成">
