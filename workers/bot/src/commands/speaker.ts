@@ -122,8 +122,6 @@ export const handleSpeakerAutocomplete = async (interaction: AutocompleteInterac
   const speakers = await updateSpeakerCache()
   const focused = interaction.options.getFocused(true)
   const focusedValue = focused.value.toLowerCase()
-  console.debug('[autocomplete] focused:', focused.name, '| speakers:', speakers.length)
-
   if (focused.name === 'category') {
     const labelMap = new Map<string, string>()
     for (const s of speakers) {
@@ -139,9 +137,13 @@ export const handleSpeakerAutocomplete = async (interaction: AutocompleteInterac
   }
 
   const categoryFilter = interaction.options.getString('category')
+  const categoryId = categoryFilter
+    ? (speakers.find((s) => s.category.id === categoryFilter || s.category.label === categoryFilter)?.category.id ??
+      categoryFilter)
+    : null
   const filtered = speakers
     .filter((s) => {
-      if (categoryFilter && s.category.id !== categoryFilter) return false
+      if (categoryId && s.category.id !== categoryId) return false
       return s.name.toLowerCase().includes(focusedValue)
     })
     .slice(0, 25)
