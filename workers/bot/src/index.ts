@@ -1,5 +1,5 @@
 import { Client, Events, GatewayIntentBits, MessageFlags, REST, Routes } from 'discord.js'
-import { commands, executeAutocomplete, executeCommand } from './commands'
+import { commands, executeAutocomplete, executeCommand, executeSelectMenu } from './commands'
 import { config } from './config'
 import {
   getCurrentSpeakerConfig,
@@ -56,6 +56,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await executeAutocomplete(interaction)
     } catch (error) {
       console.error('Autocomplete error:', error)
+    }
+    return
+  }
+
+  // StringSelectMenu の処理
+  if (interaction.isStringSelectMenu()) {
+    try {
+      await executeSelectMenu(interaction)
+    } catch (error) {
+      console.error('SelectMenu error:', error)
     }
     return
   }
@@ -265,4 +275,8 @@ client.on(Events.MessageCreate, async (message) => {
 })
 
 // Botを起動
-client.login(config.DISCORD_TOKEN)
+console.log('Starting bot...')
+client.login(config.DISCORD_TOKEN).catch((error) => {
+  console.error('Failed to login:', error)
+  process.exit(1)
+})
