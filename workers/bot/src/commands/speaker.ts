@@ -85,6 +85,9 @@ export const speakerCommand = new SlashCommandBuilder()
       .setName('set')
       .setDescription('話者を設定します')
       .addStringOption((option) =>
+        option.setName('category').setDescription('カテゴリ').setRequired(true).setAutocomplete(true)
+      )
+      .addStringOption((option) =>
         option.setName('name').setDescription('話者名').setRequired(true).setAutocomplete(true)
       )
   )
@@ -113,17 +116,39 @@ export const speakerCommand = new SlashCommandBuilder()
   )
 
 /**
- * /speaker set のオートコンプリートハンドラー（話者名）
+ * /speaker set のオートコンプリートハンドラー（カテゴリ・話者名）
  */
 export const handleSpeakerAutocomplete = async (interaction: AutocompleteInteraction): Promise<void> => {
   const speakers = await updateSpeakerCache()
-  const focusedValue = interaction.options.getFocused().toLowerCase()
+  const focused = interaction.options.getFocused(true)
+  const focusedValue = focused.value.toLowerCase()
+  console.debug('[autocomplete] focused:', focused.name, '| speakers:', speakers.length)
 
-  const filtered = speakers.filter((s) => s.name.toLowerCase().includes(focusedValue)).slice(0, 25)
+  if (focused.name === 'category') {
+    const labelMap = new Map<string, string>()
+    for (const s of speakers) {
+      if (!labelMap.has(s.category.id)) {
+        labelMap.set(s.category.id, s.category.label)
+      }
+    }
+    const categories = Array.from(labelMap.entries())
+      .filter(([, label]) => label.toLowerCase().includes(focusedValue))
+      .slice(0, 25)
+    await interaction.respond(categories.map(([id, label]) => ({ name: label, value: id })))
+    return
+  }
+
+  const categoryFilter = interaction.options.getString('category')
+  const filtered = speakers
+    .filter((s) => {
+      if (categoryFilter && s.category.id !== categoryFilter) return false
+      return s.name.toLowerCase().includes(focusedValue)
+    })
+    .slice(0, 25)
 
   await interaction.respond(
     filtered.map((s) => ({
-      name: s.name,
+      name: `${s.name} (CV: ${s.cv})`,
       value: s.uuid
     }))
   )
@@ -204,7 +229,9 @@ export const handleSpeakerCommand = async (interaction: ChatInputCommandInteract
         const speakerId = await getCurrentSpeakerId(userId)
         const speakerConfig = await getCurrentSpeakerConfig(userId)
         const speakers = await updateSpeakerCache()
-        const speakerName = speakers.find((s) => s.uuid === speakerId)?.name ?? '(不明)'
+        const speakerData = speakers.find((s) => s.uuid === speakerId)
+        const speakerName = speakerData?.name ?? '(不明)'
+        const categoryLabel = speakerData?.category.label ?? '(なし)'
 
         const display = (v: number | undefined): string => (v === undefined ? '(LoRAデフォルト)' : `${v}`)
 
@@ -212,7 +239,8 @@ export const handleSpeakerCommand = async (interaction: ChatInputCommandInteract
           .setTitle('現在のTTS設定')
           .setColor(0x00ae86)
           .addFields(
-            { name: '話者', value: `${speakerName}`, inline: false },
+            { name: '話者', value: speakerName, inline: false },
+            { name: 'カテゴリ', value: categoryLabel, inline: false },
             { name: '話者UUID', value: `\`${speakerId}\``, inline: false },
             { name: 'num_steps', value: display(speakerConfig.numSteps), inline: true },
             { name: 'cfg_scale_text', value: display(speakerConfig.cfgScaleText), inline: true },
@@ -297,8 +325,9 @@ export const handleSpeakerCommand = async (interaction: ChatInputCommandInteract
         }
 
         await setCurrentSpeakerId(interaction.user.id, speaker.uuid)
+        const categoryLabel = ` (${speaker.category.label})`
         await interaction.reply({
-          content: `話者を **${speaker.name}** に設定しました`,
+          content: `話者を **${speaker.name}**${categoryLabel} に設定しました`,
           flags: MessageFlags.Ephemeral
         })
       } catch (error) {
