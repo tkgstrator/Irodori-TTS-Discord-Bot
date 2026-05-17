@@ -1,12 +1,15 @@
-import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js'
+import type { AutocompleteInteraction, ChatInputCommandInteraction, StringSelectMenuInteraction } from 'discord.js'
 import { configCommand, handleConfigCommand } from './config'
 import { handlePlayCommand, playCommand } from './play'
-import { handleSpeakerAutocomplete, handleSpeakerCommand, speakerCommand } from './speaker'
+import {
+  handleSpeakerAutocomplete,
+  handleSpeakerCommand,
+  handleSpeakerSelectMenu,
+  SPEAKER_SELECT_CUSTOM_ID,
+  speakerCommand
+} from './speaker'
 import { handleJoinCommand, handleLeaveCommand, joinCommand, leaveCommand } from './voice'
 
-/**
- * 全スラッシュコマンドの定義
- */
 export const commands = [
   joinCommand.toJSON(),
   leaveCommand.toJSON(),
@@ -50,6 +53,23 @@ export const executeCommand = async (interaction: ChatInputCommandInteraction): 
  */
 export const executeAutocomplete = async (interaction: AutocompleteInteraction): Promise<void> => {
   const handler = autocompleteHandlers[interaction.commandName]
+  if (handler) {
+    await handler(interaction)
+  }
+}
+
+/**
+ * StringSelectMenu ハンドラーのマップ
+ */
+const selectMenuHandlers: Record<string, (interaction: StringSelectMenuInteraction) => Promise<void>> = {
+  [SPEAKER_SELECT_CUSTOM_ID]: handleSpeakerSelectMenu
+}
+
+/**
+ * StringSelectMenu インタラクションを実行する
+ */
+export const executeSelectMenu = async (interaction: StringSelectMenuInteraction): Promise<void> => {
+  const handler = selectMenuHandlers[interaction.customId]
   if (handler) {
     await handler(interaction)
   }

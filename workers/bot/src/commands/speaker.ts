@@ -1,10 +1,13 @@
 import type { SpeakerInfo } from '@irodori-tts/shared/irodori-api'
 import {
+  ActionRowBuilder,
   type AutocompleteInteraction,
   type ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
-  SlashCommandBuilder
+  SlashCommandBuilder,
+  StringSelectMenuBuilder,
+  type StringSelectMenuInteraction
 } from 'discord.js'
 import type { SpeakerConfigUpdate } from '../schemas/user-settings.dto'
 import {
@@ -74,6 +77,8 @@ const FIELD_CONSTRAINTS: Record<
   seed: { integer: true, label: '乱数シード', updateKey: 'seed' }
 }
 
+export const SPEAKER_SELECT_CUSTOM_ID = 'speaker_select'
+
 /**
  * /speaker コマンドの定義
  */
@@ -86,9 +91,6 @@ export const speakerCommand = new SlashCommandBuilder()
       .setDescription('話者を設定します')
       .addStringOption((option) =>
         option.setName('category').setDescription('カテゴリ').setRequired(true).setAutocomplete(true)
-      )
-      .addStringOption((option) =>
-        option.setName('name').setDescription('話者名').setRequired(true).setAutocomplete(true)
       )
   )
   .addSubcommand((subcommand) => subcommand.setName('clear').setDescription('話者設定をリセットします'))
@@ -116,44 +118,47 @@ export const speakerCommand = new SlashCommandBuilder()
   )
 
 /**
- * /speaker set のオートコンプリートハンドラー（カテゴリ・話者名）
+ * /speaker set のカテゴリオートコンプリートハンドラー
  */
 export const handleSpeakerAutocomplete = async (interaction: AutocompleteInteraction): Promise<void> => {
   const speakers = await updateSpeakerCache()
-  const focused = interaction.options.getFocused(true)
-  const focusedValue = focused.value.toLowerCase()
-  if (focused.name === 'category') {
-    const labelMap = new Map<string, string>()
-    for (const s of speakers) {
-      if (!labelMap.has(s.category.id)) {
-        labelMap.set(s.category.id, s.category.label)
-      }
+  const focusedValue = interaction.options.getFocused(true).value.toLowerCase()
+
+  const labelMap = new Map<string, string>()
+  for (const s of speakers) {
+    if (!labelMap.has(s.category.id)) {
+      labelMap.set(s.category.id, s.category.label)
     }
-    const categories = Array.from(labelMap.entries())
-      .filter(([, label]) => label.toLowerCase().includes(focusedValue))
-      .slice(0, 25)
-    await interaction.respond(categories.map(([id, label]) => ({ name: label, value: id })))
+  }
+  const categories = Array.from(labelMap.entries())
+    .filter(([, label]) => label.toLowerCase().includes(focusedValue))
+    .slice(0, 25)
+  await interaction.respond(categories.map(([id, label]) => ({ name: label, value: id })))
+}
+
+/**
+ * /speaker set で表示する話者選択 StringSelectMenu のハンドラー
+ */
+export const handleSpeakerSelectMenu = async (interaction: StringSelectMenuInteraction): Promise<void> => {
+  const speakerUuid = interaction.values[0]
+  const speakers = await updateSpeakerCache()
+  const speaker = speakers.find((s) => s.uuid === speakerUuid)
+
+  if (!speaker) {
+    await interaction.update({ content: '指定された話者が見つかりませんでした', components: [] })
     return
   }
 
-  const categoryFilter = interaction.options.getString('category')
-  const categoryId = categoryFilter
-    ? (speakers.find((s) => s.category.id === categoryFilter || s.category.label === categoryFilter)?.category.id ??
-      categoryFilter)
-    : null
-  const filtered = speakers
-    .filter((s) => {
-      if (categoryId && s.category.id !== categoryId) return false
-      return s.name.toLowerCase().includes(focusedValue)
+  try {
+    await setCurrentSpeakerId(interaction.user.id, speaker.uuid)
+    await interaction.update({
+      content: `話者を **${speaker.name}** (${speaker.category.label}) に設定しました`,
+      components: []
     })
-    .slice(0, 25)
-
-  await interaction.respond(
-    filtered.map((s) => ({
-      name: `${s.name} (CV: ${s.cv})`,
-      value: s.uuid
-    }))
-  )
+  } catch (error) {
+    console.error('Failed to set speaker via select menu:', error)
+    await interaction.update({ content: '話者の設定に失敗しました', components: [] })
+  }
 }
 
 /**
@@ -220,7 +225,6 @@ const applyConfigValue = async (
 export const handleSpeakerCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   const subcommand = interaction.options.getSubcommand()
 
-  // speaker config サブコマンドの処理
   if (subcommand === 'config') {
     const userId = interaction.user.id
     const setting = interaction.options.getString('setting', true)
@@ -292,7 +296,6 @@ export const handleSpeakerCommand = async (interaction: ChatInputCommandInteract
     return
   }
 
-  // 通常のサブコマンド処理
   switch (subcommand) {
     case 'clear': {
       try {
@@ -312,33 +315,41 @@ export const handleSpeakerCommand = async (interaction: ChatInputCommandInteract
     }
 
     case 'set': {
-      const speakerUuid = interaction.options.getString('name', true)
+      const categoryFilter = interaction.options.getString('category', true)
+      const speakers = await updateSpeakerCache()
 
-      try {
-        const speakers = await updateSpeakerCache()
-        const speaker = speakers.find((s) => s.uuid === speakerUuid)
+      const categoryId =
+        speakers.find((s) => s.category.id === categoryFilter || s.category.label === categoryFilter)?.category.id ??
+        categoryFilter
+      const categoryLabel = speakers.find((s) => s.category.id === categoryId)?.category.label ?? categoryFilter
 
-        if (!speaker) {
-          await interaction.reply({
-            content: '指定された話者が見つかりませんでした',
-            flags: MessageFlags.Ephemeral
-          })
-          return
-        }
+      const inCategory = speakers.filter((s) => s.category.id === categoryId).slice(0, 25)
 
-        await setCurrentSpeakerId(interaction.user.id, speaker.uuid)
-        const categoryLabel = ` (${speaker.category.label})`
+      if (inCategory.length === 0) {
         await interaction.reply({
-          content: `話者を **${speaker.name}**${categoryLabel} に設定しました`,
+          content: `カテゴリ「${categoryLabel}」に話者が見つかりませんでした`,
           flags: MessageFlags.Ephemeral
         })
-      } catch (error) {
-        console.error('Failed to set speaker:', error)
-        await interaction.reply({
-          content: '話者の設定に失敗しました',
-          flags: MessageFlags.Ephemeral
-        })
+        return
       }
+
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(SPEAKER_SELECT_CUSTOM_ID)
+        .setPlaceholder('話者を選択してください')
+        .addOptions(
+          inCategory.map((s) => ({
+            label: `${s.name} (CV: ${s.cv})`,
+            value: s.uuid
+          }))
+        )
+
+      const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)
+
+      await interaction.reply({
+        content: `**${categoryLabel}** の話者を選択してください：`,
+        components: [row],
+        flags: MessageFlags.Ephemeral
+      })
       break
     }
   }
