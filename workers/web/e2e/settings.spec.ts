@@ -64,9 +64,9 @@ test.describe('settings route', () => {
     await expect(darkButton).toBeVisible()
     await expect(systemButton).toBeVisible()
     await expect(page.getByRole('heading', { name: 'LLM の既定モデル' })).toBeVisible()
-    await expect(page.getByText('Gemini 3.1 Pro')).toBeVisible()
-    await expect(page.getByText('Gemini 2.0 Flash-Lite')).toBeVisible()
-    await expect(page.getByText('★が多いほど、速い・高精度・低コストです。')).toBeVisible()
+    await expect(page.getByText('Gemini 3.1 Pro', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Gemini 3 Flash', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('★が多いほど、速い・高精度・低コスト・検閲が緩いです。')).toBeVisible()
     await expect(page.getByRole('combobox').first()).toBeVisible()
     await expect(page.getByRole('combobox').nth(1)).toBeVisible()
 
@@ -86,7 +86,7 @@ test.describe('settings route', () => {
     await expect(darkButton).toHaveAttribute('aria-pressed', 'true')
 
     await editorModelSelect.click()
-    await page.getByRole('option', { name: 'Gemini 3.1 Pro' }).click()
+    await page.getByRole('option', { name: 'Gemini 3.1 Pro', exact: true }).click()
     await expect(editorModelSelect).toContainText('Gemini 3.1 Pro')
 
     await page.keyboard.press('Tab')
@@ -124,9 +124,9 @@ test.describe('settings route', () => {
 
     const writerModelSelect = page.getByRole('combobox').nth(1)
     await writerModelSelect.click()
-    await page.getByRole('option', { name: 'Gemini 2.0 Flash-Lite' }).click()
-    await expect(writerModelSelect).toContainText('Gemini 2.0 Flash-Lite')
-    await expect(page.getByText('Gemini 2.0 Flash-Lite').first()).toBeVisible()
+    await page.getByRole('option', { name: 'Gemini 3 Flash', exact: true }).click()
+    await expect(writerModelSelect).toContainText('Gemini 3 Flash')
+    await expect(page.getByText('Gemini 3 Flash').first()).toBeVisible()
 
     await expectNoHorizontalOverflow(page)
 

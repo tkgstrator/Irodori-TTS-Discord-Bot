@@ -17,6 +17,7 @@ COPY packages/shared packages/shared
 COPY workers/web workers/web
 RUN bunx prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
 RUN bun run --filter @irodori-tts/web build
+RUN bun build workers/web/prisma/init.ts --outfile workers/web/dist/init.js --target=bun
 
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app/workers/web

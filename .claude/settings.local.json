@@ -21,7 +21,7 @@
     "defaultMode": "bypassPermissions",
     "bypassPermissionsMode": "allow"
   },
-  "model": "claude-opus-4-7",
+  "model": "sonnet",
   "enabledMcpjsonServers": [
     "docker",
     "github",

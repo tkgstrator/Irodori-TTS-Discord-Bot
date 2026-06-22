@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Clock, ListTree, MessageSquare, Plus, Users } from 'lucide-react'
 import { PageContainer } from '@/components/page-container'
 import { PageSuspense } from '@/components/page-suspense'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import type { Scenario } from '@/lib/scenarios'
 import { useSuspenseResolvedScenarios } from '@/lib/scenarios'
@@ -93,12 +94,21 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
             ))}
           </div>
 
-          <p className="mb-2 text-xs text-muted-foreground">
-            登場人物:{' '}
-            <span className="font-medium text-foreground">
-              {scenario.plotCharacters.length > 0 ? scenario.plotCharacters.join(' · ') : '未設定'}
-            </span>
-          </p>
+          <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>登場人物:</span>
+            {scenario.speakers.length > 0 ? (
+              <div className="flex items-center gap-1">
+                {scenario.speakers.map((speaker) => (
+                  <Avatar key={speaker.alias} className="size-5 text-[9px]" title={speaker.name}>
+                    <AvatarImage src={speaker.imageUrl ?? undefined} alt="" />
+                    <AvatarFallback>{speaker.initial}</AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+            ) : (
+              <span className="font-medium text-foreground">未設定</span>
+            )}
+          </div>
 
           <p className="mb-3 text-xs text-muted-foreground">
             トーン: <span className="italic">{scenario.tone}</span>

@@ -10,16 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as DictionaryRouteImport } from './routes/dictionary'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScenariosIndexRouteImport } from './routes/scenarios/index'
 import { Route as RelationsIndexRouteImport } from './routes/relations/index'
 import { Route as PlotsIndexRouteImport } from './routes/plots/index'
 import { Route as MockupsIndexRouteImport } from './routes/mockups/index'
+import { Route as DictionaryIndexRouteImport } from './routes/dictionary/index'
 import { Route as CharactersIndexRouteImport } from './routes/characters/index'
 import { Route as ScenariosNewRouteImport } from './routes/scenarios/new'
 import { Route as ScenariosIdRouteImport } from './routes/scenarios/$id'
 import { Route as PlotsNewRouteImport } from './routes/plots/new'
 import { Route as PlotsIdRouteImport } from './routes/plots/$id'
+import { Route as DictionaryIdRouteImport } from './routes/dictionary/$id'
 import { Route as CharactersNewRouteImport } from './routes/characters/new'
 import { Route as ScenariosIdEditRouteImport } from './routes/scenarios/$id.edit'
 import { Route as ScenariosIdChapterPlanRouteImport } from './routes/scenarios/$id.chapter-plan'
@@ -32,6 +35,11 @@ import { Route as PlotsIdChaptersChapterIdRouteImport } from './routes/plots/$id
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DictionaryRoute = DictionaryRouteImport.update({
+  id: '/dictionary',
+  path: '/dictionary',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +67,11 @@ const MockupsIndexRoute = MockupsIndexRouteImport.update({
   path: '/mockups/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DictionaryIndexRoute = DictionaryIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DictionaryRoute,
+} as any)
 const CharactersIndexRoute = CharactersIndexRouteImport.update({
   id: '/characters/',
   path: '/characters/',
@@ -83,6 +96,11 @@ const PlotsIdRoute = PlotsIdRouteImport.update({
   id: '/plots/$id',
   path: '/plots/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DictionaryIdRoute = DictionaryIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => DictionaryRoute,
 } as any)
 const CharactersNewRoute = CharactersNewRouteImport.update({
   id: '/characters/new',
@@ -129,13 +147,16 @@ const PlotsIdChaptersChapterIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dictionary': typeof DictionaryRouteWithChildren
   '/settings': typeof SettingsRoute
   '/characters/new': typeof CharactersNewRoute
+  '/dictionary/$id': typeof DictionaryIdRoute
   '/plots/$id': typeof PlotsIdRouteWithChildren
   '/plots/new': typeof PlotsNewRoute
   '/scenarios/$id': typeof ScenariosIdRouteWithChildren
   '/scenarios/new': typeof ScenariosNewRoute
   '/characters/': typeof CharactersIndexRoute
+  '/dictionary/': typeof DictionaryIndexRoute
   '/mockups/': typeof MockupsIndexRoute
   '/plots/': typeof PlotsIndexRoute
   '/relations/': typeof RelationsIndexRoute
@@ -152,11 +173,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
   '/characters/new': typeof CharactersNewRoute
+  '/dictionary/$id': typeof DictionaryIdRoute
   '/plots/$id': typeof PlotsIdRouteWithChildren
   '/plots/new': typeof PlotsNewRoute
   '/scenarios/$id': typeof ScenariosIdRouteWithChildren
   '/scenarios/new': typeof ScenariosNewRoute
   '/characters': typeof CharactersIndexRoute
+  '/dictionary': typeof DictionaryIndexRoute
   '/mockups': typeof MockupsIndexRoute
   '/plots': typeof PlotsIndexRoute
   '/relations': typeof RelationsIndexRoute
@@ -172,13 +195,16 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dictionary': typeof DictionaryRouteWithChildren
   '/settings': typeof SettingsRoute
   '/characters/new': typeof CharactersNewRoute
+  '/dictionary/$id': typeof DictionaryIdRoute
   '/plots/$id': typeof PlotsIdRouteWithChildren
   '/plots/new': typeof PlotsNewRoute
   '/scenarios/$id': typeof ScenariosIdRouteWithChildren
   '/scenarios/new': typeof ScenariosNewRoute
   '/characters/': typeof CharactersIndexRoute
+  '/dictionary/': typeof DictionaryIndexRoute
   '/mockups/': typeof MockupsIndexRoute
   '/plots/': typeof PlotsIndexRoute
   '/relations/': typeof RelationsIndexRoute
@@ -195,13 +221,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dictionary'
     | '/settings'
     | '/characters/new'
+    | '/dictionary/$id'
     | '/plots/$id'
     | '/plots/new'
     | '/scenarios/$id'
     | '/scenarios/new'
     | '/characters/'
+    | '/dictionary/'
     | '/mockups/'
     | '/plots/'
     | '/relations/'
@@ -218,11 +247,13 @@ export interface FileRouteTypes {
     | '/'
     | '/settings'
     | '/characters/new'
+    | '/dictionary/$id'
     | '/plots/$id'
     | '/plots/new'
     | '/scenarios/$id'
     | '/scenarios/new'
     | '/characters'
+    | '/dictionary'
     | '/mockups'
     | '/plots'
     | '/relations'
@@ -237,13 +268,16 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dictionary'
     | '/settings'
     | '/characters/new'
+    | '/dictionary/$id'
     | '/plots/$id'
     | '/plots/new'
     | '/scenarios/$id'
     | '/scenarios/new'
     | '/characters/'
+    | '/dictionary/'
     | '/mockups/'
     | '/plots/'
     | '/relations/'
@@ -259,6 +293,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DictionaryRoute: typeof DictionaryRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   CharactersNewRoute: typeof CharactersNewRoute
   PlotsIdRoute: typeof PlotsIdRouteWithChildren
@@ -280,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dictionary': {
+      id: '/dictionary'
+      path: '/dictionary'
+      fullPath: '/dictionary'
+      preLoaderRoute: typeof DictionaryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -317,6 +359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MockupsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dictionary/': {
+      id: '/dictionary/'
+      path: '/'
+      fullPath: '/dictionary/'
+      preLoaderRoute: typeof DictionaryIndexRouteImport
+      parentRoute: typeof DictionaryRoute
+    }
     '/characters/': {
       id: '/characters/'
       path: '/characters'
@@ -351,6 +400,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/plots/$id'
       preLoaderRoute: typeof PlotsIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dictionary/$id': {
+      id: '/dictionary/$id'
+      path: '/$id'
+      fullPath: '/dictionary/$id'
+      preLoaderRoute: typeof DictionaryIdRouteImport
+      parentRoute: typeof DictionaryRoute
     }
     '/characters/new': {
       id: '/characters/new'
@@ -411,6 +467,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DictionaryRouteChildren {
+  DictionaryIdRoute: typeof DictionaryIdRoute
+  DictionaryIndexRoute: typeof DictionaryIndexRoute
+}
+
+const DictionaryRouteChildren: DictionaryRouteChildren = {
+  DictionaryIdRoute: DictionaryIdRoute,
+  DictionaryIndexRoute: DictionaryIndexRoute,
+}
+
+const DictionaryRouteWithChildren = DictionaryRoute._addFileChildren(
+  DictionaryRouteChildren,
+)
+
 interface PlotsIdRouteChildren {
   PlotsIdChapterPlanRoute: typeof PlotsIdChapterPlanRoute
   PlotsIdEditRoute: typeof PlotsIdEditRoute
@@ -444,6 +514,7 @@ const ScenariosIdRouteWithChildren = ScenariosIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DictionaryRoute: DictionaryRouteWithChildren,
   SettingsRoute: SettingsRoute,
   CharactersNewRoute: CharactersNewRoute,
   PlotsIdRoute: PlotsIdRouteWithChildren,
