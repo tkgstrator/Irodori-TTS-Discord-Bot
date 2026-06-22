@@ -5,13 +5,14 @@ describe('ScenarioGenerateRequestSchema', () => {
   test('LLM 送信用の JSON を受け入れる', () => {
     const result = ScenarioGenerateRequestSchema.safeParse({
       model: {
-        editor: 'gemini-2.5-flash',
-        writer: 'gemini-2.5-pro'
+        editor: 'gemini-3-flash-preview',
+        writer: 'gemini-3.1-pro-preview'
       },
       plot: {
         title: '夏の約束',
         genres: ['学園', '恋愛'],
         tone: 'ほろ苦い',
+        rating: '全年齢',
         promptNote: '放課後の屋上で距離が縮まる流れにしたい'
       },
       characters: [
@@ -42,13 +43,14 @@ describe('ScenarioGenerateRequestSchema', () => {
   test('ジャンル未選択の JSON は失敗する', () => {
     const result = ScenarioGenerateRequestSchema.safeParse({
       model: {
-        editor: 'gemini-2.5-flash',
-        writer: 'gemini-2.5-flash'
+        editor: 'gemini-3-flash-preview',
+        writer: 'gemini-3-flash-preview'
       },
       plot: {
         title: '夏の約束',
         genres: [],
         tone: 'ほろ苦い',
+        rating: '全年齢',
         promptNote: ''
       },
       characters: []

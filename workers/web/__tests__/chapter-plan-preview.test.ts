@@ -9,13 +9,14 @@ const previewFixture = {
     schemaVersion: 1,
     dramaId: '76150d2f-f27b-48d7-9550-893d76f66726',
     model: {
-      editor: 'gemini-2.5-flash',
-      writer: 'gemini-2.5-flash'
+      editor: 'gemini-3-flash-preview',
+      writer: 'gemini-3-flash-preview'
     },
     scenario: {
       title: '夏の約束',
       genres: ['学園', '恋愛'],
       tone: 'ほろ苦い',
+      rating: '全年齢',
       promptNote: ''
     },
     characters: [

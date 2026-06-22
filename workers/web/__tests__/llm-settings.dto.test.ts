@@ -1,13 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  defaultLlmSettings,
-  GeminiModelSchema,
-  geminiModelCatalog,
-  LlmSettingsSchema
-} from '../src/schemas/llm-settings.dto'
+import { defaultLlmSettings, LlmModelSchema, LlmSettingsSchema, llmModelCatalog } from '../src/schemas/llm-settings.dto'
 
 describe('LlmSettingsSchema', () => {
-  test('Gemini モデルの既定値を受け入れる', () => {
+  test('LLM モデルの既定値を受け入れる', () => {
     const result = LlmSettingsSchema.safeParse(defaultLlmSettings)
 
     expect(result.success).toBe(true)
@@ -22,14 +17,17 @@ describe('LlmSettingsSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  test('Gemini の文章生成モデルを一覧表示用に保持する', () => {
-    expect(geminiModelCatalog.length).toBe(9)
-    expect(geminiModelCatalog.some((item) => item.value === 'gemini-3.1-pro-preview')).toBe(true)
-    expect(geminiModelCatalog.some((item) => item.value === 'gemini-2.0-flash-lite')).toBe(true)
+  test('LLM モデルを一覧表示用に保持する', () => {
+    expect(llmModelCatalog.length).toBe(18)
+    expect(llmModelCatalog.some((item) => item.value === 'gemini-3.1-pro-preview')).toBe(true)
+    expect(llmModelCatalog.some((item) => item.value === 'gemini-3-flash-preview')).toBe(true)
+    expect(llmModelCatalog.some((item) => item.value === 'gpt-5.5')).toBe(true)
+    expect(llmModelCatalog.some((item) => item.value === 'qwen36-27b')).toBe(true)
+    expect(llmModelCatalog.some((item) => item.value === 'gemma4-31b')).toBe(true)
   })
 
-  test('Gemini 以外のモデルは拒否する', () => {
-    const result = GeminiModelSchema.safeParse('gpt-5')
+  test('��登録モデルは拒否する', () => {
+    const result = LlmModelSchema.safeParse('gpt-5')
 
     expect(result.success).toBe(false)
   })

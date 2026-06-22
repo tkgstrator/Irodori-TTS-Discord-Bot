@@ -10,10 +10,17 @@ export const SpeakerImportValuesSchema = CharacterFormFieldsSchema.omit({
   speakerId: true
 })
 
+const SpeakerCategorySchema = z.object({
+  id: z.string(),
+  label: z.string()
+})
+
 // 話者一覧用のレスポンス要素を定義する
 const SpeakerImportItemSchema = z.object({
   speakerId: SpeakerIdSchema,
-  name: z.string().nonempty()
+  name: z.string().nonempty(),
+  cv: z.string().nullable(),
+  category: SpeakerCategorySchema.nullable()
 })
 
 // 話者一覧レスポンスの形式を定義する

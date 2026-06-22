@@ -3,6 +3,7 @@ import { ChapterGenerateFormSchema, type ChapterGenerateFormValues } from '@/sch
 import { type ChapterPlan, ChapterPlanSchema } from '@/schemas/chapter-plan.dto'
 import { type ChapterPlanRequest, ChapterPlanRequestSchema } from '@/schemas/chapter-plan-request.dto'
 import type { LlmSettings } from '@/schemas/llm-settings.dto'
+import { ScenarioRatingSchema, ScenarioToneSchema } from '@/schemas/scenario.dto'
 import { backendApi } from './backend-api'
 import type { Character } from './characters'
 import type { Scenario } from './scenarios'
@@ -11,7 +12,9 @@ import type { Scenario } from './scenarios'
 const AutoChapterGenerateFormSchema = z.object({
   title: z.string().trim().max(60, '章タイトルは60文字以内で入力してください'),
   promptNote: z.string().trim().max(400, '流れメモは400文字以内で入力してください'),
-  characterNames: z.array(z.string().trim().nonempty()).max(10, '登場人物は10人まで選択できます')
+  characterNames: z.array(z.string().trim().nonempty()).max(10, '登場人物は10人まで選択できます'),
+  rating: ScenarioRatingSchema,
+  tone: ScenarioToneSchema
 })
 
 // シナリオ上の登場人物名から実キャラクターを引き当てる。
@@ -41,9 +44,7 @@ const toStoryCharacterContext = (character: Character) => ({
   attributeTags: character.attributeTags,
   backgroundTags: character.backgroundTags,
   sampleQuotes: character.sampleQuotes,
-  memo: character.memo,
-  speakerId: character.speakerId,
-  caption: character.caption
+  memo: character.memo
 })
 
 // 章に登場した人物を character id 配列へ変換する。
@@ -144,7 +145,8 @@ export const buildChapterPlanRequest = ({
     scenario: {
       title: scenario.title,
       genres: scenario.genres,
-      tone: scenario.tone,
+      tone: inputResult.data.tone,
+      rating: inputResult.data.rating,
       promptNote: scenario.promptNote
     },
     characters: scenarioCharacters.map((character) => toStoryCharacterContext(character)),

@@ -8,6 +8,7 @@ const ChapterGenerateScenarioSchema = z.object({
   title: z.string().nonempty(),
   genres: z.array(z.string().nonempty()),
   tone: z.string().nonempty(),
+  rating: z.string().nonempty(),
   plotCharacters: z.array(z.string().nonempty())
 })
 

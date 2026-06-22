@@ -1,8 +1,8 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
 import {
   defaultLlmSettings,
-  type GeminiModel,
-  GeminiModelSchema,
+  type LlmModel,
+  LlmModelSchema,
   type LlmSettings,
   LlmSettingsSchema
 } from '@/schemas/llm-settings.dto'
@@ -11,8 +11,8 @@ const llmSettingsStorageKey = 'irodori-llm-settings'
 
 const LlmSettingsContext = createContext<{
   readonly llmSettings: LlmSettings
-  readonly setEditorModel: (model: GeminiModel) => void
-  readonly setWriterModel: (model: GeminiModel) => void
+  readonly setEditorModel: (model: LlmModel) => void
+  readonly setWriterModel: (model: LlmModel) => void
 } | null>(null)
 
 // ローカルストレージの設定文字列を安全に復元する。
@@ -54,11 +54,11 @@ export const LlmSettingsProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(
     () => ({
       llmSettings,
-      setEditorModel: (model: GeminiModel) => {
-        const parsedResult = GeminiModelSchema.safeParse(model)
+      setEditorModel: (model: LlmModel) => {
+        const parsedResult = LlmModelSchema.safeParse(model)
 
         if (!parsedResult.success) {
-          throw new Error('Invalid editor Gemini model')
+          throw new Error('Invalid editor LLM model')
         }
 
         setLlmSettings((currentSettings) => ({
@@ -66,11 +66,11 @@ export const LlmSettingsProvider = ({ children }: { children: ReactNode }) => {
           editor: parsedResult.data
         }))
       },
-      setWriterModel: (model: GeminiModel) => {
-        const parsedResult = GeminiModelSchema.safeParse(model)
+      setWriterModel: (model: LlmModel) => {
+        const parsedResult = LlmModelSchema.safeParse(model)
 
         if (!parsedResult.success) {
-          throw new Error('Invalid writer Gemini model')
+          throw new Error('Invalid writer LLM model')
         }
 
         setLlmSettings((currentSettings) => ({

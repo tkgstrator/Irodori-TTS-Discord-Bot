@@ -11,12 +11,12 @@
     "format": "biome format --write packages/"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.11",
-    "@playwright/test": "^1.59.1",
+    "@biomejs/biome": "^2.5.0",
+    "@playwright/test": "^1.61.0",
     "@types/sharp": "^0.32.0",
     "openapi-zod-client": "^1.18.3",
-    "sharp": "^0.34.5",
-    "typescript": "^6.0.2"
+    "sharp": "^0.35.2",
+    "typescript": "^6.0.3"
   },
   "dependencies": {}
 }

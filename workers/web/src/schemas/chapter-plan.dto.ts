@@ -1,33 +1,49 @@
 import { SceneKindSchema, TensionSchema } from '@irodori-tts/shared/enums'
 import { z } from 'zod'
 
+// schemaVersion を整数 1 に強制する（文字列 "1" も許容）。
+const SchemaVersionSchema = z.union([z.literal(1), z.literal('1')]).transform(() => 1 as const)
+
+// emotionalArc がオブジェクトで返された場合に文字列化する。
+const EmotionalArcSchema = z
+  .union([z.string(), z.record(z.string(), z.unknown())])
+  .transform((value) => (typeof value === 'string' ? value.trim() : JSON.stringify(value)))
+
+// presentCharacterIds が省略された場合に空配列へフォールバックする。
+const PresentCharacterIdsSchema = z
+  .array(z.string().uuid())
+  .nonempty()
+  .or(z.undefined().transform(() => [] as string[]))
+
 // 章内の Beat 設計を定義する。
 const ChapterPlanBeatSchema = z.object({
-  order: z.number().int().positive(),
+  order: z.coerce.number().int().positive(),
   sceneKind: SceneKindSchema,
   summary: z.string().trim().nonempty(),
   goal: z.string().trim().nonempty(),
   tension: TensionSchema,
-  presentCharacterIds: z.array(z.string().uuid()).nonempty()
+  presentCharacterIds: PresentCharacterIdsSchema
 })
 
 // Editor が返す章全体の設計を定義する。
 export const ChapterPlanSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: SchemaVersionSchema,
     dramaId: z.string().uuid(),
     chapter: z.object({
-      number: z.number().int().positive(),
+      number: z.coerce.number().int().positive(),
       title: z.string().trim().nonempty(),
       summary: z.string().trim().nonempty(),
       goal: z.string().trim().nonempty(),
-      emotionalArc: z.string().trim().nonempty()
+      emotionalArc: EmotionalArcSchema
     }),
-    continuity: z.object({
-      mustKeep: z.array(z.string().trim().nonempty()),
-      reveals: z.array(z.string().trim().nonempty()),
-      unresolvedThreads: z.array(z.string().trim().nonempty())
-    }),
+    continuity: z
+      .object({
+        mustKeep: z.array(z.string().trim().nonempty()).default([]),
+        reveals: z.array(z.string().trim().nonempty()).default([]),
+        unresolvedThreads: z.array(z.string().trim().nonempty()).default([])
+      })
+      .default({ mustKeep: [], reveals: [], unresolvedThreads: [] }),
     beatOutline: z.array(ChapterPlanBeatSchema).nonempty()
   })
   .superRefine((value, ctx) => {

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { ChapterDigestSchema } from './chapter-digest.dto'
 import { ChapterGenerateModeSchema } from './chapter-generate-request.dto'
 import { LlmRequestModelSchema } from './llm-settings.dto'
-import { ScenarioGenreSchema, ScenarioToneSchema } from './scenario.dto'
+import { ScenarioGenreSchema, ScenarioRatingSchema, ScenarioToneSchema } from './scenario.dto'
 import { StoryCharacterContextSchema } from './story-character-context.dto'
 
 // 章計画時に参照するシナリオの固定情報を定義する。
@@ -10,6 +10,7 @@ const ChapterPlanRequestScenarioSchema = z.object({
   title: z.string().trim().nonempty(),
   genres: z.array(ScenarioGenreSchema).nonempty(),
   tone: ScenarioToneSchema,
+  rating: ScenarioRatingSchema,
   promptNote: z.string().max(400, '補足メモは400文字以内で入力してください')
 })
 

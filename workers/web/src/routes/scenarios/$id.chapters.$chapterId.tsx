@@ -16,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { VdsPreviewDialog } from '@/components/vds-preview-dialog'
 import { useSuspenseCharacters } from '@/lib/characters'
+import { useSuspenseScenarioRubyDicts } from '@/lib/ruby-dict'
+import { type RubyEntry, RubyText } from '@/lib/ruby-text'
 import type { ChapterCharacter, Cue, Speaker } from '@/lib/scenarios'
 import { canRegenerateChapter, useScenarioMutations, useSuspenseResolvedScenario } from '@/lib/scenarios'
 import { stripTtsShortcodes } from '@/lib/utils'
@@ -36,11 +38,13 @@ const CharacterAvatar = ({ character, size = 'md' }: { character: ChapterCharact
 const SpeechCueCard = ({
   cue,
   speaker,
-  character
+  character,
+  rubyEntries
 }: {
   cue: Cue & { kind: 'speech' }
   speaker: Speaker | undefined
-  character: ChapterCharacter | undefined
+  character: ChapterCharacter
+  rubyEntries: readonly RubyEntry[]
 }) => {
   const isNarrator = speaker?.alias === 'yuki'
 
@@ -49,12 +53,14 @@ const SpeechCueCard = ({
       className={`rounded-xl border border-border px-4 py-3 transition-shadow hover:shadow-md ${isNarrator ? 'bg-secondary/40' : 'bg-card'}`}
     >
       <div className="flex items-start gap-3">
-        {character && <CharacterAvatar character={character} />}
+        <CharacterAvatar character={character} />
         <div className="min-w-0 flex-1">
           <p className={`mb-1 text-xs font-semibold ${speaker?.nameColor ?? 'text-muted-foreground'}`}>
-            {character?.name ?? speaker?.name ?? cue.speaker}
+            {character.name}
           </p>
-          <p className="text-sm leading-relaxed">{stripTtsShortcodes(cue.text)}</p>
+          <p className="text-sm leading-relaxed">
+            <RubyText text={stripTtsShortcodes(cue.text)} entries={rubyEntries} />
+          </p>
         </div>
       </div>
     </div>
@@ -84,6 +90,8 @@ const ChapterDetailPageContent = () => {
     characters,
     scenarios: scenario ? [scenario] : []
   })
+  const { dicts: scenarioDicts } = useSuspenseScenarioRubyDicts(scenarioId)
+  const rubyEntries = scenarioDicts.flatMap((d) => d.entries)
   const isPlotsRoute = pathname.startsWith('/plots')
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -130,8 +138,8 @@ const ChapterDetailPageContent = () => {
           ? '後続の章があるため、この章は削除できません'
           : '後続の章があるため、この章のエピソードは削除できません'
   const canDeleteEpisode = deleteHint === null
-  const chapterVdsExport = createChapterVdsExport({ scenario, chapter })
-  const chapterVdsJsonExport = createChapterVdsJsonExport({ scenario, chapter })
+  const chapterVdsExport = createChapterVdsExport({ scenario, chapter, rubyEntries })
+  const chapterVdsJsonExport = createChapterVdsJsonExport({ scenario, chapter, rubyEntries })
   const chapterVdsPreviewReason =
     !chapterVdsExport.ok && !chapterVdsJsonExport.ok
       ? chapterVdsExport.reason
@@ -385,8 +393,18 @@ const ChapterDetailPageContent = () => {
                 )
               }
               const speaker = scenario.speakers.find((s) => s.alias === cue.speaker)
-              const character = chapter.characters.find((item) => item.name === speaker?.name)
-              return <SpeechCueCard key={key} cue={cue} speaker={speaker} character={character} />
+              const character = speaker?.speakerId
+                ? (chapter.characters.find((item) => item.speakerId === speaker.speakerId) ??
+                  chapter.characters.find((item) => item.name === speaker.name))
+                : chapter.characters.find((item) => item.name === speaker?.name)
+
+              if (!character) {
+                return null
+              }
+
+              return (
+                <SpeechCueCard key={key} cue={cue} speaker={speaker} character={character} rubyEntries={rubyEntries} />
+              )
             })}
           </div>
         )}
