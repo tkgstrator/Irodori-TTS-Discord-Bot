@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai'
+import OpenAI from 'openai'
 import { z } from 'zod'
 import {
   buildChapterPlanPrompt,
@@ -7,22 +7,20 @@ import {
 } from '@/lib/chapter-plan-prompt'
 import { type ChapterPlan, ChapterPlanSchema } from '@/schemas/chapter-plan.dto'
 import type { ChapterPlanRequest } from '@/schemas/chapter-plan-request.dto'
-import { formatZodIssues, parseJsonText } from './gemini-utils'
+import { formatZodIssues, parseJsonText } from './llm-utils'
 
-// Gemini 利用時に必要な環境変数を定義する。
-const GeminiEnvSchema = z.object({
-  GEMINI_API_KEY: z.string().nonempty()
+const LlmEnvSchema = z.object({
+  LITELLM_BASE_URL: z.string().nonempty(),
+  LITELLM_MASTER_KEY: z.string().nonempty()
 })
 
-// Gemini クライアントをシングルトンで保持する。
-const clientCache = new Map<'default', GoogleGenAI>()
+const clientCache = new Map<'default', OpenAI>()
 
-// Gemini クライアントを取得する。
 const getClient = () => {
-  const envResult = GeminiEnvSchema.safeParse(process.env)
+  const envResult = LlmEnvSchema.safeParse(process.env)
 
   if (!envResult.success) {
-    throw new Error('GEMINI_API_KEY is not set')
+    throw new Error('LITELLM_BASE_URL / LITELLM_MASTER_KEY is not set')
   }
 
   const cachedClient = clientCache.get('default')
@@ -31,7 +29,10 @@ const getClient = () => {
     return cachedClient
   }
 
-  const createdClient = new GoogleGenAI({ apiKey: envResult.data.GEMINI_API_KEY })
+  const createdClient = new OpenAI({
+    baseURL: envResult.data.LITELLM_BASE_URL,
+    apiKey: envResult.data.LITELLM_MASTER_KEY
+  })
   clientCache.set('default', createdClient)
   return createdClient
 }
@@ -56,7 +57,7 @@ const buildChapterPlanSchema = (request: ChapterPlanRequest) =>
     }
   })
 
-// Gemini から返った JSON テキストを検証する。
+// LLM から返った JSON テキストを検証する。
 export const parseChapterPlanText = ({ request, text }: { request: ChapterPlanRequest; text: string }): ChapterPlan => {
   const jsonResult = parseJsonText(text)
   const planResult = buildChapterPlanSchema(request).safeParse(jsonResult)
@@ -68,7 +69,7 @@ export const parseChapterPlanText = ({ request, text }: { request: ChapterPlanRe
   return planResult.data
 }
 
-// ChapterPlanRequest を Gemini に送り、章設計を生成する。
+// ChapterPlanRequest を LLM に送り、章設計を生成する。
 export const planChapter = async (request: ChapterPlanRequest): Promise<ChapterPlan> => {
   const client = getClient()
   const responseText = await generateChapterPlanText({
@@ -101,28 +102,29 @@ export const planChapter = async (request: ChapterPlanRequest): Promise<ChapterP
   }
 }
 
-// Gemini に JSON mode で章計画を生成させる。
 const generateChapterPlanText = async ({
   client,
   model,
   prompt
 }: {
-  client: GoogleGenAI
+  client: OpenAI
   model: string
   prompt: string
 }): Promise<string> => {
-  const response = await client.models.generateContent({
+  const response = await client.chat.completions.create({
     model,
-    contents: prompt,
-    config: {
-      systemInstruction: chapterPlanSystemInstruction,
-      responseMimeType: 'application/json'
-    }
+    messages: [
+      { role: 'system', content: chapterPlanSystemInstruction },
+      { role: 'user', content: prompt }
+    ],
+    response_format: { type: 'json_object' }
   })
 
-  if (!response.text) {
-    throw new Error('Gemini returned empty response')
+  const text = response.choices[0]?.message?.content
+
+  if (!text) {
+    throw new Error('LLM returned empty response')
   }
 
-  return response.text
+  return text
 }

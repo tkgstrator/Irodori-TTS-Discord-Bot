@@ -8,8 +8,8 @@ describe('ScenarioCreateApiSchema', () => {
       genres: ['学園', '恋愛'],
       tone: 'ほろ苦い',
       promptNote: '放課後の屋上シーンを含める',
-      editorModel: 'gemini-2.5-flash',
-      writerModel: 'gemini-2.5-flash',
+      editorModel: 'gemini-3-flash-preview',
+      writerModel: 'gemini-3-flash-preview',
       characterIds: ['11111111-1111-4111-8111-111111111111']
     })
 
@@ -22,8 +22,8 @@ describe('ScenarioCreateApiSchema', () => {
       genres: [],
       tone: 'ほろ苦い',
       promptNote: '',
-      editorModel: 'gemini-2.5-flash',
-      writerModel: 'gemini-2.5-flash',
+      editorModel: 'gemini-3-flash-preview',
+      writerModel: 'gemini-3-flash-preview',
       characterIds: []
     })
 

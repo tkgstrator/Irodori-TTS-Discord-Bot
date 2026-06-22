@@ -5,7 +5,8 @@ import { StoryCharacterContextSchema } from './story-character-context.dto'
 const ChapterEpisodeScenarioSchema = z.object({
   title: z.string().trim().nonempty(),
   genres: z.array(z.string().trim().nonempty()).nonempty(),
-  tone: z.string().trim().nonempty()
+  tone: z.string().trim().nonempty(),
+  rating: z.string().trim().nonempty()
 })
 
 // Writer へ送る章情報を定義する。

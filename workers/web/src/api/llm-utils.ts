@@ -1,11 +1,11 @@
 import type { z } from 'zod'
 
-// Gemini が返した JSON テキストを安全に parse する。
+// LLM が返した JSON テキストを安全に parse する。
 export const parseJsonText = (text: string): unknown => {
   try {
     return JSON.parse(text)
   } catch {
-    throw new Error('Gemini returned invalid JSON')
+    throw new Error('LLM returned invalid JSON')
   }
 }
 

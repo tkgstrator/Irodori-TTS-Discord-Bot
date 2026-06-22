@@ -17,15 +17,22 @@ const SpeakerSourceEnvSchema = z.object({
 })
 
 const SpeakerSourceDefaultsSchema = z.object({
-  num_steps: z.number(),
-  cfg_scale_text: z.number(),
-  cfg_scale_speaker: z.number()
+  num_steps: z.number().optional(),
+  cfg_scale_text: z.number().optional(),
+  cfg_scale_speaker: z.number().optional()
+})
+
+const SpeakerSourceCategorySchema = z.object({
+  id: z.string(),
+  label: z.string()
 })
 
 const SpeakerSourceSchema = z.object({
   uuid: SpeakerIdSchema,
   name: z.string().nonempty(),
-  defaults: SpeakerSourceDefaultsSchema
+  cv: z.string().optional(),
+  defaults: SpeakerSourceDefaultsSchema,
+  category: SpeakerSourceCategorySchema.optional()
 })
 
 const SpeakerSourceListResponseSchema = z.object({
@@ -213,17 +220,23 @@ const buildSeedSpeakerCharacter = async (speaker: SpeakerLink) => {
 const createLegacySpeakerMemo = (speakerName: string) => `seed:speaker:${speakerName}`
 
 // 話者レコードを作成または更新する
-const upsertSpeaker = async (speaker: SpeakerLink) => {
+const upsertSpeaker = async (speaker: z.infer<typeof SpeakerSourceSchema>) => {
   await db.speaker.upsert({
     where: {
-      id: speaker.id
+      id: speaker.uuid
     },
     create: {
-      id: speaker.id,
-      name: speaker.name
+      id: speaker.uuid,
+      name: speaker.name,
+      cv: speaker.cv ?? null,
+      categoryId: speaker.category?.id ?? null,
+      categoryLabel: speaker.category?.label ?? null
     },
     update: {
-      name: speaker.name
+      name: speaker.name,
+      cv: speaker.cv ?? null,
+      categoryId: speaker.category?.id ?? null,
+      categoryLabel: speaker.category?.label ?? null
     }
   })
 }
@@ -312,12 +325,18 @@ const ensureSeedCharacter = async (speaker: SpeakerLink) => {
 // 話者 seed の同期全体を実行する
 export const syncSpeakerSeeds = async () => {
   const sourceSpeakers = await fetchSpeakerSourceList()
-  const speakers = sourceSpeakers.map((speaker) => buildSeedSpeakerRecord(speaker))
+  const speakerLinks = sourceSpeakers.map((speaker) => buildSeedSpeakerRecord(speaker))
 
-  await Promise.all(speakers.map((speaker) => upsertSpeaker(speaker)))
-  await Promise.all(speakers.map((speaker) => ensureSeedCharacter(speaker)))
+  await Promise.all(sourceSpeakers.map((speaker) => upsertSpeaker(speaker)))
+  await Promise.all(speakerLinks.map((speaker) => ensureSeedCharacter(speaker)))
 
-  console.log(`Seed completed with ${speakers.length} speakers.`)
+  console.log(`Seed completed with ${sourceSpeakers.length} speakers.`)
+}
+
+// irodori-tts から話者を同期し DB を最新にする
+export const syncSpeakers = async () => {
+  const sourceSpeakers = await fetchSpeakerSourceList()
+  await Promise.all(sourceSpeakers.map((speaker) => upsertSpeaker(speaker)))
 }
 
 // 一覧表示用の話者データを返す
@@ -331,7 +350,10 @@ export const listSpeakerImports = async () => {
   const parsedResult = SpeakerImportListSchema.safeParse(
     speakers.map((speaker) => ({
       speakerId: speaker.id,
-      name: speaker.name
+      name: speaker.name,
+      cv: speaker.cv,
+      category:
+        speaker.categoryId && speaker.categoryLabel ? { id: speaker.categoryId, label: speaker.categoryLabel } : null
     }))
   )
 

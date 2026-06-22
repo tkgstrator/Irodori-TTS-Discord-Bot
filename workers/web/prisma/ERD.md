@@ -53,6 +53,35 @@ scene scene
     DateTime created_at 
     DateTime updated_at 
     String name 
+    String cv "nullable"
+    String category_id "nullable"
+    String category_label "nullable"
+    }
+  
+
+  "ruby_dicts" {
+    String id "PK"
+    DateTime created_at 
+    DateTime updated_at 
+    String name 
+    }
+  
+
+  "ruby_dict_entries" {
+    String id "PK"
+    DateTime created_at 
+    DateTime updated_at 
+    String word 
+    String reading 
+    String dict_id 
+    }
+  
+
+  "scenario_ruby_dicts" {
+    String id "PK"
+    DateTime created_at 
+    String scenario_id 
+    String dict_id 
     }
   
 
@@ -73,6 +102,7 @@ scene scene
     String title 
     String genres 
     String tone 
+    String rating 
     String prompt_note 
     String editor_model 
     String writer_model 
@@ -132,6 +162,9 @@ scene scene
     }
   
     "characters" }o--|o speakers : "speaker"
+    "ruby_dict_entries" }o--|| ruby_dicts : "dict"
+    "scenario_ruby_dicts" }o--|| scenarios : "scenario"
+    "scenario_ruby_dicts" }o--|| ruby_dicts : "dict"
     "character_relations" }o--|| characters : "fromCharacter"
     "character_relations" }o--|| characters : "toCharacter"
     "scenarios" |o--|| "ScenarioStatus" : "enum:status"

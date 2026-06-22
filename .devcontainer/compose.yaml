@@ -24,6 +24,7 @@ services:
     volumes:
       - ./configs/config.yaml:/app/config.yaml:ro
       - ./models:/app/models:ro
+      # - ./server.py:/app/server.py:ro
       - hf_cache:/root/.cache/huggingface
       - venv:/app/.venv
     deploy:

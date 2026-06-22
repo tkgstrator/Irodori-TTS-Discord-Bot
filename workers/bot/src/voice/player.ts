@@ -122,7 +122,6 @@ const playAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConn
     inlineVolume: false
   })
   guildPlayer.player.play(resource)
-  guildPlayer.isPlaying = true
 }
 
 export const enqueueAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConnection): Promise<void> => {
@@ -131,6 +130,8 @@ export const enqueueAudio = async (guildId: string, audio: PcmAudio, connection:
   if (guildPlayer.isPlaying) {
     guildPlayer.queue.push(audio)
   } else {
+    // await より前に同期的にフラグを立て、並行呼び出しによる二重再生を防ぐ
+    guildPlayer.isPlaying = true
     await playAudio(guildId, audio, connection)
   }
 }
@@ -173,7 +174,7 @@ export const playStream = async (
 
     const onIdle = () => {
       cleanup()
-      guildPlayer.isPlaying = false
+      // isPlaying はグローバル Idle ハンドラーが管理するため、ここでは変更しない
       resolve()
     }
 

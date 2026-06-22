@@ -1,6 +1,6 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
-import { BookOpen, Home, Layout, Settings as SettingsIcon, Users } from 'lucide-react'
+import { Book, BookOpen, Home, Layout, Settings as SettingsIcon, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -21,7 +21,8 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { to: '/', label: 'ホーム', Icon: Home },
   { to: '/characters', label: 'キャラクター', Icon: Users },
-  { to: '/plots', label: 'プロット', Icon: BookOpen }
+  { to: '/plots', label: 'プロット', Icon: BookOpen },
+  { to: '/dictionary', label: '辞書', Icon: Book }
 ] as const
 
 const MOCKUPS_ITEM: NavItem = { to: '/mockups', label: 'モック', Icon: Layout } as const

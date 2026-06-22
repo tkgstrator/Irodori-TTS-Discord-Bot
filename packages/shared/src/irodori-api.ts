@@ -2,21 +2,26 @@
 import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core'
 import { z } from 'zod'
 
-const HealthResponse = z.object({ status: z.string(), speakers: z.number().int().gte(0) }).passthrough()
+const HealthResponse = z.object({ status: z.string().nonempty(), speakers: z.number().int().gte(0) }).passthrough()
 const SpeakerInfo = z
   .object({
-    uuid: z.string(),
-    name: z.string(),
-    defaults: z.object({}).partial().passthrough().optional()
+    uuid: z.uuid(),
+    name: z.string().nonempty(),
+    cv: z.string().nonempty(),
+    defaults: z.object({}).partial().passthrough().optional(),
+    category: z.object({
+      id: z.string().nonempty(),
+      label: z.string().nonempty()
+    })
   })
   .passthrough()
 const SpeakersResponse = z.object({ speakers: z.array(SpeakerInfo) }).passthrough()
 const SynthRequest = z
   .object({
-    speaker_id: z.string(),
-    text: z.string().min(1),
-    seed: z.union([z.number(), z.null()]).optional(),
-    num_steps: z.union([z.number(), z.null()]).optional(),
+    speaker_id: z.string().nonempty(),
+    text: z.string().nonempty(),
+    seed: z.union([z.number().int(), z.null()]).optional(),
+    num_steps: z.union([z.number().int(), z.null()]).optional(),
     cfg_scale_text: z.union([z.number(), z.null()]).optional(),
     cfg_scale_speaker: z.union([z.number(), z.null()]).optional(),
     speaker_kv_scale: z.union([z.number(), z.null()]).optional(),

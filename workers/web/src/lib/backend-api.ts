@@ -4,6 +4,16 @@ import { ChapterEpisodeRequestSchema } from '@/schemas/chapter-episode-request.d
 import { ChapterPlanSchema } from '@/schemas/chapter-plan.dto'
 import { ChapterPlanRequestSchema } from '@/schemas/chapter-plan-request.dto'
 import { CharacterIdSchema, CharacterInputSchema, CharacterListSchema, CharacterSchema } from '@/schemas/character.dto'
+import {
+  RubyDictEntryIdSchema,
+  RubyDictEntryInputSchema,
+  RubyDictEntryListSchema,
+  RubyDictEntrySchema,
+  RubyDictIdSchema,
+  RubyDictInputSchema,
+  RubyDictListSchema,
+  RubyDictSchema
+} from '@/schemas/ruby-dict.dto'
 import { ScenarioApiListSchema, ScenarioApiSchema } from '@/schemas/scenario-api.dto'
 import {
   ScenarioAppendChapterApiSchema,
@@ -242,6 +252,112 @@ const backendApiDefinition = makeApi([
       }
     ],
     response: SpeakerImportTemplateSchema
+  },
+  {
+    method: 'get',
+    path: '/ruby-dict',
+    alias: 'listRubyDicts',
+    requestFormat: 'json',
+    response: RubyDictListSchema
+  },
+  {
+    method: 'post',
+    path: '/ruby-dict',
+    alias: 'createRubyDict',
+    requestFormat: 'json',
+    parameters: [{ name: 'body', type: 'Body', schema: RubyDictInputSchema }],
+    response: RubyDictSchema
+  },
+  {
+    method: 'put',
+    path: '/ruby-dict/:id',
+    alias: 'updateRubyDict',
+    requestFormat: 'json',
+    parameters: [
+      { name: 'id', type: 'Path', schema: RubyDictIdSchema },
+      { name: 'body', type: 'Body', schema: RubyDictInputSchema }
+    ],
+    response: RubyDictSchema
+  },
+  {
+    method: 'delete',
+    path: '/ruby-dict/:id',
+    alias: 'deleteRubyDict',
+    requestFormat: 'json',
+    parameters: [{ name: 'id', type: 'Path', schema: RubyDictIdSchema }],
+    response: z.void()
+  },
+  {
+    method: 'get',
+    path: '/ruby-dict/:dictId/entries',
+    alias: 'listRubyDictEntries',
+    requestFormat: 'json',
+    parameters: [{ name: 'dictId', type: 'Path', schema: RubyDictIdSchema }],
+    response: RubyDictEntryListSchema
+  },
+  {
+    method: 'post',
+    path: '/ruby-dict/:dictId/entries',
+    alias: 'createRubyDictEntry',
+    requestFormat: 'json',
+    parameters: [
+      { name: 'dictId', type: 'Path', schema: RubyDictIdSchema },
+      { name: 'body', type: 'Body', schema: RubyDictEntryInputSchema }
+    ],
+    response: RubyDictEntrySchema
+  },
+  {
+    method: 'put',
+    path: '/ruby-dict/:dictId/entries/:entryId',
+    alias: 'updateRubyDictEntry',
+    requestFormat: 'json',
+    parameters: [
+      { name: 'dictId', type: 'Path', schema: RubyDictIdSchema },
+      { name: 'entryId', type: 'Path', schema: RubyDictEntryIdSchema },
+      { name: 'body', type: 'Body', schema: RubyDictEntryInputSchema }
+    ],
+    response: RubyDictEntrySchema
+  },
+  {
+    method: 'delete',
+    path: '/ruby-dict/:dictId/entries/:entryId',
+    alias: 'deleteRubyDictEntry',
+    requestFormat: 'json',
+    parameters: [
+      { name: 'dictId', type: 'Path', schema: RubyDictIdSchema },
+      { name: 'entryId', type: 'Path', schema: RubyDictEntryIdSchema }
+    ],
+    response: z.void()
+  },
+  {
+    method: 'get',
+    path: '/ruby-dict/scenario/:scenarioId',
+    alias: 'listScenarioRubyDicts',
+    requestFormat: 'json',
+    parameters: [{ name: 'scenarioId', type: 'Path', schema: z.string().uuid() }],
+    response: RubyDictListSchema
+  },
+  {
+    method: 'post',
+    path: '/ruby-dict/scenario/:scenarioId/:dictId',
+    alias: 'associateRubyDict',
+    requestFormat: 'json',
+    parameters: [
+      { name: 'scenarioId', type: 'Path', schema: z.string().uuid() },
+      { name: 'dictId', type: 'Path', schema: RubyDictIdSchema }
+    ],
+    response: z.object({ scenarioId: z.string(), dictId: z.string() })
+  },
+  {
+    method: 'delete',
+    path: '/ruby-dict/scenario/:scenarioId/:dictId',
+    alias: 'dissociateRubyDict',
+    requestFormat: 'json',
+    parameters: [
+      { name: 'scenarioId', type: 'Path', schema: z.string().uuid() },
+      { name: 'dictId', type: 'Path', schema: RubyDictIdSchema }
+    ],
+    response: z.void()
   }
 ])
 

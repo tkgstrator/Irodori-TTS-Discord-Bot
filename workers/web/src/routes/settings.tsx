@@ -1,13 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Check, Palette, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import { useLlmSettings } from '@/components/llm-settings-provider'
 import { useTheme } from '@/components/theme-provider'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { themeIcons, themeLabels } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
+import { type LlmModel, llmModelCatalog, llmModelCatalogByCategory } from '@/schemas/llm-settings.dto'
 import type { Theme } from '@/schemas/theme.dto'
 
 type ThemeOption = {
@@ -44,8 +54,8 @@ const guideItems: ReadonlyArray<{ readonly title: string; readonly description: 
 ]
 
 // モデル名から表示ラベルを引く。
-const getGeminiModelLabel = (model: GeminiModel) => {
-  return geminiModelCatalog.find((item) => item.value === model)?.label ?? model
+const getLlmModelLabel = (model: LlmModel) => {
+  return llmModelCatalog.find((item) => item.value === model)?.label ?? model
 }
 
 // 星評価を文字列へ変換する。
@@ -149,10 +159,11 @@ const SettingsPage = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">Editor</p>
-                      <Badge variant="secondary">{getGeminiModelLabel(llmSettings.editor)}</Badge>
+                      <Badge variant="secondary">{getLlmModelLabel(llmSettings.editor)}</Badge>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
-                      構成整理や吸収を担当する Editor の既定モデルです。長い文脈を扱うなら Pro が向いています。
+                      構成整理を担当する Editor の既定モデルです。精度重視なら Pro 系、速度重視なら Flash
+                      系が向いています。
                     </p>
                   </div>
 
@@ -162,10 +173,15 @@ const SettingsPage = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {geminiModelCatalog.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
+                        {llmModelCatalogByCategory.map((group) => (
+                          <SelectGroup key={group.category}>
+                            <SelectLabel>{group.category}</SelectLabel>
+                            {group.models.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         ))}
                       </SelectContent>
                     </Select>
@@ -176,10 +192,11 @@ const SettingsPage = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">Writer</p>
-                      <Badge variant="secondary">{getGeminiModelLabel(llmSettings.writer)}</Badge>
+                      <Badge variant="secondary">{getLlmModelLabel(llmSettings.writer)}</Badge>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
-                      台詞や地の文を生成する Writer の既定モデルです。速度重視なら Flash が扱いやすいです。
+                      台詞や地の文を生成する Writer
+                      の既定モデルです。大量生成ならコスト効率の高いモデルが扱いやすいです。
                     </p>
                   </div>
 
@@ -189,10 +206,15 @@ const SettingsPage = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {geminiModelCatalog.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
+                        {llmModelCatalogByCategory.map((group) => (
+                          <SelectGroup key={group.category}>
+                            <SelectLabel>{group.category}</SelectLabel>
+                            {group.models.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         ))}
                       </SelectContent>
                     </Select>
@@ -207,51 +229,71 @@ const SettingsPage = () => {
               <div className="space-y-2">
                 <h2 className="text-lg font-semibold tracking-tight">LLM モデル比較</h2>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Google Gemini 系モデルの傾向を比較できます。既定値の変更は左側の設定カードから行えます。
+                  利用可能なモデルの傾向を比較できます。既定値の変更は左側の設定カードから行えます。
                 </p>
               </div>
 
               <div className="border-t border-border/70 pt-4">
-                <p className="text-xs text-muted-foreground">★が多いほど、速い・高精度・低コストです。</p>
+                <p className="text-xs text-muted-foreground">★が多いほど、速い・高精度・低コスト・検閲が緩いです。</p>
 
-                <ul className="mt-4 space-y-4">
-                  {geminiModelCatalog.map((item) => (
-                    <li key={item.value} className="border-b border-border/70 pb-4 last:border-b-0 last:pb-0">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-start gap-2 sm:items-center">
-                          <p className="text-sm font-semibold">{item.label}</p>
-                          <Badge variant={item.release === 'GA' ? 'secondary' : 'outline'}>{item.release}</Badge>
-                        </div>
+                <Accordion type="multiple" defaultValue={['Gemini']} className="mt-4">
+                  {llmModelCatalogByCategory.map((group) => (
+                    <AccordionItem key={group.category} value={group.category}>
+                      <AccordionTrigger>{group.category}</AccordionTrigger>
+                      <AccordionContent>
+                        <ul className="space-y-4">
+                          {group.models.map((item) => (
+                            <li key={item.value} className="border-b border-border/70 pb-4 last:border-b-0 last:pb-0">
+                              <div className="space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex h-5 items-center text-sm font-semibold">
+                                    {item.label}
+                                  </span>
+                                  <Badge variant={item.release === 'GA' ? 'secondary' : 'outline'}>
+                                    {item.release}
+                                  </Badge>
+                                </div>
 
-                        <p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
+                                <p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
 
-                        <dl className="grid max-w-sm grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <dt className="text-xs font-medium tracking-wide text-muted-foreground">速度</dt>
-                            <dd className="text-sm font-medium">
-                              <span className="sr-only">{`速度 ${item.speedStars} / 5`}</span>
-                              <span aria-hidden="true">{getStars(item.speedStars)}</span>
-                            </dd>
-                          </div>
-                          <div className="space-y-1">
-                            <dt className="text-xs font-medium tracking-wide text-muted-foreground">精度</dt>
-                            <dd className="text-sm font-medium">
-                              <span className="sr-only">{`精度 ${item.accuracyStars} / 5`}</span>
-                              <span aria-hidden="true">{getStars(item.accuracyStars)}</span>
-                            </dd>
-                          </div>
-                          <div className="space-y-1">
-                            <dt className="text-xs font-medium tracking-wide text-muted-foreground">コスト</dt>
-                            <dd className="text-sm font-medium">
-                              <span className="sr-only">{`コスト ${item.costStars} / 5`}</span>
-                              <span aria-hidden="true">{getStars(item.costStars)}</span>
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
-                    </li>
+                                <dl className="grid grid-cols-2 gap-2">
+                                  <div className="space-y-1">
+                                    <dt className="text-xs font-medium tracking-wide text-muted-foreground">速度</dt>
+                                    <dd className="text-sm font-medium">
+                                      <span className="sr-only">{`速度 ${item.speed} / 5`}</span>
+                                      <span aria-hidden="true">{getStars(item.speed)}</span>
+                                    </dd>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <dt className="text-xs font-medium tracking-wide text-muted-foreground">精度</dt>
+                                    <dd className="text-sm font-medium">
+                                      <span className="sr-only">{`精度 ${item.accuracy} / 5`}</span>
+                                      <span aria-hidden="true">{getStars(item.accuracy)}</span>
+                                    </dd>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <dt className="text-xs font-medium tracking-wide text-muted-foreground">コスト</dt>
+                                    <dd className="text-sm font-medium">
+                                      <span className="sr-only">{`コスト ${item.cost} / 5`}</span>
+                                      <span aria-hidden="true">{getStars(item.cost)}</span>
+                                    </dd>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <dt className="text-xs font-medium tracking-wide text-muted-foreground">柔軟性</dt>
+                                    <dd className="text-sm font-medium">
+                                      <span className="sr-only">{`柔軟性 ${item.flexibility} / 5`}</span>
+                                      <span aria-hidden="true">{getStars(item.flexibility)}</span>
+                                    </dd>
+                                  </div>
+                                </dl>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </ul>
+                </Accordion>
               </div>
             </section>
 

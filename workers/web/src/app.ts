@@ -4,6 +4,9 @@ import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { rateLimiter } from 'hono-rate-limiter'
 import { api } from './api/api'
+import { syncSpeakers } from './api/speaker-import'
+
+syncSpeakers().catch((error) => console.error('Speaker sync failed:', error))
 
 const app = new Hono()
 

@@ -22,11 +22,12 @@ import { getAgeGroupLabel, getGenderLabel, getOccupationLabel } from '@/lib/char
 import { useSuspenseCharacters } from '@/lib/characters'
 import { useScenarioMutations } from '@/lib/scenarios'
 import { cn } from '@/lib/utils'
-import { type GeminiModel, geminiModelCatalog } from '@/schemas/llm-settings.dto'
+import { type LlmModel, llmModelCatalog } from '@/schemas/llm-settings.dto'
 import {
   ScenarioCreateFormSchema,
   type ScenarioCreateFormValues,
   ScenarioGenreValues,
+  ScenarioRatingValues,
   ScenarioToneValues,
   scenarioCharacterLimit
 } from '@/schemas/scenario.dto'
@@ -36,8 +37,9 @@ const defaultValues: ScenarioCreateFormValues = {
   title: '',
   genres: [],
   tone: 'ほろ苦い',
-  editorModel: 'gemini-2.5-flash',
-  writerModel: 'gemini-2.5-flash',
+  rating: '全年齢',
+  editorModel: 'gemini-3-flash-preview',
+  writerModel: 'gemini-3-flash-preview',
   plotCharacterIds: [],
   promptNote: ''
 }
@@ -76,8 +78,8 @@ export const characterBaseSummary = ({
 }) => [getAgeGroupLabel(ageGroup), getGenderLabel(gender), getOccupationLabel(occupation)].join(' ・ ')
 
 // モデル名から表示ラベルを引く
-const getGeminiModelLabel = (model: GeminiModel) => {
-  return geminiModelCatalog.find((item) => item.value === model)?.label ?? model
+const getLlmModelLabel = (model: LlmModel) => {
+  return llmModelCatalog.find((item) => item.value === model)?.label ?? model
 }
 
 // キャラクターアイコンを画像またはイニシャルで表示する
@@ -211,6 +213,7 @@ const ScenarioNewPageContent = () => {
   const selectedCharacterIds = watch('plotCharacterIds')
   const title = watch('title')
   const tone = watch('tone')
+  const rating = watch('rating')
   const promptNote = watch('promptNote')
   const editorModel = watch('editorModel')
   const writerModel = watch('writerModel')
@@ -235,6 +238,7 @@ const ScenarioNewPageContent = () => {
         title: values.title.trim(),
         genres: values.genres,
         tone: values.tone,
+        rating: values.rating,
         promptNote: values.promptNote
       },
       characters: characters
@@ -290,6 +294,7 @@ const ScenarioNewPageContent = () => {
         title: previewRequest.plot.title,
         genres: previewRequest.plot.genres,
         tone: previewRequest.plot.tone,
+        rating: previewRequest.plot.rating,
         promptNote: previewRequest.plot.promptNote,
         editorModel: previewRequest.model.editor,
         writerModel: previewRequest.model.writer,
@@ -409,6 +414,33 @@ const ScenarioNewPageContent = () => {
                 />
                 <FieldHint error={errors.tone?.message} />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rating">レーティング</Label>
+                <Controller
+                  control={control}
+                  name="rating"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger
+                        id="rating"
+                        className="!h-11 w-full !py-1 !text-base md:!text-sm"
+                        aria-invalid={errors.rating ? 'true' : 'false'}
+                      >
+                        <SelectValue placeholder="レーティングを選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ScenarioRatingValues.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldHint error={errors.rating?.message} />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -477,7 +509,7 @@ const ScenarioNewPageContent = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="editorModel">Editor</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(editorModel)}</span>
+                  <span className="text-xs text-muted-foreground">{getLlmModelLabel(editorModel)}</span>
                 </div>
                 <Controller
                   control={control}
@@ -488,7 +520,7 @@ const ScenarioNewPageContent = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {geminiModelCatalog.map((item) => (
+                        {llmModelCatalog.map((item) => (
                           <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
@@ -503,7 +535,7 @@ const ScenarioNewPageContent = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="writerModel">Writer</Label>
-                  <span className="text-xs text-muted-foreground">{getGeminiModelLabel(writerModel)}</span>
+                  <span className="text-xs text-muted-foreground">{getLlmModelLabel(writerModel)}</span>
                 </div>
                 <Controller
                   control={control}
@@ -514,7 +546,7 @@ const ScenarioNewPageContent = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {geminiModelCatalog.map((item) => (
+                        {llmModelCatalog.map((item) => (
                           <SelectItem key={item.value} value={item.value}>
                             {item.label}
                           </SelectItem>
@@ -617,14 +649,19 @@ const ScenarioNewPageContent = () => {
               <p className="text-sm text-foreground">{tone}</p>
             </div>
 
+            <div className="space-y-2">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground">レーティング</p>
+              <p className="text-sm text-foreground">{rating}</p>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Editor</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(editorModel)}</p>
+                <p className="text-sm text-foreground">{getLlmModelLabel(editorModel)}</p>
               </div>
               <div className="space-y-1.5">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground">Writer</p>
-                <p className="text-sm text-foreground">{getGeminiModelLabel(writerModel)}</p>
+                <p className="text-sm text-foreground">{getLlmModelLabel(writerModel)}</p>
               </div>
             </div>
 

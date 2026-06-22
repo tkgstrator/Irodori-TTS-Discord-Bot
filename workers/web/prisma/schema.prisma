@@ -73,11 +73,57 @@ model Speaker {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  name String
+  name          String
+  cv            String?
+  categoryId    String? @map("category_id")
+  categoryLabel String? @map("category_label")
 
   characters Character[]
 
   @@map("speakers")
+}
+
+model RubyDict {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name    String
+
+  entries   RubyDictEntry[]
+  scenarios ScenarioRubyDict[]
+
+  @@map("ruby_dicts")
+}
+
+model RubyDictEntry {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  word    String
+  reading String
+  dictId  String @map("dict_id")
+
+  dict RubyDict @relation(fields: [dictId], references: [id], onDelete: Cascade)
+
+  @@unique([word, dictId])
+  @@index([dictId])
+  @@map("ruby_dict_entries")
+}
+
+model ScenarioRubyDict {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  scenarioId String @map("scenario_id")
+  dictId     String @map("dict_id")
+
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  dict     RubyDict @relation(fields: [dictId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, dictId])
+  @@map("scenario_ruby_dicts")
 }
 
 model CharacterRelation {
@@ -104,9 +150,10 @@ model Scenario {
   title   String
   genres  String[]
   tone    String
+  rating  String @default("全年齢")
   promptNote  String @default("") @map("prompt_note")
-  editorModel String @default("gemini-2.5-flash") @map("editor_model")
-  writerModel String @default("gemini-2.5-flash") @map("writer_model")
+  editorModel String @default("gemini-3-flash-preview") @map("editor_model")
+  writerModel String @default("gemini-3-flash-preview") @map("writer_model")
   ending  String
   status  ScenarioStatus @default(draft)
   vdsJson Json?          @map("vds_json")
@@ -114,8 +161,9 @@ model Scenario {
   narratorId String?    @map("narrator_id")
   narrator   Character? @relation("Narrator", fields: [narratorId], references: [id], onDelete: SetNull)
 
-  cast     ScenarioCast[]
-  chapters ScenarioChapter[]
+  cast       ScenarioCast[]
+  chapters   ScenarioChapter[]
+  rubyDicts  ScenarioRubyDict[]
 
   @@map("scenarios")
 }

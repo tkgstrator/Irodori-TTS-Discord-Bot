@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { LlmRequestModelSchema } from './llm-settings.dto'
-import { ScenarioGenreSchema, ScenarioToneSchema, scenarioCharacterLimit } from './scenario.dto'
+import { ScenarioGenreSchema, ScenarioRatingSchema, ScenarioToneSchema, scenarioCharacterLimit } from './scenario.dto'
 import { StoryCharacterContextSchema } from './story-character-context.dto'
 
 // LLM 送信時に含めるキャラクター情報を定義する
@@ -14,6 +14,7 @@ const ScenarioGeneratePlotSchema = z.object({
     .nonempty('ジャンルを1つ以上選択してください')
     .max(3, 'ジャンルは3つまで選択できます'),
   tone: ScenarioToneSchema,
+  rating: ScenarioRatingSchema,
   promptNote: z.string().max(400, '補足メモは400文字以内で入力してください')
 })
 

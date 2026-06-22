@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { ChapterEpisodeRequestSchema } from '@/schemas/chapter-episode-request.dto'
 import { ChapterPlanRequestSchema } from '@/schemas/chapter-plan-request.dto'
+import { normalizeLlmModel } from '@/schemas/llm-settings.dto'
 import {
   type ScenarioApi,
   type ScenarioApiChapter,
@@ -232,9 +233,10 @@ const buildScenarioResponse = (row: ScenarioRow) => {
     }),
     genres: row.genres,
     tone: row.tone,
+    rating: row.rating,
     promptNote: row.promptNote,
-    editorModel: row.editorModel,
-    writerModel: row.writerModel,
+    editorModel: normalizeLlmModel(row.editorModel),
+    writerModel: normalizeLlmModel(row.writerModel),
     plotCharacters: row.cast.map((cast) => cast.character.name),
     cueCount: chapters.reduce((total, chapter) => total + chapter.cueCount, 0),
     speakerCount: row.cast.length,
@@ -299,6 +301,7 @@ scenarios.post('/', async (c) => {
       title: bodyResult.data.title,
       genres: bodyResult.data.genres,
       tone: bodyResult.data.tone,
+      rating: bodyResult.data.rating,
       promptNote: bodyResult.data.promptNote,
       editorModel: bodyResult.data.editorModel,
       writerModel: bodyResult.data.writerModel,
@@ -383,6 +386,7 @@ scenarios.put('/:id', async (c) => {
         title: bodyResult.data.title,
         genres: bodyResult.data.genres,
         tone: bodyResult.data.tone,
+        rating: bodyResult.data.rating,
         promptNote: bodyResult.data.promptNote,
         editorModel: bodyResult.data.editorModel,
         writerModel: bodyResult.data.writerModel
