@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: ../..
-      dockerfile: workers/bot/Dockerfile
+    image: tkgling/irodori-tts-discord-bot:latest
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
     depends_on:
