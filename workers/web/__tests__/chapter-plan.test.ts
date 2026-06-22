@@ -101,7 +101,9 @@ describe('chapter plan helpers', () => {
       input: {
         title: '',
         promptNote: '',
-        characterNames: ['桜羽エマ']
+        characterNames: ['桜羽エマ'],
+        rating: '全年齢',
+        tone: 'ほろ苦い'
       },
       llmSettings: {
         editor: 'gemini-3-flash-preview',
@@ -124,7 +126,9 @@ describe('chapter plan helpers', () => {
       input: {
         title: '',
         promptNote: '',
-        characterNames: ['桜羽エマ']
+        characterNames: ['桜羽エマ'],
+        rating: '全年齢',
+        tone: 'ほろ苦い'
       },
       llmSettings: {
         editor: 'gemini-3-flash-preview',
@@ -144,7 +148,9 @@ describe('chapter plan helpers', () => {
       input: {
         title: '',
         promptNote: '',
-        characterNames: ['桜羽エマ', '二階堂ヒロ']
+        characterNames: ['桜羽エマ', '二階堂ヒロ'],
+        rating: '全年齢',
+        tone: 'ほろ苦い'
       },
       llmSettings: {
         editor: 'gemini-3-flash-preview',

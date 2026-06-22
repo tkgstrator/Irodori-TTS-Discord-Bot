@@ -5,6 +5,7 @@ import {
   type VdsSynthOptions,
   type Cue as VoiceDramaCue
 } from '@irodori-tts/shared/voice-drama'
+import { applyRubyAnnotations, type RubyEntry } from '@/api/ruby-replacer'
 import type { Chapter, Scenario } from './scenarios'
 
 // VDS 出力成功時の共通戻り値。
@@ -88,11 +89,13 @@ const resolveSpeakerRef = ({ scenario, speakerAlias }: { scenario: Scenario; spe
 const buildVdsJson = ({
   scenario,
   title,
-  cues
+  cues,
+  rubyEntries = []
 }: {
   scenario: Scenario
   title: string
   cues: readonly VoiceDramaCue[]
+  rubyEntries?: readonly RubyEntry[]
 }) => {
   const speakerMap = new Map<string, SpeakerRef>()
   const normalizedCues: VoiceDramaCue[] = []
@@ -113,8 +116,11 @@ const buildVdsJson = ({
       speakerMap.set(speakerRef.data.alias, speakerRef.data.speakerRef)
     }
 
+    const annotatedText = rubyEntries.length > 0 ? applyRubyAnnotations(cue.text, rubyEntries) : cue.text
+
     normalizedCues.push({
       ...cue,
+      text: annotatedText,
       speaker: speakerRef.data.alias
     })
   }
@@ -180,10 +186,12 @@ const serializeScenarioBody = (
 // 章単体の VDS 出力内容を組み立てる。
 export const createChapterVdsExport = ({
   scenario,
-  chapter
+  chapter,
+  rubyEntries = []
 }: {
   scenario: Scenario
   chapter: Chapter
+  rubyEntries?: readonly RubyEntry[]
 }): VdsExportResult => {
   if (chapter.cues.length === 0) {
     return {
@@ -195,7 +203,8 @@ export const createChapterVdsExport = ({
   const vdsResult = buildVdsJson({
     scenario,
     title: `${scenario.title} 第${chapter.number}章 ${chapter.title}`,
-    cues: chapter.cues
+    cues: chapter.cues,
+    rubyEntries
   })
 
   if (!vdsResult.ok) {
@@ -215,10 +224,12 @@ export const createChapterVdsExport = ({
 // 章単体の VDS-JSON 出力内容を組み立てる。
 export const createChapterVdsJsonExport = ({
   scenario,
-  chapter
+  chapter,
+  rubyEntries = []
 }: {
   scenario: Scenario
   chapter: Chapter
+  rubyEntries?: readonly RubyEntry[]
 }): VdsExportResult => {
   if (chapter.cues.length === 0) {
     return {
@@ -230,7 +241,8 @@ export const createChapterVdsJsonExport = ({
   const vdsResult = buildVdsJson({
     scenario,
     title: `${scenario.title} 第${chapter.number}章 ${chapter.title}`,
-    cues: chapter.cues
+    cues: chapter.cues,
+    rubyEntries
   })
 
   if (!vdsResult.ok) {
@@ -245,13 +257,17 @@ export const createChapterVdsJsonExport = ({
 }
 
 // シナリオ全体の VDS 出力内容を組み立てる。
-export const createScenarioVdsExport = (scenario: Scenario): VdsExportResult => {
+export const createScenarioVdsExport = (
+  scenario: Scenario,
+  rubyEntries: readonly RubyEntry[] = []
+): VdsExportResult => {
   const chapters = scenario.chapters.filter((chapter) => chapter.cues.length > 0)
   const normalizedChapters = chapters.map((chapter) => {
     const vdsResult = buildVdsJson({
       scenario,
       title: '',
-      cues: chapter.cues
+      cues: chapter.cues,
+      rubyEntries
     })
 
     if (!vdsResult.ok) {
@@ -284,7 +300,8 @@ export const createScenarioVdsExport = (scenario: Scenario): VdsExportResult => 
   const vdsResult = buildVdsJson({
     scenario,
     title: scenario.title,
-    cues: chapters.flatMap((chapter) => chapter.cues)
+    cues: chapters.flatMap((chapter) => chapter.cues),
+    rubyEntries
   })
 
   if (!vdsResult.ok) {
@@ -302,7 +319,10 @@ export const createScenarioVdsExport = (scenario: Scenario): VdsExportResult => 
 }
 
 // シナリオ全体の VDS-JSON 出力内容を組み立てる。
-export const createScenarioVdsJsonExport = (scenario: Scenario): VdsExportResult => {
+export const createScenarioVdsJsonExport = (
+  scenario: Scenario,
+  rubyEntries: readonly RubyEntry[] = []
+): VdsExportResult => {
   const chapters = scenario.chapters.filter((chapter) => chapter.cues.length > 0)
 
   if (chapters.length === 0) {
@@ -315,7 +335,8 @@ export const createScenarioVdsJsonExport = (scenario: Scenario): VdsExportResult
   const vdsResult = buildVdsJson({
     scenario,
     title: scenario.title,
-    cues: chapters.flatMap((chapter) => chapter.cues)
+    cues: chapters.flatMap((chapter) => chapter.cues),
+    rubyEntries
   })
 
   if (!vdsResult.ok) {

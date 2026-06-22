@@ -28,7 +28,7 @@ const ChapterPlanPreviewPageContent = () => {
   const backTo = isPlotsRoute ? '/plots/$id' : '/scenarios/$id'
 
   const chapterRequestJson = useMemo(() => (preview ? `${JSON.stringify(preview.request, null, 2)}\n` : ''), [preview])
-  const chapterGeminiPayloadJson = useMemo(
+  const chapterLlmPayloadJson = useMemo(
     () => (preview ? `${JSON.stringify(buildChapterPlanDebugPayload(preview.request), null, 2)}\n` : ''),
     [preview]
   )
@@ -95,7 +95,9 @@ const ChapterPlanPreviewPageContent = () => {
         characterNames: resolveChapterPlanCharacterNames({
           plan: preview.plan,
           request: preview.request
-        })
+        }),
+        rating: preview.request.scenario.rating,
+        tone: preview.request.scenario.tone
       })
 
       const nextChapter =
@@ -290,10 +292,10 @@ const ChapterPlanPreviewPageContent = () => {
             </div>
             <div className="rounded-xl border border-border bg-muted/30">
               <div className="border-b border-border px-4 py-3">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground">Gemini Payload</p>
+                <p className="text-xs font-medium tracking-wide text-muted-foreground">LLM Payload</p>
               </div>
               <pre className="max-h-[56vh] overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">
-                {chapterGeminiPayloadJson}
+                {chapterLlmPayloadJson}
               </pre>
             </div>
             <div className="rounded-xl border border-border bg-muted/30">

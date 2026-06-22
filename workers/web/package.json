@@ -2,7 +2,7 @@
   "name": "@irodori-tts/web",
   "type": "module",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "dev": "bunx --bun vite",
     "start": "bun --env-file=.env --watch src/index.ts",
@@ -12,7 +12,6 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource/fraunces": "^5.2.9",
-    "@google/genai": "^1.50.1",
     "@hono/node-server": "^2.0.0",
     "@hookform/resolvers": "^5.2.2",
     "@irodori-tts/shared": "workspace:*",
@@ -28,6 +27,7 @@
     "hono": "^4.12.14",
     "hono-rate-limiter": "^0.5.3",
     "lucide-react": "^1.8.0",
+    "openai": "^6.34.0",
     "pg": "^8.20.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.5",
@@ -46,7 +46,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "knip": "^6.6.2",
+    "knip": "^6.7.0",
     "prisma": "^7.7.0",
     "prisma-erd-generator": "^2.4.2",
     "tailwindcss": "^4.2.4",

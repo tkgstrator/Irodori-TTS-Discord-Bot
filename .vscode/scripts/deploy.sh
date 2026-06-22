@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-IMAGE="tkgling/irodori-tts-discord-bot:latest"
 PLATFORMS="linux/amd64,linux/arm64"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# マルチアーキテクチャ対応のビルダーを作成・使用
 BUILDER_NAME="multiarch-builder"
 if ! docker buildx inspect "$BUILDER_NAME" &>/dev/null; then
   echo "=== Creating buildx builder ==="
@@ -13,12 +13,20 @@ else
   docker buildx use "$BUILDER_NAME"
 fi
 
-# マルチアーキテクチャビルド & Docker Hubへプッシュ
-echo "=== Building and pushing ${IMAGE} (${PLATFORMS}) ==="
-docker buildx build \
-  --platform "$PLATFORMS" \
-  --tag "$IMAGE" \
-  --push \
-  .
+declare -A IMAGES=(
+  ["tkgling/irodori-tts-discord-bot:latest"]="workers/bot/Dockerfile"
+  ["tkgling/plotmaker:latest"]="workers/web/Dockerfile"
+)
 
-echo "=== Push complete ==="
+for IMAGE in "${!IMAGES[@]}"; do
+  DOCKERFILE="${IMAGES[$IMAGE]}"
+  echo "=== Building and pushing ${IMAGE} (${PLATFORMS}) ==="
+  docker buildx build \
+    --platform "$PLATFORMS" \
+    --tag "$IMAGE" \
+    --file "$REPO_ROOT/$DOCKERFILE" \
+    --push \
+    "$REPO_ROOT"
+done
+
+echo "=== All images pushed ==="
