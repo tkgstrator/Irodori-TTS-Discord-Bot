@@ -2,17 +2,16 @@
   "name": "@irodori-tts/bot",
   "type": "module",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "build": "bun run tsc --noEmit && bun build src/index.ts --outdir=dist --target=bun --external @discordjs/opus --external sodium-native --external @snazzah/davey",
     "start": "bun run dist/index.js"
   },
   "dependencies": {
-    "@irodori-tts/shared": "workspace:*",
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.19.2",
-    "@google/genai": "^1.50.1",
+    "@irodori-tts/shared": "workspace:*",
     "@snazzah/davey": "^0.1.11",
     "@zodios/core": "^10.9.6",
     "dayjs": "^1.11.20",

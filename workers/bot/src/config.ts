@@ -11,11 +11,7 @@ const EnvSchema = z.object({
   DEFAULT_SPEAKER_ID: z.string().nonempty(),
   REDIS_URL: z.string().default('redis://redis:6379'),
   /** エラー通知用のDiscord Webhook URL（任意） */
-  ERROR_WEBHOOK_URL: z.url().optional(),
-  /** Gemini API キー。ボイスドラマ機能（Editor / Writer）で使用。 */
-  GEMINI_API_KEY: z.string().nonempty().optional(),
-  /** Writer / Editor で使う Gemini モデル名。既定は `gemini-2.5-flash`。 */
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash')
+  ERROR_WEBHOOK_URL: z.url().optional()
 })
 
 /**
@@ -24,7 +20,7 @@ const EnvSchema = z.object({
 const env = EnvSchema.safeParse(process.env)
 
 if (!env.success) {
-  console.error('Environment validation failed:', env.error.format())
+  console.error('Environment validation failed:', JSON.stringify(env.error.format(), null, 2))
   process.exit(1)
 }
 
