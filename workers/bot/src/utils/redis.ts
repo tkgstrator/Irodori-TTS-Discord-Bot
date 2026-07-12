@@ -7,6 +7,7 @@ import {
   type UserSettings,
   UserSettingsSchema
 } from '../schemas/user-settings.dto'
+import { notifyError } from './notifier'
 
 /**
  * Redisクライアント
@@ -17,6 +18,24 @@ export const redis = new Redis(config.REDIS_URL)
  * ユーザー設定のキープレフィックス
  */
 const USER_SETTINGS_KEY_PREFIX = 'user:settings:'
+
+/**
+ * JSON.parseの結果を表す型
+ */
+type JsonParseResult<T> = { ok: true; value: T } | { ok: false }
+
+/**
+ * JSON.parseを例外を投げずに実行する
+ * @param data パース対象の文字列
+ * @returns パース結果
+ */
+export const safeJsonParse = <T>(data: string): JsonParseResult<T> => {
+  try {
+    return { ok: true, value: JSON.parse(data) as T }
+  } catch {
+    return { ok: false }
+  }
+}
 
 /**
  * デフォルトの話者設定を生成する
@@ -48,11 +67,20 @@ export const getUserSettings = async (userId: string): Promise<UserSettings> => 
     return createDefaultUserSettings()
   }
 
-  const parseResult = UserSettingsSchema.safeParse(JSON.parse(data))
+  const jsonResult = safeJsonParse<unknown>(data)
+  if (!jsonResult.ok) {
+    await notifyError('getUserSettings: JSON parse failed', new Error(`Failed to parse JSON for userId=${userId}`), {
+      userId
+    })
+    return createDefaultUserSettings()
+  }
+
+  const parseResult = UserSettingsSchema.safeParse(jsonResult.value)
   if (!parseResult.success) {
-    console.warn(`Invalid user settings for ${userId}, resetting to default:`, parseResult.error)
-    // パースエラー時は既存データを削除してデフォルトを返す
-    await redis.del(`${USER_SETTINGS_KEY_PREFIX}${userId}`)
+    // パース失敗時は既存データを削除せず、デフォルト値を返して調査可能な状態を保つ
+    await notifyError('getUserSettings: schema validation failed', parseResult.error, {
+      userId
+    })
     return createDefaultUserSettings()
   }
 
