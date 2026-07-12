@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { ChapterEpisodeRequestSchema } from '@/schemas/chapter-episode-request.dto'
+import { type ChapterEpisodeRequest, ChapterEpisodeRequestSchema } from '@/schemas/chapter-episode-request.dto'
 import { ChapterPlanRequestSchema } from '@/schemas/chapter-plan-request.dto'
 import { normalizeLlmModel } from '@/schemas/llm-settings.dto'
 import {
@@ -206,6 +206,29 @@ const toScenarioApi = (row: ScenarioRow | null): ScenarioApi => {
   return responseResult.data
 }
 
+// toScenarioApi の throw を Hono のレスポンス形式に変換する。
+const buildScenarioApiResult = (
+  row: ScenarioRow | null
+):
+  | { ok: true; data: ScenarioApi }
+  | { ok: false; status: 404; body: { error: string } }
+  | { ok: false; status: 500; body: { error: string; code: string } } => {
+  try {
+    return { ok: true, data: toScenarioApi(row) }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Scenario not found') {
+      return { ok: false, status: 404, body: { error: 'Not found' } }
+    }
+
+    console.error('Failed to build scenario response.', error)
+    return {
+      ok: false,
+      status: 500,
+      body: { error: 'Failed to build scenario response', code: 'SCENARIO_RESPONSE_BUILD_FAILED' }
+    }
+  }
+}
+
 // DB のシナリオ行を API レスポンスへ変換する (検証は toScenarioApi / safeParse に委ねる)
 const buildScenarioResponse = (row: ScenarioRow) => {
   const speakers: ScenarioApiSpeaker[] = row.cast.map((cast, index) => {
@@ -249,6 +272,47 @@ const buildScenarioResponse = (row: ScenarioRow) => {
   }
 }
 
+// 章のエピソード生成を fire-and-forget で実行し、内部の失敗永続化まで失敗しても
+// チャプターが generating のまま固まらないよう最終手段でステータスを failed に戻す。
+const triggerScenarioEpisodeGeneration = async ({
+  chapterId,
+  request,
+  scenarioId
+}: {
+  chapterId: string
+  request: ChapterEpisodeRequest
+  scenarioId: string
+}) => {
+  try {
+    await runScenarioEpisodeGeneration({ chapterId, request, scenarioId })
+  } catch (error) {
+    console.error('Unhandled error while running scenario episode generation.', error)
+  } finally {
+    try {
+      const chapter = await db.scenarioChapter.findUnique({ where: { id: chapterId } })
+
+      if (chapter?.status === 'generating') {
+        await db.$transaction(async (tx) => {
+          await tx.scenarioChapter.update({
+            where: { id: chapterId },
+            data: {
+              status: 'failed',
+              generationError: 'Unexpected error during episode generation'
+            }
+          })
+
+          await tx.scenario.update({
+            where: { id: scenarioId },
+            data: { status: 'failed' }
+          })
+        })
+      }
+    } catch (finalizeError) {
+      console.error('Failed to finalize chapter status after generation failure.', finalizeError)
+    }
+  }
+}
+
 scenarios.get('/', async (c) => {
   const rows = await db.scenario.findMany({
     include: scenarioInclude,
@@ -278,7 +342,13 @@ scenarios.get('/:id', async (c) => {
     return c.json({ error: 'Not found' }, 404)
   }
 
-  return c.json(toScenarioApi(row))
+  const scenarioResult = buildScenarioApiResult(row)
+
+  if (!scenarioResult.ok) {
+    return c.json(scenarioResult.body, scenarioResult.status)
+  }
+
+  return c.json(scenarioResult.data)
 })
 
 scenarios.post('/', async (c) => {
@@ -319,7 +389,13 @@ scenarios.post('/', async (c) => {
     include: scenarioInclude
   })
 
-  return c.json(toScenarioApi(row), 201)
+  const scenarioResult = buildScenarioApiResult(row)
+
+  if (!scenarioResult.ok) {
+    return c.json(scenarioResult.body, scenarioResult.status)
+  }
+
+  return c.json(scenarioResult.data, 201)
 })
 
 scenarios.put('/:id', async (c) => {
@@ -431,7 +507,13 @@ scenarios.put('/:id', async (c) => {
     include: scenarioInclude
   })
 
-  return c.json(toScenarioApi(row))
+  const scenarioResult = buildScenarioApiResult(row)
+
+  if (!scenarioResult.ok) {
+    return c.json(scenarioResult.body, scenarioResult.status)
+  }
+
+  return c.json(scenarioResult.data)
 })
 
 scenarios.post('/:id/chapters', async (c) => {
@@ -528,7 +610,13 @@ scenarios.post('/:id/chapters', async (c) => {
     include: scenarioInclude
   })
 
-  return c.json(toScenarioApi(row), 201)
+  const scenarioResult = buildScenarioApiResult(row)
+
+  if (!scenarioResult.ok) {
+    return c.json(scenarioResult.body, scenarioResult.status)
+  }
+
+  return c.json(scenarioResult.data, 201)
 })
 
 scenarios.post('/:id/chapter-plan', async (c) => {
@@ -621,16 +709,21 @@ scenarios.post('/:id/chapters/:chapterId/create', async (c) => {
     return c.json({ error: 'Only the latest completed or failed chapter can be regenerated' }, 409)
   }
 
-  await db.$transaction(async (tx) => {
-    await tx.scenarioChapter.update({
+  const generationClaimed = await db.$transaction(async (tx) => {
+    const claimResult = await tx.scenarioChapter.updateMany({
       where: {
-        id: chapter.id
+        id: chapter.id,
+        status: { in: ['draft', 'completed', 'failed'] }
       },
       data: {
         status: 'generating',
         generationError: null
       }
     })
+
+    if (claimResult.count === 0) {
+      return false
+    }
 
     await tx.scenario.update({
       where: {
@@ -640,9 +733,15 @@ scenarios.post('/:id/chapters/:chapterId/create', async (c) => {
         status: 'generating'
       }
     })
+
+    return true
   })
 
-  void runScenarioEpisodeGeneration({
+  if (!generationClaimed) {
+    return c.json({ error: 'Chapter generation already in progress' }, 409)
+  }
+
+  void triggerScenarioEpisodeGeneration({
     chapterId: chapter.id,
     request: bodyResult.data,
     scenarioId: scenario.id
@@ -655,7 +754,13 @@ scenarios.post('/:id/chapters/:chapterId/create', async (c) => {
     include: scenarioInclude
   })
 
-  return c.json(toScenarioApi(row), 202)
+  const scenarioResult = buildScenarioApiResult(row)
+
+  if (!scenarioResult.ok) {
+    return c.json(scenarioResult.body, scenarioResult.status)
+  }
+
+  return c.json(scenarioResult.data, 202)
 })
 
 scenarios.delete('/:id/chapters/:chapterId/episode', async (c) => {
@@ -742,5 +847,11 @@ scenarios.delete('/:id/chapters/:chapterId/episode', async (c) => {
     include: scenarioInclude
   })
 
-  return c.json(toScenarioApi(row))
+  const scenarioResult = buildScenarioApiResult(row)
+
+  if (!scenarioResult.ok) {
+    return c.json(scenarioResult.body, scenarioResult.status)
+  }
+
+  return c.json(scenarioResult.data)
 })
