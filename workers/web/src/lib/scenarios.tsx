@@ -1,5 +1,4 @@
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
 import type { ChapterGenerateFormValues } from '@/schemas/chapter-generation.dto'
 import type { Character } from '@/schemas/character.dto'
 import {
@@ -194,6 +193,9 @@ const resolveScenarioStatus = (chapters: readonly Chapter[]): ScenarioStatus => 
   return 'completed'
 }
 
+// ポーリング間隔（ミリ秒）。生成中の間だけこの間隔で再取得する。
+const SCENARIO_POLL_INTERVAL_MS = 3000
+
 // 生成中の章があれば一覧取得を定期更新する。
 const shouldPollScenarios = (scenarios: readonly Scenario[] | undefined): boolean =>
   scenarios?.some(
@@ -222,38 +224,24 @@ const shouldPollScenarioById = ({
   return scenario.status === 'generating' || scenario.chapters.some((chapter) => chapter.status === 'generating')
 }
 
-// 生成中のシナリオがある間だけ一定間隔で再取得する。
-const useScenarioPolling = ({
+// 一覧データの状態から refetchInterval に渡す値を組み立てる。
+const resolveScenariosRefetchInterval = ({
   mode,
-  refetch,
   scenarioId,
   scenarios
 }: {
   mode: 'all' | 'scenario' | 'off'
-  refetch: () => Promise<unknown>
   scenarioId?: string | null
-  scenarios: readonly Scenario[]
-}) => {
-  useEffect(() => {
-    const isPolling =
-      mode === 'all'
-        ? shouldPollScenarios(scenarios)
-        : mode === 'scenario'
-          ? shouldPollScenarioById({ scenarioId, scenarios })
-          : false
+  scenarios: readonly Scenario[] | undefined
+}): number | false => {
+  const isPolling =
+    mode === 'all'
+      ? shouldPollScenarios(scenarios)
+      : mode === 'scenario'
+        ? shouldPollScenarioById({ scenarioId, scenarios })
+        : false
 
-    if (!isPolling) {
-      return
-    }
-
-    const timerId = window.setInterval(() => {
-      void refetch()
-    }, 3000)
-
-    return () => {
-      window.clearInterval(timerId)
-    }
-  }, [mode, refetch, scenarioId, scenarios])
+  return isPolling ? SCENARIO_POLL_INTERVAL_MS : false
 }
 
 // 章配列から表示用のセリフ数を再計算する。
@@ -329,22 +317,17 @@ export const useSuspenseResolvedScenario = (id: string, characters: readonly Cha
   const queryClient = useQueryClient()
   const query = useSuspenseQuery({
     ...scenarioQueryOptions(id),
-    select: (scenario: Scenario) => resolveScenarioState({ scenario, characters })
-  })
+    select: (scenario: Scenario) => resolveScenarioState({ scenario, characters }),
+    refetchInterval: (query) => {
+      const scenario = query.state.data
 
-  const isGenerating = query.data.chapters.some((c) => c.status === 'generating')
+      if (!scenario) {
+        return false
+      }
 
-  useEffect(() => {
-    if (!isGenerating) return
-
-    const timerId = window.setInterval(() => {
-      void query.refetch()
-    }, 3000)
-
-    return () => {
-      window.clearInterval(timerId)
+      return scenario.chapters.some((chapter) => chapter.status === 'generating') ? SCENARIO_POLL_INTERVAL_MS : false
     }
-  }, [isGenerating, query.refetch])
+  })
 
   return {
     ...query,
@@ -363,12 +346,10 @@ export const useSuspenseScenarios = ({
   pollMode?: 'all' | 'scenario' | 'off'
   pollScenarioId?: string | null
 } = {}) => {
-  const query = useSuspenseQuery(scenariosQueryOptions)
-  useScenarioPolling({
-    mode: pollMode,
-    refetch: query.refetch,
-    scenarioId: pollScenarioId,
-    scenarios: query.data
+  const query = useSuspenseQuery({
+    ...scenariosQueryOptions,
+    refetchInterval: (query) =>
+      resolveScenariosRefetchInterval({ mode: pollMode, scenarioId: pollScenarioId, scenarios: query.state.data })
   })
 
   return {
@@ -393,13 +374,9 @@ export const useSuspenseResolvedScenarios = (
 ) => {
   const query = useSuspenseQuery({
     ...scenariosQueryOptions,
-    select: (rows: readonly Scenario[]) => rows.map((scenario) => resolveScenarioState({ scenario, characters }))
-  })
-  useScenarioPolling({
-    mode: pollMode,
-    refetch: query.refetch,
-    scenarioId: pollScenarioId,
-    scenarios: query.data
+    select: (rows: readonly Scenario[]) => rows.map((scenario) => resolveScenarioState({ scenario, characters })),
+    refetchInterval: (query) =>
+      resolveScenariosRefetchInterval({ mode: pollMode, scenarioId: pollScenarioId, scenarios: query.state.data })
   })
 
   return {

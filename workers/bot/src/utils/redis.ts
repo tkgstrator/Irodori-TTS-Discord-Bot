@@ -7,6 +7,7 @@ import {
   type UserSettings,
   UserSettingsSchema
 } from '../schemas/user-settings.dto'
+import { notifyError } from './notifier'
 
 /**
  * Redisクライアント
@@ -17,6 +18,48 @@ export const redis = new Redis(config.REDIS_URL)
  * ユーザー設定のキープレフィックス
  */
 const USER_SETTINGS_KEY_PREFIX = 'user:settings:'
+
+/**
+ * キー単位でRead-Modify-Write処理を直列化するためのin-flightキュー
+ * 同一キーへの並行更新でロスト・アップデートが起きるのを防ぐ
+ */
+const inFlight = new Map<string, Promise<unknown>>()
+
+/**
+ * 指定キーに紐づく処理を直列化して実行する
+ * 単一プロセス内でのget→mutate→setをアトミックに見せかけるためのヘルパ
+ * @param key 直列化の単位となるキー（Redisキーをそのまま利用する）
+ * @param fn 直列に実行したい処理
+ * @returns fnの返り値
+ */
+export const withSerialized = async <T>(key: string, fn: () => Promise<T>): Promise<T> => {
+  const prev = inFlight.get(key) ?? Promise.resolve()
+  const next = prev.then(fn, fn)
+  inFlight.set(key, next)
+  try {
+    return await next
+  } finally {
+    if (inFlight.get(key) === next) inFlight.delete(key)
+  }
+}
+
+/**
+ * JSON.parseの結果を表す型
+ */
+type JsonParseResult<T> = { ok: true; value: T } | { ok: false }
+
+/**
+ * JSON.parseを例外を投げずに実行する
+ * @param data パース対象の文字列
+ * @returns パース結果
+ */
+export const safeJsonParse = <T>(data: string): JsonParseResult<T> => {
+  try {
+    return { ok: true, value: JSON.parse(data) as T }
+  } catch {
+    return { ok: false }
+  }
+}
 
 /**
  * デフォルトの話者設定を生成する
@@ -48,11 +91,20 @@ export const getUserSettings = async (userId: string): Promise<UserSettings> => 
     return createDefaultUserSettings()
   }
 
-  const parseResult = UserSettingsSchema.safeParse(JSON.parse(data))
+  const jsonResult = safeJsonParse<unknown>(data)
+  if (!jsonResult.ok) {
+    await notifyError('getUserSettings: JSON parse failed', new Error(`Failed to parse JSON for userId=${userId}`), {
+      userId
+    })
+    return createDefaultUserSettings()
+  }
+
+  const parseResult = UserSettingsSchema.safeParse(jsonResult.value)
   if (!parseResult.success) {
-    console.warn(`Invalid user settings for ${userId}, resetting to default:`, parseResult.error)
-    // パースエラー時は既存データを削除してデフォルトを返す
-    await redis.del(`${USER_SETTINGS_KEY_PREFIX}${userId}`)
+    // パース失敗時は既存データを削除せず、デフォルト値を返して調査可能な状態を保つ
+    await notifyError('getUserSettings: schema validation failed', parseResult.error, {
+      userId
+    })
     return createDefaultUserSettings()
   }
 
@@ -88,9 +140,11 @@ export const getCurrentSpeakerId = async (userId: string): Promise<string> => {
  * @param speakerId 話者UUID
  */
 export const setCurrentSpeakerId = async (userId: string, speakerId: string): Promise<void> => {
-  const settings = await getUserSettings(userId)
-  settings.speaker.currentId = speakerId
-  await setUserSettings(userId, settings)
+  await withSerialized(`${USER_SETTINGS_KEY_PREFIX}${userId}`, async () => {
+    const settings = await getUserSettings(userId)
+    settings.speaker.currentId = speakerId
+    await setUserSettings(userId, settings)
+  })
 }
 
 /**
@@ -115,21 +169,22 @@ export const updateSpeakerConfig = async (
   userId: string,
   speakerId: string,
   update: SpeakerConfigUpdate
-): Promise<SpeakerConfig> => {
-  const settings = await getUserSettings(userId)
-  const current = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
-  const updated = { ...current, ...update }
+): Promise<SpeakerConfig> =>
+  withSerialized(`${USER_SETTINGS_KEY_PREFIX}${userId}`, async () => {
+    const settings = await getUserSettings(userId)
+    const current = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
+    const updated = { ...current, ...update }
 
-  // バリデーション
-  const parseResult = SpeakerConfigSchema.safeParse(updated)
-  if (!parseResult.success) {
-    throw new Error(`Invalid speaker config: ${parseResult.error.message}`)
-  }
+    // バリデーション
+    const parseResult = SpeakerConfigSchema.safeParse(updated)
+    if (!parseResult.success) {
+      throw new Error(`Invalid speaker config: ${parseResult.error.message}`)
+    }
 
-  settings.speaker.settings[speakerId] = parseResult.data
-  await setUserSettings(userId, settings)
-  return parseResult.data
-}
+    settings.speaker.settings[speakerId] = parseResult.data
+    await setUserSettings(userId, settings)
+    return parseResult.data
+  })
 
 /**
  * 現在の話者の設定を取得する
@@ -139,6 +194,22 @@ export const updateSpeakerConfig = async (
 export const getCurrentSpeakerConfig = async (userId: string): Promise<SpeakerConfig> => {
   const settings = await getUserSettings(userId)
   return getSpeakerConfig(userId, settings.speaker.currentId)
+}
+
+/**
+ * 現在の話者IDと話者設定をまとめて取得する
+ * ユーザー設定の読み込みを1回にまとめ、getCurrentSpeakerId + getCurrentSpeakerConfig の
+ * 二重Redis読み出しを避ける
+ * @param userId DiscordユーザーID
+ * @returns 現在の話者IDと話者設定
+ */
+export const getCurrentSpeakerContext = async (
+  userId: string
+): Promise<{ speakerId: string; config: SpeakerConfig }> => {
+  const settings = await getUserSettings(userId)
+  const speakerId = settings.speaker.currentId
+  const config = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
+  return { speakerId, config }
 }
 
 /**

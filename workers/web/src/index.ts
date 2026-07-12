@@ -1,6 +1,8 @@
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
-import app from './app'
+import app, { bootstrap } from './app'
+
+bootstrap()
 
 app.use('/*', serveStatic({ root: './dist' }))
 app.get('/*', serveStatic({ root: './dist', path: '/index.html' }))

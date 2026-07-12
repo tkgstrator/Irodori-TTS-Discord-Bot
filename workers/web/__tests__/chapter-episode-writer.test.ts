@@ -73,7 +73,8 @@ describe('chapter episode writer', () => {
             duration: 1.2
           }))
         ]
-      })
+      }),
+      speakerAliases: ['char1']
     })
 
     expect(cues).toHaveLength(40)
@@ -94,9 +95,31 @@ describe('chapter episode writer', () => {
               duration: 1
             }))
           ]
-        })
+        }),
+        speakerAliases: ['char1']
       })
     ).toThrow('at least 30 speech cues')
+  })
+
+  test('未知の alias を含む JSON は失敗する', () => {
+    expect(() =>
+      parseChapterEpisodeText({
+        text: JSON.stringify({
+          cues: [
+            ...Array.from({ length: 30 }, (_, index) => ({
+              kind: 'speech',
+              speaker: 'char9',
+              text: `台詞${index + 1}`
+            })),
+            ...Array.from({ length: 10 }, () => ({
+              kind: 'pause',
+              duration: 1.2
+            }))
+          ]
+        }),
+        speakerAliases: ['char1']
+      })
+    ).toThrow('unknown speaker alias')
   })
 
   test('未知の alias は失敗する', () => {

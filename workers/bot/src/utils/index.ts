@@ -4,6 +4,7 @@ export { notifyError } from './notifier'
 export {
   deleteUserSettings,
   getCurrentSpeakerConfig,
+  getCurrentSpeakerContext,
   getCurrentSpeakerId,
   getSpeakerConfig,
   getUserSettings,
@@ -15,4 +16,4 @@ export {
   updateSpeakerConfig
 } from './redis'
 export { preprocessForTts, preprocessMessageForTts } from './text-preprocess'
-export { getSpeakers, type PcmAudio, synthesize, textToSpeech, textToSpeechWithSettings } from './tts'
+export { getSpeakers, type PcmAudio, synthesize, textToSpeechWithSettings } from './tts'

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { applyRubyAnnotations, type RubyEntry } from '@/api/ruby-replacer'
+import { applyRubyAnnotations, type RubyEntry } from './ruby-replacer'
 
 const RUBY_PATTERN = /\|([^[]+)\[([^\]]+)\]/g
 
