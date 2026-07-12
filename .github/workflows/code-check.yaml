@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate Prisma client (workers/web)
+        run: bunx prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
+
       - name: Biome (packages/)
         run: bun run lint
 
