@@ -44,11 +44,18 @@ export const notifyError = async (title: string, error: unknown, context?: Recor
   }
 
   try {
-    await fetch(config.ERROR_WEBHOOK_URL, {
+    const response = await fetch(config.ERROR_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '')
+      console.error(
+        `Failed to send error notification: ${response.status} ${response.statusText} - ${bodyText.slice(0, 200)}`
+      )
+    }
   } catch (webhookError) {
     // Webhook送信自体が失敗してもクラッシュさせない
     console.error('Failed to send error notification:', webhookError)

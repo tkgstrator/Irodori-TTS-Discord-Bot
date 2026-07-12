@@ -2,6 +2,7 @@ import type { Client } from 'discord.js'
 import { REST, Routes } from 'discord.js'
 import { commands } from '../commands'
 import { config } from '../config'
+import { notifyError } from '../utils/notifier'
 
 const registerCommands = async (clientId: string): Promise<void> => {
   const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN)
@@ -10,7 +11,7 @@ const registerCommands = async (clientId: string): Promise<void> => {
     await rest.put(Routes.applicationCommands(clientId), { body: commands })
     console.log('Slash commands registered successfully')
   } catch (error) {
-    console.error('Failed to register slash commands:', error)
+    await notifyError('Failed to register commands', error, { clientId })
   }
 }
 
