@@ -1,4 +1,5 @@
 import {
+  ChannelType,
   type ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
@@ -29,11 +30,76 @@ export const configCommand = new SlashCommandBuilder()
       .addBooleanOption((option) =>
         option.setName('announce-leave').setDescription('VC退出時のアナウンス').setRequired(false)
       )
-      .addChannelOption((option) => option.setName('channel1').setDescription('読み上げチャンネル1').setRequired(false))
-      .addChannelOption((option) => option.setName('channel2').setDescription('読み上げチャンネル2').setRequired(false))
-      .addChannelOption((option) => option.setName('channel3').setDescription('読み上げチャンネル3').setRequired(false))
-      .addChannelOption((option) => option.setName('channel4').setDescription('読み上げチャンネル4').setRequired(false))
-      .addChannelOption((option) => option.setName('channel5').setDescription('読み上げチャンネル5').setRequired(false))
+      .addChannelOption((option) =>
+        option
+          .setName('channel1')
+          .setDescription('読み上げチャンネル1')
+          .setRequired(false)
+          .addChannelTypes(
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread
+          )
+      )
+      .addChannelOption((option) =>
+        option
+          .setName('channel2')
+          .setDescription('読み上げチャンネル2')
+          .setRequired(false)
+          .addChannelTypes(
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread
+          )
+      )
+      .addChannelOption((option) =>
+        option
+          .setName('channel3')
+          .setDescription('読み上げチャンネル3')
+          .setRequired(false)
+          .addChannelTypes(
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread
+          )
+      )
+      .addChannelOption((option) =>
+        option
+          .setName('channel4')
+          .setDescription('読み上げチャンネル4')
+          .setRequired(false)
+          .addChannelTypes(
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread
+          )
+      )
+      .addChannelOption((option) =>
+        option
+          .setName('channel5')
+          .setDescription('読み上げチャンネル5')
+          .setRequired(false)
+          .addChannelTypes(
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+            ChannelType.PublicThread,
+            ChannelType.PrivateThread,
+            ChannelType.AnnouncementThread
+          )
+      )
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('read-channels-clear')
+      .setDescription('読み上げチャンネル設定をクリアし、全チャンネル読み上げに戻します')
   )
   .addSubcommand((subcommand) => subcommand.setName('reset').setDescription('サーバー設定をデフォルトに戻します'))
 
@@ -124,15 +190,11 @@ export const handleConfigCommand = async (interaction: ChatInputCommandInteracti
           interaction.options.getChannel('channel5')
         ].filter((ch): ch is NonNullable<typeof ch> => ch !== null)
 
-        if (channels.length > 0 || interaction.options.get('channel1') !== null) {
+        if (channels.length > 0) {
           const channelIds = channels.map((ch) => ch.id)
           updates.readChannels = channelIds
-          if (channelIds.length === 0) {
-            messages.push('読み上げチャンネル: 全チャンネル')
-          } else {
-            const channelMentions = channels.map((ch) => `<#${ch.id}>`).join(', ')
-            messages.push(`読み上げチャンネル: ${channelMentions}`)
-          }
+          const channelMentions = channels.map((ch) => `<#${ch.id}>`).join(', ')
+          messages.push(`読み上げチャンネル: ${channelMentions}`)
         }
 
         if (Object.keys(updates).length === 0) {
@@ -152,6 +214,23 @@ export const handleConfigCommand = async (interaction: ChatInputCommandInteracti
         console.error('Failed to update settings:', error)
         await interaction.reply({
           content: '設定の更新に失敗しました',
+          flags: MessageFlags.Ephemeral
+        })
+      }
+      break
+    }
+
+    case 'read-channels-clear': {
+      try {
+        await updateGuildSettings(guildId, { readChannels: [] })
+        await interaction.reply({
+          content: '読み上げチャンネル設定をクリアしました(全チャンネル読み上げに戻りました)',
+          flags: MessageFlags.Ephemeral
+        })
+      } catch (error) {
+        console.error('Failed to clear read channels:', error)
+        await interaction.reply({
+          content: '読み上げチャンネルのクリアに失敗しました',
           flags: MessageFlags.Ephemeral
         })
       }

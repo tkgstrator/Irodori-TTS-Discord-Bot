@@ -5,7 +5,7 @@ import {
   type VdsSynthOptions,
   type Cue as VoiceDramaCue
 } from '@irodori-tts/shared/voice-drama'
-import { applyRubyAnnotations, type RubyEntry } from '@/api/ruby-replacer'
+import { applyRubyAnnotations, type RubyEntry } from './ruby-replacer'
 import type { Chapter, Scenario } from './scenarios'
 
 // VDS 出力成功時の共通戻り値。

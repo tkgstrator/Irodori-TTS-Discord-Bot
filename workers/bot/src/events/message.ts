@@ -1,7 +1,6 @@
 import type { Client } from 'discord.js'
 import {
-  getCurrentSpeakerConfig,
-  getCurrentSpeakerId,
+  getCurrentSpeakerContext,
   getGuildSettings,
   preprocessForTts,
   preprocessMessageForTts,
@@ -43,14 +42,26 @@ export const registerMessageHandler = (client: Client): void => {
     if (lines.length === 0) return
 
     try {
-      const speakerId = await getCurrentSpeakerId(message.author.id)
-      const speakerConfig = await getCurrentSpeakerConfig(message.author.id)
-      // 全行を並列合成してからまとめてキューに積む（逐次合成だと行間に他ユーザーが割り込む）
-      const audioStreams = await Promise.all(
-        lines.map((line) => textToSpeechWithSettings(line, speakerId, speakerConfig))
+      const { speakerId, config: speakerConfig } = await getCurrentSpeakerContext(message.author.id)
+
+      // 全行の合成は並列で開始する（サーバー負荷は従来と同じ）
+      const synthPromises = lines.map((line, lineIndex) =>
+        textToSpeechWithSettings(line, speakerId, speakerConfig, {
+          authorId: message.author.id,
+          lineIndex
+        }).catch((err) => ({ __failed: true, err, line }) as const)
       )
-      for (const audioStream of audioStreams) {
-        enqueueAudio(guildId, audioStream, connection)
+
+      // 解決を発生順（＝行の順番）で待ってキューに積む
+      // 1行ずつ即キューへ回せるので最初の再生が全行合成を待たずに始まり、
+      // かつ同一メッセージ内の行順もここで保証される
+      for (const promise of synthPromises) {
+        const result = await promise
+        if ('__failed' in result) {
+          await notifyError('TTS synthesis failed for line', result.err, { guildId, line: result.line })
+          continue
+        }
+        enqueueAudio(guildId, result, connection)
       }
     } catch (error) {
       await notifyError('Failed to process TTS', error, { guildId })

@@ -137,36 +137,6 @@ export const LooseSpeechCueSchema = z
   })
   .strict()
 
-export const LooseCueSchema = z.discriminatedUnion('kind', [LooseSpeechCueSchema, PauseCueSchema, SceneCueSchema])
-
-/**
- * `text` の max 200 字制約を外したゆるい VDS-JSON ルートスキーマ。
- *
- * Gemini 等の生成器が 200 字を超える text を返しても、一旦このスキーマで
- * 受けて型を確定させ、`transform` で自然な区切りで分割した後に
- * `VdsJsonSchema` へ pipe することで厳密検証を通す用途。
- */
-export const LooseVdsJsonSchema = z
-  .object({
-    version: z.literal(1),
-    title: z.string().optional(),
-    defaults: VdsDefaultsSchema.optional(),
-    speakers: z.record(z.string().regex(ALIAS_PATTERN), SpeakerRefSchema),
-    cues: z.array(LooseCueSchema).nonempty()
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    for (const [index, cue] of data.cues.entries()) {
-      if (cue.kind === 'speech' && !(cue.speaker in data.speakers)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['cues', index, 'speaker'],
-          message: `未定義の speaker エイリアス: ${cue.speaker}`
-        })
-      }
-    }
-  })
-
 // 型エクスポート
 export type VdsSynthOptions = z.infer<typeof VdsSynthOptionsSchema>
 export type SpeakerRef = z.infer<typeof SpeakerRefSchema>
@@ -177,5 +147,3 @@ export type Cue = z.infer<typeof CueSchema>
 export type VdsDefaults = z.infer<typeof VdsDefaultsSchema>
 export type VdsJson = z.infer<typeof VdsJsonSchema>
 export type LooseSpeechCue = z.infer<typeof LooseSpeechCueSchema>
-export type LooseCue = z.infer<typeof LooseCueSchema>
-export type LooseVdsJson = z.infer<typeof LooseVdsJsonSchema>

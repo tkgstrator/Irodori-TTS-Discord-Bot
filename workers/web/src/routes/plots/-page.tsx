@@ -3,8 +3,9 @@ import { Clock, ListTree, MessageSquare, Plus, Users } from 'lucide-react'
 import { PageContainer } from '@/components/page-container'
 import { PageSuspense } from '@/components/page-suspense'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { Scenario } from '@/lib/scenarios'
+import type { Scenario, ScenarioStatus } from '@/lib/scenarios'
 import { useSuspenseResolvedScenarios } from '@/lib/scenarios'
 
 // ジャンル表示色を定義する
@@ -17,6 +18,54 @@ const genreColors: Record<string, string> = {
   歴史: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
   サスペンス: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   日常: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+}
+
+// ステータス文言を返す
+const getStatusLabel = (status: ScenarioStatus): string => {
+  switch (status) {
+    case 'completed':
+      return '生成済み'
+    case 'generating':
+      return '生成中'
+    case 'failed':
+      return '失敗'
+    case 'draft':
+      return '未生成'
+  }
+}
+
+// ステータスバッジを表示する
+const StatusBadge = ({ status }: { status: ScenarioStatus }) => {
+  if (status === 'completed') {
+    return (
+      <Badge className="bg-green-500 text-white hover:bg-green-500" aria-label="生成済み">
+        {getStatusLabel(status)}
+      </Badge>
+    )
+  }
+
+  if (status === 'generating') {
+    return (
+      <Badge className="bg-blue-500 text-white hover:bg-blue-500" aria-label="生成中">
+        <span className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-white" />
+        {getStatusLabel(status)}
+      </Badge>
+    )
+  }
+
+  if (status === 'failed') {
+    return (
+      <Badge className="bg-destructive text-white hover:bg-destructive" aria-label="失敗">
+        {getStatusLabel(status)}
+      </Badge>
+    )
+  }
+
+  return (
+    <Badge variant="secondary" aria-label="未生成">
+      {getStatusLabel(status)}
+    </Badge>
+  )
 }
 
 // 章進捗の集計値を返す
@@ -81,9 +130,12 @@ const PlotCard = ({ scenario }: { scenario: Scenario }) => {
               >
                 {scenario.title}
               </p>
-              <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-muted-foreground">
-                <Clock className="size-3.5" aria-hidden="true" />
-                <span>{scenario.durationMinutes != null ? Math.round(scenario.durationMinutes) : '—'}分</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <StatusBadge status={scenario.status} />
+                <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                  <Clock className="size-3.5" aria-hidden="true" />
+                  <span>{scenario.durationMinutes != null ? Math.round(scenario.durationMinutes) : '—'}分</span>
+                </div>
               </div>
             </div>
           </div>

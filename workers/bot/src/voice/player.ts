@@ -1,4 +1,4 @@
-import { Readable } from 'node:stream'
+import { PassThrough, Readable } from 'node:stream'
 import {
   AudioPlayerStatus,
   createAudioPlayer,
@@ -10,6 +10,7 @@ import {
 } from '@discordjs/voice'
 import { notifyError } from '../utils/notifier'
 import type { PcmAudio } from '../utils/tts'
+import { getConnection } from '.'
 
 const createWavHeader = (sampleRate: number): Buffer => {
   const header = Buffer.alloc(44)
@@ -46,6 +47,33 @@ const guildPlayers = new Map<
   }
 >()
 
+/**
+ * キューの次のアイテムを再生する
+ * 再生中フラグの更新と接続の再取得を一箇所に集約し、
+ * 状態の不整合（デッドロック・二重再生）を防ぐ
+ * @param guildId ギルドID
+ */
+const advanceQueue = (guildId: string): void => {
+  const gp = guildPlayers.get(guildId)
+  if (!gp) return
+
+  const next = gp.queue.shift()
+  if (!next) {
+    gp.isPlaying = false
+    return
+  }
+
+  const connection = getConnection(guildId)
+  if (!connection) {
+    console.warn(`No active connection for guild ${guildId}, dropping queued audio`)
+    gp.isPlaying = false
+    return
+  }
+
+  gp.isPlaying = true
+  void playAudio(guildId, next, connection)
+}
+
 const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
   const existing = guildPlayers.get(guildId)
   if (existing) return existing
@@ -58,30 +86,13 @@ const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
 
   player.on(AudioPlayerStatus.Idle, () => {
     console.debug('Player became idle')
-    const gp = guildPlayers.get(guildId)
-    if (gp && gp.queue.length > 0) {
-      const next = gp.queue.shift()
-      if (next) {
-        void playAudio(guildId, next, connection)
-      }
-    } else if (gp) {
-      gp.isPlaying = false
-    }
+    advanceQueue(guildId)
   })
 
   player.on('error', (error) => {
     console.error(`Audio player error in guild ${guildId}:`, error)
     void notifyError('Audio player error', error, { guildId })
-    const gp = guildPlayers.get(guildId)
-    if (gp) {
-      gp.isPlaying = false
-      if (gp.queue.length > 0) {
-        const next = gp.queue.shift()
-        if (next) {
-          void playAudio(guildId, next, connection)
-        }
-      }
-    }
+    advanceQueue(guildId)
   })
 
   connection.subscribe(player)
@@ -96,7 +107,18 @@ const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
 }
 
 const playAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConnection): Promise<void> => {
-  console.debug('Playing audio for guild:', guildId, 'size:', audio.buffer.length, 'sampleRate:', audio.sampleRate)
+  console.debug(
+    'Playing audio for guild:',
+    guildId,
+    'size:',
+    audio.buffer.length,
+    'sampleRate:',
+    audio.sampleRate,
+    'authorId:',
+    audio.authorId,
+    'lineIndex:',
+    audio.lineIndex
+  )
 
   if (connection.state.status === VoiceConnectionStatus.Destroyed) {
     console.warn(`Skipping playback: connection destroyed in guild ${guildId}`)
@@ -110,6 +132,7 @@ const playAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConn
       await entersState(connection, VoiceConnectionStatus.Ready, 5_000)
     } catch {
       console.error('Connection failed to become ready')
+      advanceQueue(guildId)
       return
     }
   }
@@ -136,9 +159,52 @@ export const enqueueAudio = async (guildId: string, audio: PcmAudio, connection:
   }
 }
 
+const QUEUE_DRAIN_TIMEOUT_MS = 30_000
+
+const isQueueDrained = (guildId: string): boolean => {
+  const gp = guildPlayers.get(guildId)
+  if (!gp) return true
+  return !gp.isPlaying && gp.queue.length === 0
+}
+
+/**
+ * TTSキューが完全に空になる（再生中でもキュー待ちでもない）まで待つ。
+ * playStream（VDS等の単発ストリーム再生）が進行中のTTSを打ち切らないようにするための待機。
+ * @param guildId ギルドID
+ * @param timeoutMs 最大待機時間。タイムアウト時は諦めて先に進む
+ */
+const waitForQueueDrain = (guildId: string, timeoutMs: number = QUEUE_DRAIN_TIMEOUT_MS): Promise<void> => {
+  if (isQueueDrained(guildId)) return Promise.resolve()
+
+  const gp = guildPlayers.get(guildId)
+  if (!gp) return Promise.resolve()
+
+  return new Promise<void>((resolve) => {
+    const check = () => {
+      if (isQueueDrained(guildId)) {
+        cleanup()
+        resolve()
+      }
+    }
+
+    const timeoutId = setTimeout(() => {
+      console.warn(`Timed out waiting for queue drain in guild ${guildId}, proceeding anyway`)
+      cleanup()
+      resolve()
+    }, timeoutMs)
+
+    const cleanup = () => {
+      clearTimeout(timeoutId)
+      gp.player.removeListener(AudioPlayerStatus.Idle, check)
+    }
+
+    gp.player.on(AudioPlayerStatus.Idle, check)
+  })
+}
+
 export const playStream = async (
   guildId: string,
-  pcmStream: import('node:stream').Readable,
+  pcmStream: Readable,
   sampleRate: number,
   connection: VoiceConnection
 ): Promise<void> => {
@@ -156,9 +222,12 @@ export const playStream = async (
   }
 
   const guildPlayer = getOrCreatePlayer(guildId, connection)
+
+  // 進行中のTTSキューを打ち切らないよう、キューが空になるまで待つ
+  await waitForQueueDrain(guildId)
+
   const wavHeader = createWavHeader(sampleRate)
 
-  const { PassThrough } = await import('node:stream')
   const passThrough = new PassThrough()
   passThrough.write(wavHeader)
   pcmStream.pipe(passThrough)
@@ -170,17 +239,18 @@ export const playStream = async (
 
   return new Promise<void>((resolve, reject) => {
     guildPlayer.player.play(resource)
+    // ストリーム再生中は isPlaying を立てておき、並行する enqueueAudio をキューへ退避させる
     guildPlayer.isPlaying = true
 
     const onIdle = () => {
       cleanup()
-      // isPlaying はグローバル Idle ハンドラーが管理するため、ここでは変更しない
+      // isPlaying とキューの前進はグローバル Idle ハンドラー（advanceQueue）が管理するため、ここでは変更しない
       resolve()
     }
 
     const onError = (error: Error) => {
       cleanup()
-      guildPlayer.isPlaying = false
+      // isPlaying とキューの前進はグローバル error ハンドラー（advanceQueue）が管理するため、ここでは変更しない
       reject(error)
     }
 
@@ -192,15 +262,6 @@ export const playStream = async (
     guildPlayer.player.on(AudioPlayerStatus.Idle, onIdle)
     guildPlayer.player.on('error', onError)
   })
-}
-
-export const clearQueue = (guildId: string): void => {
-  const guildPlayer = guildPlayers.get(guildId)
-  if (guildPlayer) {
-    guildPlayer.queue = []
-    guildPlayer.player.stop()
-    guildPlayer.isPlaying = false
-  }
 }
 
 export const destroyPlayer = (guildId: string): void => {

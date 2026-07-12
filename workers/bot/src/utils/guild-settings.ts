@@ -1,5 +1,6 @@
 import { type GuildSettings, GuildSettingsSchema, type GuildSettingsUpdate } from '../schemas/guild-settings.dto'
-import { redis } from './redis'
+import { notifyError } from './notifier'
+import { redis, safeJsonParse, withSerialized } from './redis'
 
 /**
  * デフォルトのギルド設定
@@ -24,9 +25,19 @@ export const getGuildSettings = async (guildId: string): Promise<GuildSettings> 
     return defaultGuildSettings
   }
 
-  const parsed = GuildSettingsSchema.safeParse(JSON.parse(data))
+  const jsonResult = safeJsonParse<unknown>(data)
+  if (!jsonResult.ok) {
+    await notifyError('getGuildSettings: JSON parse failed', new Error(`Failed to parse JSON for guildId=${guildId}`), {
+      guildId
+    })
+    return defaultGuildSettings
+  }
+
+  const parsed = GuildSettingsSchema.safeParse(jsonResult.value)
   if (!parsed.success) {
-    console.error('Invalid guild settings data:', parsed.error)
+    await notifyError('getGuildSettings: schema validation failed', parsed.error, {
+      guildId
+    })
     return defaultGuildSettings
   }
 
@@ -49,9 +60,11 @@ export const setGuildSettings = async (guildId: string, settings: GuildSettings)
  * @param updates - 更新する設定項目
  */
 export const updateGuildSettings = async (guildId: string, updates: GuildSettingsUpdate): Promise<void> => {
-  const current = await getGuildSettings(guildId)
-  const updated = { ...current, ...updates }
-  await setGuildSettings(guildId, updated)
+  await withSerialized(`guild:${guildId}:settings`, async () => {
+    const current = await getGuildSettings(guildId)
+    const updated = { ...current, ...updates }
+    await setGuildSettings(guildId, updated)
+  })
 }
 
 /**
