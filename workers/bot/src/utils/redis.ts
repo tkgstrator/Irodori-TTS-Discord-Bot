@@ -170,6 +170,22 @@ export const getCurrentSpeakerConfig = async (userId: string): Promise<SpeakerCo
 }
 
 /**
+ * 現在の話者IDと話者設定をまとめて取得する
+ * ユーザー設定の読み込みを1回にまとめ、getCurrentSpeakerId + getCurrentSpeakerConfig の
+ * 二重Redis読み出しを避ける
+ * @param userId DiscordユーザーID
+ * @returns 現在の話者IDと話者設定
+ */
+export const getCurrentSpeakerContext = async (
+  userId: string
+): Promise<{ speakerId: string; config: SpeakerConfig }> => {
+  const settings = await getUserSettings(userId)
+  const speakerId = settings.speaker.currentId
+  const config = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
+  return { speakerId, config }
+}
+
+/**
  * 現在の話者の設定を更新する
  * @param userId DiscordユーザーID
  * @param update 更新する設定（部分的でOK）

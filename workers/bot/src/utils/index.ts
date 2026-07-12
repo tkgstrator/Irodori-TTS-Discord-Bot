@@ -4,6 +4,7 @@ export { notifyError } from './notifier'
 export {
   deleteUserSettings,
   getCurrentSpeakerConfig,
+  getCurrentSpeakerContext,
   getCurrentSpeakerId,
   getSpeakerConfig,
   getUserSettings,
