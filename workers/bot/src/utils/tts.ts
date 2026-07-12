@@ -37,10 +37,6 @@ export const synthesize = async (
   return { buffer: Buffer.from(arrayBuffer), sampleRate }
 }
 
-export const textToSpeech = async (text: string, speakerId: string): Promise<PcmAudio> => {
-  return await synthesize(text, speakerId)
-}
-
 const toSynthParams = (cfg: SpeakerConfig): Omit<SynthRequest, 'speaker_id' | 'text'> => ({
   seed: cfg.seed,
   num_steps: cfg.numSteps,
