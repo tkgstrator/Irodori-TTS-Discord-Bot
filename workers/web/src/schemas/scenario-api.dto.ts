@@ -2,10 +2,10 @@ import { z } from 'zod'
 import { LlmModelSchema } from './llm-settings.dto'
 
 // シナリオ API のステータス値を定義する
-const ScenarioApiStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
+export const ScenarioApiStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
 
 // 章 API のステータス値を定義する
-const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
+export const ScenarioApiChapterStatusSchema = z.enum(['draft', 'generating', 'failed', 'completed'])
 
 // 章内の話者表示情報を定義する
 const ScenarioApiSpeakerSchema = z.object({

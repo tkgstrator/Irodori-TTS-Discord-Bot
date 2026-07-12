@@ -6,9 +6,11 @@ import { normalizeLlmModel } from '@/schemas/llm-settings.dto'
 import {
   type ScenarioApi,
   type ScenarioApiChapter,
+  ScenarioApiChapterStatusSchema,
   ScenarioApiListSchema,
   ScenarioApiSchema,
-  type ScenarioApiSpeaker
+  type ScenarioApiSpeaker,
+  ScenarioApiStatusSchema
 } from '@/schemas/scenario-api.dto'
 import {
   ScenarioAppendChapterApiSchema,
@@ -105,7 +107,7 @@ const buildChapterResponse = (chapter: ScenarioChapterRow): ScenarioApiChapter =
   id: chapter.id,
   number: chapter.number,
   title: chapter.title,
-  status: chapter.status as ScenarioApiChapter['status'],
+  status: ScenarioApiChapterStatusSchema.parse(chapter.status),
   cueCount: chapter.cueCount,
   durationMinutes: chapter.durationMinutes,
   synopsis: chapter.synopsis,
@@ -252,7 +254,7 @@ const buildScenarioResponse = (row: ScenarioRow) => {
     title: row.title,
     status: resolveScenarioStatus({
       chapterStatuses: chapters.map((chapter) => chapter.status),
-      fallback: row.status as ScenarioApi['status']
+      fallback: ScenarioApiStatusSchema.parse(row.status)
     }),
     genres: row.genres,
     tone: row.tone,
@@ -321,8 +323,20 @@ scenarios.get('/', async (c) => {
     }
   })
 
-  const responseRows = rows.map((row) => buildScenarioResponse(row))
-  const responseResult = ScenarioApiListSchema.safeParse(responseRows)
+  const responseRowsResult = (() => {
+    try {
+      return { ok: true as const, data: rows.map((row) => buildScenarioResponse(row)) }
+    } catch (error) {
+      return { ok: false as const, error }
+    }
+  })()
+
+  if (!responseRowsResult.ok) {
+    console.error('Invalid scenario response.', responseRowsResult.error)
+    return c.json({ error: 'Failed to build scenarios' }, 500)
+  }
+
+  const responseResult = ScenarioApiListSchema.safeParse(responseRowsResult.data)
 
   if (!responseResult.success) {
     console.error('Invalid scenario response.', responseResult.error)
