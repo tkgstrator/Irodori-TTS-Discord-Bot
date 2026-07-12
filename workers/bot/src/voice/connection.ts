@@ -37,21 +37,32 @@ export const connectToChannel = async (channel: VoiceBasedChannel): Promise<Voic
   }
 }
 
+// setupConnectionRecoveryを既に登録済みのconnectionを記録し、二重登録を防ぐ
+const recoveryRegisteredConnections = new WeakSet<VoiceConnection>()
+
 /**
  * 接続切断時のリカバリ処理を設定する
  * - WebSocket切断（コード4014）: Discordによる強制切断のため再接続しない
  * - それ以外の切断: 再接続を試行する（最大5秒待機）
  * - Destroyed状態: プレイヤーをクリーンアップする
+ * joinVoiceChannelはギルドごとに既存のconnectionを返すことがあるため、
+ * 同一connectionへの重複登録をrecoveryRegisteredConnectionsで防ぐ
  * @param connection VoiceConnection
  * @param guildId ギルドID
  */
 const setupConnectionRecovery = (connection: VoiceConnection, guildId: string): void => {
+  if (recoveryRegisteredConnections.has(connection)) return
+  recoveryRegisteredConnections.add(connection)
+
   connection.on(VoiceConnectionStatus.Disconnected, async (_oldState, newState) => {
     // WebSocket close code 4014: サーバー側からの切断（チャンネル移動やキック）
     if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
       try {
-        // Signalling状態への遷移を待つ（Botがチャンネル移動された場合）
-        await entersState(connection, VoiceConnectionStatus.Connecting, 5_000)
+        // Signalling または Connecting のいずれかの状態への遷移を待つ（Botがチャンネル移動された場合）
+        await Promise.race([
+          entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+          entersState(connection, VoiceConnectionStatus.Connecting, 5_000)
+        ])
       } catch {
         // タイムアウト → 完全に切断されたのでクリーンアップ
         console.log(`Connection forcefully closed in guild: ${guildId}`)
