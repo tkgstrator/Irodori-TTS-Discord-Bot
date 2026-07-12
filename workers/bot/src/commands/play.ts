@@ -51,6 +51,14 @@ export const handlePlayCommand = async (interaction: ChatInputCommandInteraction
 
   try {
     const response = await fetch(attachment.url)
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '')
+      throw new Error(
+        `添付ファイルの取得に失敗しました: ${response.status} ${response.statusText} - ${bodyText.slice(0, 200)}`
+      )
+    }
+
     const body = await response.json()
     const parseResult = VdsJsonSchema.safeParse(body)
 

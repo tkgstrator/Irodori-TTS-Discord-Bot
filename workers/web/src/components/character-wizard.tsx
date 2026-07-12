@@ -21,7 +21,7 @@ import {
 import { mergeImportedValues } from '@/lib/speaker-import'
 import { cn } from '@/lib/utils'
 import type { CharacterFormValues, SpeakerLink } from '@/schemas/character.dto'
-import { CharacterFormSchema } from '@/schemas/character.dto'
+import { CharacterFormFieldsSchema, CharacterFormSchema } from '@/schemas/character.dto'
 import type { SpeakerImportTemplate } from '@/schemas/speaker.dto'
 
 const STEPS = [
@@ -598,6 +598,9 @@ export function CharacterWizard({
     handleSubmit,
     formState: { errors }
   } = useForm<CharacterFormValues>({
+    // CharacterFormSchema は caption/sampleQuotes に z.preprocess を使っており、その入力型は
+    // unknown に広がるため zodResolver の推論結果が Resolver<CharacterFormValues> と一致しない。
+    // フォームに渡る値は常に CharacterFormValues 形なので、ここでの絞り込みは安全。
     resolver: zodResolver(CharacterFormSchema) as Resolver<CharacterFormValues>,
     defaultValues
   })
@@ -606,11 +609,14 @@ export function CharacterWizard({
   const applySpeakerTemplate = (template: SpeakerImportTemplate) => {
     const currentValues = getValues()
     const mergedValues = mergeImportedValues(currentValues, template.values)
-
-    reset({
+    // mergeImportedValues は enum フィールドを string に広げて返すため、
+    // reset に渡す前に CharacterFormFieldsSchema で再検証して型を絞り込む。
+    const nextValues = CharacterFormFieldsSchema.parse({
       ...mergedValues,
       speakerId: template.speaker.id
-    } as CharacterFormValues)
+    })
+
+    reset(nextValues)
     void trigger(['speakerId', 'caption'])
     setLinkedSpeaker(template.speaker)
   }
@@ -636,7 +642,7 @@ export function CharacterWizard({
       await handleSubmit(async (data) => {
         setIsSubmitting(true)
         try {
-          await onSubmit(data as CharacterFormValues, imageUrl)
+          await onSubmit(data, imageUrl)
         } finally {
           setIsSubmitting(false)
         }
@@ -696,25 +702,15 @@ export function CharacterWizard({
 
             {step === 0 && (
               <Step1
-                control={control as unknown as import('react-hook-form').Control<CharacterFormValues>}
+                control={control}
                 errors={errors}
                 imageUrl={imageUrl}
                 onImageChange={handleImageChange}
                 actions={stepOneActionNodes}
               />
             )}
-            {step === 1 && (
-              <Step2
-                control={control as unknown as import('react-hook-form').Control<CharacterFormValues>}
-                errors={errors}
-              />
-            )}
-            {step === 2 && (
-              <Step3
-                control={control as unknown as import('react-hook-form').Control<CharacterFormValues>}
-                errors={errors}
-              />
-            )}
+            {step === 1 && <Step2 control={control} errors={errors} />}
+            {step === 2 && <Step3 control={control} errors={errors} />}
           </div>
         </form>
       </div>

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { applyRubyAnnotations } from '../src/api/ruby-replacer'
+import { applyRubyAnnotations } from '../src/lib/ruby-replacer'
 
 describe('applyRubyAnnotations', () => {
   test('基本的な置換: 酒寄 → |酒寄[さかより]', () => {

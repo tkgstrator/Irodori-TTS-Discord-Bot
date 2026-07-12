@@ -8,7 +8,7 @@
       "!**/node_modules",
       "!**/components/ui/*.tsx",
       "!**/routeTree.gen.ts",
-      "!**/generated/prisma/*.ts"
+      "!**/generated/prisma"
     ]
   },
   "linter": {

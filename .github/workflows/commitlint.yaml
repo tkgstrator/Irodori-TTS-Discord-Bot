@@ -1,0 +1,28 @@
+name: CommitLint
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - master
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  commitlint:
+    name: CommitLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR commit messages
+        uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: .commitlintrc.yaml
+          failOnWarnings: false
+          helpURL: https://github.com/conventional-changelog/commitlint#what-is-commitlint

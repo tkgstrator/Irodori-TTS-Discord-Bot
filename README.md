@@ -1,14 +1,26 @@
-# Irodori-TTS Discord Bot
+# Irodori-TTS
 
-Discord の音声チャンネルに参加して、テキストチャンネルのメッセージを [Irodori-TTS](https://github.com/Aratako/Irodori-TTS) で読み上げる Discord Bot。
+[Irodori-TTS](https://github.com/Aratako/Irodori-TTS) を軸にした音声合成プロダクト群のモノレポ。Bun ワークスペースで管理している。
 
-## 概要
+## リポジトリ構成
+
+このリポジトリには 2 つのアプリと 1 つの共有パッケージが同居している。
+
+| パッケージ | 場所 | 内容 |
+|---|---|---|
+| **Discord Bot** | `workers/bot/` | Discord の VC でメッセージを [Irodori-TTS](https://github.com/Aratako/Irodori-TTS) 読み上げする Bot。本リポジトリの中心プロダクト |
+| **Plotmaker (開発中)** | `workers/web/` | ボイスドラマ / VDS スクリプトを作るための創作支援 Web アプリ。プロット / キャラクター / チャプター / エピソードの管理と LLM 支援での本文生成を担う。将来的に Bot と VDS 経由で接続予定 |
+| **shared** | `packages/shared/` | 両アプリで共有する Zod スキーマ・DTO・VDS 定義 |
+
+以下は主に **Discord Bot** についての説明。Plotmaker については [Plotmaker (workers/web)](#plotmaker-workersweb) セクションを参照。
+
+## Discord Bot の概要
 
 - テキストメッセージを音声合成して VC で読み上げ
-- 改行区切りで逐次合成・再生
+- 改行区切りで逐次合成・再生（1 行目が合成でき次第すぐ再生開始、話者混在なしの FIFO）
 - LoRA ベースの話者切替（UUID 識別）とサンプリングパラメータのユーザー単位カスタマイズ
 - ギルド単位の読み上げ挙動設定（VC外ユーザー読み上げ、入退出アナウンス、対象チャンネル絞り込み）
-- Redis による設定の永続化
+- Redis による設定の永続化（同一キーへの並行更新はプロセス内でシリアライズ）
 - ボイス接続の自動復旧・エラー時の Discord Webhook 通知
 - ボイスドラマ入力フォーマット [VDS](docs/voice-drama-format.md) の仕様定義（将来の拡張）
 
@@ -175,7 +187,44 @@ bun run start              # 本番実行
 
 ## ボイスドラマ入力フォーマット (VDS)
 
-複数話者・複数セリフを順次合成するためのスクリプトフォーマットを検討中。仕様は [docs/voice-drama-format.md](docs/voice-drama-format.md) にまとめてある（v1 ドラフト、実装は未着手）。
+複数話者・複数セリフを順次合成するためのスクリプトフォーマット。仕様は [docs/voice-drama-format.md](docs/voice-drama-format.md) にまとめてある（v1 ドラフト、Bot 側の実行実装は未着手）。次節の Plotmaker が最終的にこの VDS を出力する想定。
+
+## Plotmaker (`workers/web/`)
+
+VDS スクリプトを作るための創作支援 Web アプリ。**まだ開発中（`v0.0.2`）** で API・スキーマともに変わり得るため、本番運用向けではない。
+
+### できること（現状）
+
+- プロット / シナリオ / チャプター / エピソードの階層管理
+- キャラクター定義（ウィザードでの初期作成、リレーション定義）
+- 読み方辞書（ルビ）管理と本文へのルビ付与
+- LLM（[Qwen](https://qwenlm.github.io/)）支援でのチャプター計画・エピソード本文生成
+- 話者インポート（Bot 側で利用する UUID を共有）
+
+### 技術スタック
+
+- **Runtime**: [Bun](https://bun.com) + [@hono/node-server](https://hono.dev/getting-started/nodejs)
+- **フロント**: React 19 + [TanStack Router](https://tanstack.com/router) + [TanStack Query](https://tanstack.com/query) + [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- **バックエンド**: [Hono](https://hono.dev/) + [Prisma](https://www.prisma.io/) (Postgres)
+- **LLM**: OpenAI 互換 API（デフォルトは Qwen）
+- **ビルド**: [Vite](https://vitejs.dev/)
+
+### 起動
+
+```bash
+cd workers/web
+bun install
+bunx prisma migrate deploy --schema=prisma/schema.prisma
+bun run dev              # Vite dev サーバ
+# 別ターミナルで
+bun run start            # Hono API サーバ (@hono/node-server)
+```
+
+Postgres が別途必要（`DATABASE_URL` を `.env` に設定）。開発中のため、詳細セットアップは今後整備予定。
+
+### Bot との関係
+
+`packages/shared` の VDS 型定義を共有しており、将来的には Plotmaker で作成した VDS スクリプトを Bot が読み込んで VC で再生できる構成を目指す。現状は 2 プロダクトを同じリポジトリで並行開発する形。
 
 ## ライセンス
 

@@ -5,6 +5,10 @@ import { IRODORI_TTS_BASE_URL, irodoriClient } from './client'
 export interface PcmAudio {
   buffer: Buffer
   sampleRate: number
+  /** ログ・通知用のメタ情報。キューの挙動には一切影響しない */
+  authorId?: string
+  /** ログ・通知用のメタ情報。キューの挙動には一切影響しない */
+  lineIndex?: number
 }
 
 export const getSpeakers = async (): Promise<SpeakerInfo[]> => {
@@ -37,10 +41,6 @@ export const synthesize = async (
   return { buffer: Buffer.from(arrayBuffer), sampleRate }
 }
 
-export const textToSpeech = async (text: string, speakerId: string): Promise<PcmAudio> => {
-  return await synthesize(text, speakerId)
-}
-
 const toSynthParams = (cfg: SpeakerConfig): Omit<SynthRequest, 'speaker_id' | 'text'> => ({
   seed: cfg.seed,
   num_steps: cfg.numSteps,
@@ -53,8 +53,10 @@ const toSynthParams = (cfg: SpeakerConfig): Omit<SynthRequest, 'speaker_id' | 't
 export const textToSpeechWithSettings = async (
   text: string,
   speakerId: string,
-  speakerConfig: SpeakerConfig
+  speakerConfig: SpeakerConfig,
+  meta?: { authorId?: string; lineIndex?: number }
 ): Promise<PcmAudio> => {
   console.debug('TTS request:', { text, speakerId })
-  return await synthesize(text, speakerId, toSynthParams(speakerConfig))
+  const audio = await synthesize(text, speakerId, toSynthParams(speakerConfig))
+  return { ...audio, ...meta }
 }

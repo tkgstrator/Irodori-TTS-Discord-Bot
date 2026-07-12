@@ -72,7 +72,7 @@ export const registerVoiceStateHandler = (client: Client): void => {
           const speakerConfig = await getCurrentSpeakerConfig(newState.member.user.id)
           const username = newState.member.displayName || newState.member.user.username
           const audioStream = await textToSpeechWithSettings(`${username}が参加しました`, speakerId, speakerConfig)
-          enqueueAudio(guildId, audioStream, activeConnection)
+          await enqueueAudio(guildId, audioStream, activeConnection)
         } catch (error) {
           await notifyError('Failed to announce join', error, { guildId })
         }
@@ -87,7 +87,7 @@ export const registerVoiceStateHandler = (client: Client): void => {
         const speakerConfig = await getCurrentSpeakerConfig(newState.member.user.id)
         const username = newState.member.displayName || newState.member.user.username
         const audioStream = await textToSpeechWithSettings(`${username}が退席しました`, speakerId, speakerConfig)
-        enqueueAudio(guildId, audioStream, connection)
+        await enqueueAudio(guildId, audioStream, connection)
       } catch (error) {
         await notifyError('Failed to announce leave', error, { guildId })
       }

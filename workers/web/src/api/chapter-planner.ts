@@ -1,5 +1,4 @@
-import OpenAI from 'openai'
-import { z } from 'zod'
+import type OpenAI from 'openai'
 import {
   buildChapterPlanPrompt,
   buildChapterPlanRepairPrompt,
@@ -7,35 +6,8 @@ import {
 } from '@/lib/chapter-plan-prompt'
 import { type ChapterPlan, ChapterPlanSchema } from '@/schemas/chapter-plan.dto'
 import type { ChapterPlanRequest } from '@/schemas/chapter-plan-request.dto'
+import { getClient } from './llm-client'
 import { formatZodIssues, parseJsonText } from './llm-utils'
-
-const LlmEnvSchema = z.object({
-  LITELLM_BASE_URL: z.string().nonempty(),
-  LITELLM_MASTER_KEY: z.string().nonempty()
-})
-
-const clientCache = new Map<'default', OpenAI>()
-
-const getClient = () => {
-  const envResult = LlmEnvSchema.safeParse(process.env)
-
-  if (!envResult.success) {
-    throw new Error('LITELLM_BASE_URL / LITELLM_MASTER_KEY is not set')
-  }
-
-  const cachedClient = clientCache.get('default')
-
-  if (cachedClient) {
-    return cachedClient
-  }
-
-  const createdClient = new OpenAI({
-    baseURL: envResult.data.LITELLM_BASE_URL,
-    apiKey: envResult.data.LITELLM_MASTER_KEY
-  })
-  clientCache.set('default', createdClient)
-  return createdClient
-}
 
 // request 依存の整合も含めた章計画スキーマを組み立てる。
 const buildChapterPlanSchema = (request: ChapterPlanRequest) =>
