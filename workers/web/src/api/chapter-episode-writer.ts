@@ -256,5 +256,5 @@ export const writeChapterEpisode = async (request: ChapterEpisodeRequest): Promi
 export const estimateEpisodeDuration = (cues: readonly Cue[]): number => {
   const totalSpeechChars = cues.reduce((total, cue) => (cue.kind === 'speech' ? total + cue.text.length : total), 0)
   const totalPauseSeconds = cues.reduce((total, cue) => (cue.kind === 'pause' ? total + cue.duration : total), 0)
-  return Number((totalSpeechChars / 330 + totalPauseSeconds / 60 || 0).toFixed(1))
+  return Number((totalSpeechChars / 330 + totalPauseSeconds / 60).toFixed(1))
 }
