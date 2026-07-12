@@ -1,6 +1,6 @@
 import { type GuildSettings, GuildSettingsSchema, type GuildSettingsUpdate } from '../schemas/guild-settings.dto'
 import { notifyError } from './notifier'
-import { redis, safeJsonParse } from './redis'
+import { redis, safeJsonParse, withSerialized } from './redis'
 
 /**
  * デフォルトのギルド設定
@@ -60,9 +60,11 @@ export const setGuildSettings = async (guildId: string, settings: GuildSettings)
  * @param updates - 更新する設定項目
  */
 export const updateGuildSettings = async (guildId: string, updates: GuildSettingsUpdate): Promise<void> => {
-  const current = await getGuildSettings(guildId)
-  const updated = { ...current, ...updates }
-  await setGuildSettings(guildId, updated)
+  await withSerialized(`guild:${guildId}:settings`, async () => {
+    const current = await getGuildSettings(guildId)
+    const updated = { ...current, ...updates }
+    await setGuildSettings(guildId, updated)
+  })
 }
 
 /**

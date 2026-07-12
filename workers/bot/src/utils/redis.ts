@@ -20,6 +20,30 @@ export const redis = new Redis(config.REDIS_URL)
 const USER_SETTINGS_KEY_PREFIX = 'user:settings:'
 
 /**
+ * キー単位でRead-Modify-Write処理を直列化するためのin-flightキュー
+ * 同一キーへの並行更新でロスト・アップデートが起きるのを防ぐ
+ */
+const inFlight = new Map<string, Promise<unknown>>()
+
+/**
+ * 指定キーに紐づく処理を直列化して実行する
+ * 単一プロセス内でのget→mutate→setをアトミックに見せかけるためのヘルパ
+ * @param key 直列化の単位となるキー（Redisキーをそのまま利用する）
+ * @param fn 直列に実行したい処理
+ * @returns fnの返り値
+ */
+export const withSerialized = async <T>(key: string, fn: () => Promise<T>): Promise<T> => {
+  const prev = inFlight.get(key) ?? Promise.resolve()
+  const next = prev.then(fn, fn)
+  inFlight.set(key, next)
+  try {
+    return await next
+  } finally {
+    if (inFlight.get(key) === next) inFlight.delete(key)
+  }
+}
+
+/**
  * JSON.parseの結果を表す型
  */
 type JsonParseResult<T> = { ok: true; value: T } | { ok: false }
@@ -116,9 +140,11 @@ export const getCurrentSpeakerId = async (userId: string): Promise<string> => {
  * @param speakerId 話者UUID
  */
 export const setCurrentSpeakerId = async (userId: string, speakerId: string): Promise<void> => {
-  const settings = await getUserSettings(userId)
-  settings.speaker.currentId = speakerId
-  await setUserSettings(userId, settings)
+  await withSerialized(`${USER_SETTINGS_KEY_PREFIX}${userId}`, async () => {
+    const settings = await getUserSettings(userId)
+    settings.speaker.currentId = speakerId
+    await setUserSettings(userId, settings)
+  })
 }
 
 /**
@@ -143,21 +169,22 @@ export const updateSpeakerConfig = async (
   userId: string,
   speakerId: string,
   update: SpeakerConfigUpdate
-): Promise<SpeakerConfig> => {
-  const settings = await getUserSettings(userId)
-  const current = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
-  const updated = { ...current, ...update }
+): Promise<SpeakerConfig> =>
+  withSerialized(`${USER_SETTINGS_KEY_PREFIX}${userId}`, async () => {
+    const settings = await getUserSettings(userId)
+    const current = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
+    const updated = { ...current, ...update }
 
-  // バリデーション
-  const parseResult = SpeakerConfigSchema.safeParse(updated)
-  if (!parseResult.success) {
-    throw new Error(`Invalid speaker config: ${parseResult.error.message}`)
-  }
+    // バリデーション
+    const parseResult = SpeakerConfigSchema.safeParse(updated)
+    if (!parseResult.success) {
+      throw new Error(`Invalid speaker config: ${parseResult.error.message}`)
+    }
 
-  settings.speaker.settings[speakerId] = parseResult.data
-  await setUserSettings(userId, settings)
-  return parseResult.data
-}
+    settings.speaker.settings[speakerId] = parseResult.data
+    await setUserSettings(userId, settings)
+    return parseResult.data
+  })
 
 /**
  * 現在の話者の設定を取得する
