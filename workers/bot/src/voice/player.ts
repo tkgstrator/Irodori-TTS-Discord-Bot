@@ -1,4 +1,4 @@
-import { Readable } from 'node:stream'
+import { PassThrough, Readable } from 'node:stream'
 import {
   AudioPlayerStatus,
   createAudioPlayer,
@@ -10,6 +10,7 @@ import {
 } from '@discordjs/voice'
 import { notifyError } from '../utils/notifier'
 import type { PcmAudio } from '../utils/tts'
+import { getConnection } from '.'
 
 const createWavHeader = (sampleRate: number): Buffer => {
   const header = Buffer.alloc(44)
@@ -46,6 +47,33 @@ const guildPlayers = new Map<
   }
 >()
 
+/**
+ * キューの次のアイテムを再生する
+ * 再生中フラグの更新と接続の再取得を一箇所に集約し、
+ * 状態の不整合（デッドロック・二重再生）を防ぐ
+ * @param guildId ギルドID
+ */
+const advanceQueue = (guildId: string): void => {
+  const gp = guildPlayers.get(guildId)
+  if (!gp) return
+
+  const next = gp.queue.shift()
+  if (!next) {
+    gp.isPlaying = false
+    return
+  }
+
+  const connection = getConnection(guildId)
+  if (!connection) {
+    console.warn(`No active connection for guild ${guildId}, dropping queued audio`)
+    gp.isPlaying = false
+    return
+  }
+
+  gp.isPlaying = true
+  void playAudio(guildId, next, connection)
+}
+
 const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
   const existing = guildPlayers.get(guildId)
   if (existing) return existing
@@ -58,30 +86,13 @@ const getOrCreatePlayer = (guildId: string, connection: VoiceConnection) => {
 
   player.on(AudioPlayerStatus.Idle, () => {
     console.debug('Player became idle')
-    const gp = guildPlayers.get(guildId)
-    if (gp && gp.queue.length > 0) {
-      const next = gp.queue.shift()
-      if (next) {
-        void playAudio(guildId, next, connection)
-      }
-    } else if (gp) {
-      gp.isPlaying = false
-    }
+    advanceQueue(guildId)
   })
 
   player.on('error', (error) => {
     console.error(`Audio player error in guild ${guildId}:`, error)
     void notifyError('Audio player error', error, { guildId })
-    const gp = guildPlayers.get(guildId)
-    if (gp) {
-      gp.isPlaying = false
-      if (gp.queue.length > 0) {
-        const next = gp.queue.shift()
-        if (next) {
-          void playAudio(guildId, next, connection)
-        }
-      }
-    }
+    advanceQueue(guildId)
   })
 
   connection.subscribe(player)
@@ -110,6 +121,7 @@ const playAudio = async (guildId: string, audio: PcmAudio, connection: VoiceConn
       await entersState(connection, VoiceConnectionStatus.Ready, 5_000)
     } catch {
       console.error('Connection failed to become ready')
+      advanceQueue(guildId)
       return
     }
   }
@@ -138,7 +150,7 @@ export const enqueueAudio = async (guildId: string, audio: PcmAudio, connection:
 
 export const playStream = async (
   guildId: string,
-  pcmStream: import('node:stream').Readable,
+  pcmStream: Readable,
   sampleRate: number,
   connection: VoiceConnection
 ): Promise<void> => {
@@ -158,7 +170,6 @@ export const playStream = async (
   const guildPlayer = getOrCreatePlayer(guildId, connection)
   const wavHeader = createWavHeader(sampleRate)
 
-  const { PassThrough } = await import('node:stream')
   const passThrough = new PassThrough()
   passThrough.write(wavHeader)
   pcmStream.pipe(passThrough)
@@ -192,15 +203,6 @@ export const playStream = async (
     guildPlayer.player.on(AudioPlayerStatus.Idle, onIdle)
     guildPlayer.player.on('error', onError)
   })
-}
-
-export const clearQueue = (guildId: string): void => {
-  const guildPlayer = guildPlayers.get(guildId)
-  if (guildPlayer) {
-    guildPlayer.queue = []
-    guildPlayer.player.stop()
-    guildPlayer.isPlaying = false
-  }
 }
 
 export const destroyPlayer = (guildId: string): void => {
