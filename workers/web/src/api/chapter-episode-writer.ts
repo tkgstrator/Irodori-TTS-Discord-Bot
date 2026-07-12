@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Handlebars from 'handlebars'
-import OpenAI from 'openai'
 import { z } from 'zod'
 import {
   getAgeGroupLabel,
@@ -15,14 +14,9 @@ import {
 } from '@/lib/character-options'
 import type { Cue } from '@/lib/scenarios'
 import type { ChapterEpisodeRequest } from '@/schemas/chapter-episode-request.dto'
+import { getClient } from './llm-client'
 import { formatZodIssues, parseJsonText } from './llm-utils'
 
-const LlmEnvSchema = z.object({
-  LITELLM_BASE_URL: z.string().nonempty(),
-  LITELLM_MASTER_KEY: z.string().nonempty()
-})
-
-const clientCache = new Map<'default', OpenAI>()
 const templateDir = join(dirname(fileURLToPath(import.meta.url)), 'templates')
 const minSpeechCueCount = 30
 const maxSpeechCueCount = 70
@@ -45,30 +39,37 @@ const EpisodeCueSchema = z.discriminatedUnion('kind', [
   })
 ])
 
+// speech cue の件数が上限・下限に収まっているかをまとめて検証する（複数スキーマから共有）。
+const checkSpeechCueCount = (
+  cues: readonly z.infer<typeof EpisodeCueSchema>[],
+  ctx: z.RefinementCtx,
+  path: (string | number)[]
+) => {
+  const speechCueCount = cues.filter((cue) => cue.kind === 'speech').length
+
+  if (speechCueCount < minSpeechCueCount) {
+    ctx.addIssue({
+      code: 'custom',
+      path,
+      message: `expected at least ${minSpeechCueCount} speech cues, got ${speechCueCount}`
+    })
+  }
+
+  if (speechCueCount > maxSpeechCueCount) {
+    ctx.addIssue({
+      code: 'custom',
+      path,
+      message: `expected at most ${maxSpeechCueCount} speech cues, got ${speechCueCount}`
+    })
+  }
+}
+
 // cue 全体の件数と speech 件数をまとめて検証する。
 const EpisodeScriptSchema = z
   .object({
     cues: z.array(EpisodeCueSchema).min(minCueCount).max(maxCueCount)
   })
-  .superRefine((script, ctx) => {
-    const speechCueCount = script.cues.filter((cue) => cue.kind === 'speech').length
-
-    if (speechCueCount < minSpeechCueCount) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['cues'],
-        message: `expected at least ${minSpeechCueCount} speech cues, got ${speechCueCount}`
-      })
-    }
-
-    if (speechCueCount > maxSpeechCueCount) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['cues'],
-        message: `expected at most ${maxSpeechCueCount} speech cues, got ${speechCueCount}`
-      })
-    }
-  })
+  .superRefine((script, ctx) => checkSpeechCueCount(script.cues, ctx, ['cues']))
 
 // Handlebars テンプレートを読み込み、描画関数を返す。
 const loadTemplate = (fileName: string) => Handlebars.compile(readFileSync(join(templateDir, fileName), 'utf8'))
@@ -133,24 +134,9 @@ const buildEpisodeCueSchema = (speakerAliases: readonly string[]) =>
     .min(minCueCount)
     .max(maxCueCount)
     .superRefine((cues, ctx) => {
+      checkSpeechCueCount(cues, ctx, [])
+
       const speakerAliasSet = new Set(speakerAliases)
-      const speechCueCount = cues.filter((cue) => cue.kind === 'speech').length
-
-      if (speechCueCount < minSpeechCueCount) {
-        ctx.addIssue({
-          code: 'custom',
-          path: [],
-          message: `expected at least ${minSpeechCueCount} speech cues, got ${speechCueCount}`
-        })
-      }
-
-      if (speechCueCount > maxSpeechCueCount) {
-        ctx.addIssue({
-          code: 'custom',
-          path: [],
-          message: `expected at most ${maxSpeechCueCount} speech cues, got ${speechCueCount}`
-        })
-      }
 
       cues.forEach((cue, index) => {
         if (cue.kind === 'speech' && !speakerAliasSet.has(cue.speaker)) {
@@ -163,8 +149,9 @@ const buildEpisodeCueSchema = (speakerAliases: readonly string[]) =>
       })
     })
 
-// エピソード応答 JSON の形を検証する。
-const parseEpisodeScript = (text: string): readonly Cue[] => {
+// エピソード応答 JSON の形だけを検証する（話者 alias は検証しない）。
+// alias を持たない呼び出し元向けに残しているが、通常は parseEpisodeScript を使う。
+const parseEpisodeScriptRaw = (text: string): readonly Cue[] => {
   const jsonResult = parseJsonText(text)
   const scriptResult = EpisodeScriptSchema.safeParse(jsonResult)
 
@@ -190,25 +177,17 @@ export const validateEpisodeCues = ({
   }
 }
 
-const getClient = () => {
-  const envResult = LlmEnvSchema.safeParse(process.env)
-
-  if (!envResult.success) {
-    throw new Error('LITELLM_BASE_URL / LITELLM_MASTER_KEY is not set')
-  }
-
-  const cachedClient = clientCache.get('default')
-
-  if (cachedClient) {
-    return cachedClient
-  }
-
-  const createdClient = new OpenAI({
-    baseURL: envResult.data.LITELLM_BASE_URL,
-    apiKey: envResult.data.LITELLM_MASTER_KEY
-  })
-  clientCache.set('default', createdClient)
-  return createdClient
+// エピソード応答 JSON の形と話者 alias の整合をまとめて検証する。
+const parseEpisodeScript = ({
+  text,
+  speakerAliases
+}: {
+  text: string
+  speakerAliases: readonly string[]
+}): readonly Cue[] => {
+  const cues = parseEpisodeScriptRaw(text)
+  validateEpisodeCues({ cues, speakerAliases })
+  return cues
 }
 
 const buildEpisodeSystemInstruction = (speakerAliases: readonly string[]) =>
@@ -225,9 +204,15 @@ export const buildChapterEpisodePrompt = (request: ChapterEpisodeRequest) =>
     userDirection: request.userDirection
   }).trim()
 
-// LLM の JSON 文字列を cue 配列として検証する。
-export const parseChapterEpisodeText = ({ text }: { text: string }): readonly Cue[] => {
-  return parseEpisodeScript(text)
+// LLM の JSON 文字列を cue 配列として検証する（形と話者 alias の両方をチェック済み）。
+export const parseChapterEpisodeText = ({
+  text,
+  speakerAliases
+}: {
+  text: string
+  speakerAliases: readonly string[]
+}): readonly Cue[] => {
+  return parseEpisodeScript({ text, speakerAliases })
 }
 
 // 章プロットからエピソード cue を生成する。
@@ -249,7 +234,7 @@ export const writeChapterEpisode = async (request: ChapterEpisodeRequest): Promi
     throw new Error('LLM returned empty response')
   }
 
-  return parseChapterEpisodeText({ text })
+  return parseChapterEpisodeText({ text, speakerAliases })
 }
 
 // cue 配列から再生時間を概算する。
