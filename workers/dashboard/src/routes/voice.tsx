@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, useState } from 'react'
 import { toast } from 'sonner'
+import { ComboSelect } from '@/components/combo-select'
 import { LoginPanel } from '@/components/login-panel'
 import { SpeakerConfigForm } from '@/components/speaker-config-form'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMe } from '@/lib/auth'
 import { useBotSettingsMutations, useSuspenseMySettings, useSuspenseSpeakers } from '@/lib/bot-settings'
@@ -76,6 +76,11 @@ function VoiceSettings() {
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory === undefined ? '' : initialCategory)
 
   const speakersInCategory = speakers.filter((speaker) => categoryOf(speaker) === selectedCategory)
+  const categoryOptions = categories.map((category) => ({ value: category, label: category }))
+  const speakerOptions = speakersInCategory.map((speaker) => ({
+    value: speaker.uuid,
+    label: speaker.cv === null ? speaker.name : `${speaker.name} / ${speaker.cv}`
+  }))
   // 選択中カテゴリに現在の話者がいないときは未選択（プレースホルダ表示）にする。
   // カテゴリを眺めるだけでは保存 API を呼ばず、話者を選んだときだけ切り替える
   const speakerSelectValue = speakersInCategory.some((speaker) => speaker.uuid === currentId) ? currentId : ''
@@ -102,36 +107,30 @@ function VoiceSettings() {
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Label htmlFor="category-select">カテゴリ</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger id="category-select" className="w-full sm:w-80">
-                <SelectValue placeholder="カテゴリを選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ComboSelect
+              id="category-select"
+              options={categoryOptions}
+              value={selectedCategory}
+              placeholder="カテゴリを選択"
+              searchPlaceholder="カテゴリを検索"
+              emptyText="該当するカテゴリがありません"
+              onSelect={setSelectedCategory}
+            />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="speaker-select">話者</Label>
-            {/* カテゴリは上のセレクトで選ばせているので、ここでの再掲バッジは置かない */}
-            <Select value={speakerSelectValue} onValueChange={handleSpeakerChange} disabled={isSwitchingSpeaker}>
-              <SelectTrigger id="speaker-select" className="w-full sm:w-80">
-                <SelectValue placeholder="話者を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {speakersInCategory.map((speaker) => (
-                  <SelectItem key={speaker.uuid} value={speaker.uuid}>
-                    {speaker.name}
-                    {speaker.cv !== null && ` / ${speaker.cv}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* カテゴリは上のコントロールで選ばせているので、ここでの再掲バッジは置かない */}
+            <ComboSelect
+              id="speaker-select"
+              options={speakerOptions}
+              value={speakerSelectValue}
+              placeholder="話者を選択"
+              searchPlaceholder="話者を検索"
+              emptyText="該当する話者がいません"
+              disabled={isSwitchingSpeaker}
+              onSelect={handleSpeakerChange}
+            />
           </div>
         </div>
       </SettingsSection>
