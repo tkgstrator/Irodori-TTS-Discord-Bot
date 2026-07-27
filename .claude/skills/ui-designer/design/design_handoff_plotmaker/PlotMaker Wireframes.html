@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>PlotMaker — Wireframes</title>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; }
+  body { background: #f0eee9; font-family: 'Inter', system-ui; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="wire/primitives.jsx"></script>
+<script type="text/babel" src="wire/dashboard.jsx"></script>
+<script type="text/babel" src="wire/char-list.jsx"></script>
+<script type="text/babel" src="wire/char-edit.jsx"></script>
+<script type="text/babel" src="wire/scenario.jsx"></script>
+<script type="text/babel" src="wire/relation.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+// ── Tweaks state ───────────────────────────────────────────────
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "sidebarCollapsed": false,
+  "theme": "dark",
+  "relationLayout": "triangle"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tw, setTw] = React.useState(TWEAKS);
+  const [editMode, setEditMode] = React.useState(false);
+
+  // edit-mode protocol
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const d = e.data || {};
+      if (d.type === '__activate_edit_mode') setEditMode(true);
+      if (d.type === '__deactivate_edit_mode') setEditMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const patch = (p) => {
+    setTw((s) => {
+      const next = { ...s, ...p };
+      window.parent.postMessage({ type: '__edit_mode_set_keys', edits: p }, '*');
+      return next;
+    });
+  };
+
+  // apply theme
+  React.useEffect(() => {
+    if (tw.theme === 'dark') {
+      document.documentElement.style.filter = 'invert(0.92) hue-rotate(180deg)';
+      document.body.style.background = '#1a1814';
+    } else {
+      document.documentElement.style.filter = '';
+      document.body.style.background = '#f0eee9';
+    }
+  }, [tw.theme]);
+
+  const C = tw.sidebarCollapsed;
+
+  // Size for all artboards — 16:9-ish wireframes
+  const W = 1100, H = 680;
+
+  const Frame = ({ children }) => (
+    <div style={{ width: W, height: H, overflow: 'hidden', background: '#faf8f3' }}>{children}</div>
+  );
+
+  return (
+    <>
+      <DesignCanvas>
+        <DCSection id="dashboard" title="ダッシュボード / ホーム" subtitle="ログイン後の最初の画面 · 3案">
+          <DCArtboard id="a" label="A · 最近+クイック作成" width={W} height={H}>
+            <Frame><DashA collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="b" label="B · サムネグリッド (YouTube風)" width={W} height={H}>
+            <Frame><DashB collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c" label="C · タイムライン + AIサジェスト" width={W} height={H}>
+            <Frame><DashC collapsed={C} /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="char-list" title="キャラクター一覧" subtitle="登録したキャラを俯瞰する · 3案">
+          <DCArtboard id="a" label="A · カードグリッド" width={W} height={H}>
+            <Frame><CharListA collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="b" label="B · リスト + 右プレビュー" width={W} height={H}>
+            <Frame><CharListB collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c" label="C · テーブル" width={W} height={H}>
+            <Frame><CharListC collapsed={C} /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="char-edit" title="キャラクター作成 / 編集" subtitle="名前・年齢・性格などの入力 · 3案">
+          <DCArtboard id="a" label="A · 縦スクロール・フルフォーム" width={W} height={H}>
+            <Frame><CharEditA collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="b" label="B · 2ペイン (編集 + プレビュー)" width={W} height={H}>
+            <Frame><CharEditB collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c" label="C · タブ分け + AI対話" width={W} height={H}>
+            <Frame><CharEditC collapsed={C} /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="scenario" title="シナリオ作成" subtitle="大雑把なシナリオ入力 → LLM生成 · 3案">
+          <DCArtboard id="a" label="A · 本文エディタ中心" width={W} height={H}>
+            <Frame><ScenarioA collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="b" label="B · メタ情報カード + 生成パネル" width={W} height={H}>
+            <Frame><ScenarioB collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c" label="C · 3カラム (章立て + 本文 + 起承転結)" width={W} height={H}>
+            <Frame><ScenarioC collapsed={C} /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="relation" title="キャラクター相関図" subtitle="React Flow · 最大3人 · 3案">
+          <DCArtboard id="a" label="A · 選択リスト + 固定配置" width={W} height={H}>
+            <Frame><RelationA collapsed={C} layout={tw.relationLayout} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="b" label="B · フルキャンバス (自由配置)" width={W} height={H}>
+            <Frame><RelationB collapsed={C} /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c" label="C · 関係性プリセットで色分け" width={W} height={H}>
+            <Frame><RelationC collapsed={C} /></Frame>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      {/* Tweaks panel */}
+      {editMode && (
+        <div style={{
+          position: 'fixed', right: 16, bottom: 16, zIndex: 200,
+          background: '#fff', border: '1.2px solid #1f1a16', borderRadius: 8,
+          padding: 14, width: 240,
+          boxShadow: '0 8px 32px rgba(0,0,0,.2)',
+          fontFamily: 'Inter, system-ui',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontFamily: 'Kalam, cursive', fontSize: 18, fontWeight: 700 }}>Tweaks</div>
+            <div style={{ fontSize: 10, color: '#8a8078' }}>ワイヤーフレーム</div>
+          </div>
+
+          {/* sidebar */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: '#4a423b', marginBottom: 4, fontWeight: 500 }}>サイドバー</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[['開く', false], ['畳む', true]].map(([l, v]) => (
+                <button key={String(v)} onClick={() => patch({ sidebarCollapsed: v })}
+                  style={{
+                    flex: 1, padding: '6px 8px', fontSize: 11, borderRadius: 4,
+                    border: '1px solid ' + (tw.sidebarCollapsed === v ? '#c96442' : '#cbc2b5'),
+                    background: tw.sidebarCollapsed === v ? '#fff2a8' : '#fff',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* theme */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: '#4a423b', marginBottom: 4, fontWeight: 500 }}>テーマ</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[['ライト', 'light'], ['ダーク', 'dark']].map(([l, v]) => (
+                <button key={v} onClick={() => patch({ theme: v })}
+                  style={{
+                    flex: 1, padding: '6px 8px', fontSize: 11, borderRadius: 4,
+                    border: '1px solid ' + (tw.theme === v ? '#c96442' : '#cbc2b5'),
+                    background: tw.theme === v ? '#fff2a8' : '#fff',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* relation layout */}
+          <div>
+            <div style={{ fontSize: 11, color: '#4a423b', marginBottom: 4, fontWeight: 500 }}>相関図Aレイアウト</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[['三角', 'triangle'], ['一列', 'line'], ['放射', 'radial']].map(([l, v]) => (
+                <button key={v} onClick={() => patch({ relationLayout: v })}
+                  style={{
+                    flex: 1, padding: '6px 6px', fontSize: 11, borderRadius: 4,
+                    border: '1px solid ' + (tw.relationLayout === v ? '#c96442' : '#cbc2b5'),
+                    background: tw.relationLayout === v ? '#fff2a8' : '#fff',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}>{l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
