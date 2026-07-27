@@ -1,5 +1,5 @@
 import type { SpeakerInfo, SynthRequest } from '@irodori-tts/shared/irodori-api'
-import type { SpeakerConfig } from '../schemas/user-settings.dto'
+import type { SpeakerConfig } from '@irodori-tts/shared/settings'
 import { IRODORI_TTS_BASE_URL, irodoriClient } from './client'
 
 export interface PcmAudio {
