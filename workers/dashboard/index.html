@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Irodori TTS Dashboard</title>
+    <script>
+      // 既定はダーク。ライトを選んだ場合のみ localStorage の値で上書きする。
+      (function(){if(localStorage.getItem("irodori-dashboard-theme")==="light")document.documentElement.classList.remove("dark")})()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -57,13 +57,32 @@ export type DiscordGuild = z.infer<typeof DiscordGuildSchema>
 const MANAGE_GUILD_FLAG = 0x20n
 
 /**
+ * OAuth に必要な設定を取り出す
+ *
+ * 開発用バイパス利用時は未設定でも起動できるようにしているため、
+ * 実際にログイン処理へ入る時点でここで検証する。
+ */
+const requireOAuthConfig = (): { clientId: string; clientSecret: string; redirectUri: string } => {
+  const { DISCORD_CLIENT_ID: clientId, DISCORD_CLIENT_SECRET: clientSecret, OAUTH_REDIRECT_URI: redirectUri } = env
+
+  if (clientId === undefined || clientSecret === undefined || redirectUri === undefined) {
+    throw new Error(
+      'Discord OAuth is not configured. Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and OAUTH_REDIRECT_URI.'
+    )
+  }
+
+  return { clientId, clientSecret, redirectUri }
+}
+
+/**
  * 認可URLを組み立てる
  * @param state CSRF対策のstate
  */
 export const buildAuthorizeUrl = (state: string): string => {
+  const { clientId, redirectUri } = requireOAuthConfig()
   const params = new URLSearchParams({
-    client_id: env.DISCORD_CLIENT_ID,
-    redirect_uri: env.OAUTH_REDIRECT_URI,
+    client_id: clientId,
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope: OAUTH_SCOPES,
     state,
@@ -77,12 +96,13 @@ export const buildAuthorizeUrl = (state: string): string => {
  * @param body 送信するフォームパラメータ
  */
 const requestToken = async (body: Record<string, string>): Promise<SessionTokens> => {
+  const { clientId, clientSecret } = requireOAuthConfig()
   const response = await fetch(`${DISCORD_API_BASE}/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: env.DISCORD_CLIENT_ID,
-      client_secret: env.DISCORD_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       ...body
     })
   })
@@ -111,7 +131,7 @@ export const exchangeCode = async (code: string): Promise<SessionTokens> =>
   requestToken({
     grant_type: 'authorization_code',
     code,
-    redirect_uri: env.OAUTH_REDIRECT_URI
+    redirect_uri: requireOAuthConfig().redirectUri
   })
 
 /**

@@ -3,7 +3,10 @@ import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { rateLimiter } from 'hono-rate-limiter'
 import { api } from './api/api'
+import { warnIfDevAuthBypassEnabled } from './api/dev-auth'
 import type { SessionVariables } from './api/session'
+
+warnIfDevAuthBypassEnabled()
 
 // このアプリの前に立つ信頼できるリバースプロキシの数。
 // 各プロキシは `x-forwarded-for` の右端に接続元を追加していくため、

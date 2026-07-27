@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { z } from 'zod'
+import { createDevSession, isDevAuthBypassEnabled } from './dev-auth'
 import { env } from './env'
 import { redis, safeJsonParse, withSerialized } from './redis'
 
@@ -169,7 +170,10 @@ export const updateSession = async (sessionId: string, data: SessionData): Promi
  * @param sessionId セッションID
  */
 export const destroySession = async (c: Context, sessionId: string): Promise<void> => {
-  await redis.del(sessionKey(sessionId))
+  // バイパス中のセッションは Redis に存在しないので削除しない。
+  if (!isDevAuthBypassEnabled()) {
+    await redis.del(sessionKey(sessionId))
+  }
   deleteCookie(c, cookieName(), { path: '/' })
 }
 
@@ -179,6 +183,11 @@ export const destroySession = async (c: Context, sessionId: string): Promise<voi
  * @returns セッション（未ログインや破損時はnull）
  */
 export const getSession = async (c: Context): Promise<Session | null> => {
+  // 開発用バイパスが有効なときは Cookie も Redis も見ずに擬似セッションを返す。
+  if (isDevAuthBypassEnabled()) {
+    return createDevSession()
+  }
+
   const sessionId = getCookie(c, cookieName())
   if (sessionId === undefined || sessionId.length === 0) {
     return null

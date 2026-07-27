@@ -1,3 +1,4 @@
+import { AudioLines } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -8,13 +9,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
  */
 export function LoginCard() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Discord でログイン</CardTitle>
-        <CardDescription>読み上げBotの設定を変更するには Discord アカウントでのログインが必要です。</CardDescription>
+    <Card className="mx-auto max-w-md text-center">
+      <CardHeader className="items-center gap-3">
+        <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <AudioLines className="size-6" />
+        </span>
+        <CardTitle className="text-xl">読み上げ設定をはじめる</CardTitle>
+        <CardDescription>
+          Discord でログインすると、自分の声や読み上げの細かいパラメータを変更できます。
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button asChild>
+        <Button asChild size="lg" className="w-full">
           <a href="/api/auth/login">Discord でログイン</a>
         </Button>
       </CardContent>
