@@ -11,6 +11,23 @@ services:
     stdin_open: true
     tty: true
 
+  dashboard:
+    image: tkgling/irodori-tts-dashboard:latest
+    environment:
+      REDIS_URL: redis://redis:6379
+      IRODORI_TTS_BASE_URL: http://irodori-tts:8765
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
+      DEFAULT_SPEAKER_ID: ${DEFAULT_SPEAKER_ID}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      PORT: 18575
+    ports:
+      - 18575:18575
+    depends_on:
+      redis:
+        condition: service_healthy
+
   irodori-tts:
     image: tkgling/irodori-tts:latest
     volumes:

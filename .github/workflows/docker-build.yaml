@@ -8,6 +8,7 @@ on:
     paths:
       - 'workers/bot/**'
       - 'workers/web/**'
+      - 'workers/dashboard/**'
       - 'packages/**'
       - 'bun.lock'
       - 'package.json'
@@ -35,6 +36,9 @@ jobs:
           - name: web
             dockerfile: workers/web/Dockerfile
             image: plotmaker
+          - name: dashboard
+            dockerfile: workers/dashboard/Dockerfile
+            image: irodori-tts-dashboard
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build from the repository root:
-#   docker build -f workers/web/Dockerfile -t tkgling/plotmaker:latest .
+#   docker build -f workers/dashboard/Dockerfile -t tkgling/irodori-tts-dashboard:latest .
 
 FROM oven/bun:1 AS deps
 WORKDIR /app
@@ -15,20 +15,15 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
 FROM deps AS build
 COPY package.json tsconfig.base.json ./
 COPY packages/shared packages/shared
-COPY workers/web workers/web
-RUN bunx prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
-RUN bun run --filter @irodori-tts/web build
-RUN bun build workers/web/prisma/init.ts --outfile workers/web/dist/init.js --target=bun
+COPY workers/dashboard workers/dashboard
+RUN bun run --filter @irodori-tts/dashboard build
 
 FROM oven/bun:1-slim AS runtime
-WORKDIR /app/workers/web
+WORKDIR /app/workers/dashboard
 ENV NODE_ENV=production
+ENV PORT=18575
 
-COPY --from=build /app/workers/web/dist dist
-COPY --from=build /app/workers/web/prisma/schema.prisma prisma/schema.prisma
-COPY --from=build /app/workers/web/prisma/migrations prisma/migrations
-COPY --from=build /app/workers/web/prisma.config.ts prisma.config.ts
-COPY workers/web/entrypoint.sh /entrypoint.sh
+COPY --from=build /app/workers/dashboard/dist dist
 
-EXPOSE 3000
-ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 18575
+CMD ["bun", "run", "dist/server/index.js"]

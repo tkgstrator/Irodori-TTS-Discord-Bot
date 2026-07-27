@@ -1,0 +1,59 @@
+import { env } from './env'
+import type { Session } from './session'
+
+/**
+ * 実行時の環境変数を読む
+ *
+ * NODE_ENV への直接アクセスは bun / esbuild 系のバンドラがビルド時に
+ * リテラルへ畳み込むため、そのまま書くと本番ガードごと最適化で消える。
+ * キーを変数経由で渡して静的置換を防ぐ。
+ */
+const readRuntimeEnv = (key: string): string | undefined => process.env[key]
+
+/**
+ * 開発用ログインバイパスが有効かどうか
+ *
+ * 二重ゲート方式にしている。`DEV_AUTH_BYPASS=true` を立てても
+ * `NODE_ENV=production` では常に false になるため、本番ビルドで
+ * 事故的に認証が外れることはない。
+ */
+export const isDevAuthBypassEnabled = (): boolean =>
+  readRuntimeEnv('NODE_ENV') !== 'production' && readRuntimeEnv('DEV_AUTH_BYPASS') === 'true'
+
+/**
+ * バイパス時に使う擬似セッション
+ *
+ * Redis には保存せず、リクエストごとに組み立てる。Discordのトークンは
+ * 持たないため、ギルド一覧などDiscord APIを叩く機能は利用できない。
+ */
+export const createDevSession = (): Session => ({
+  id: 'dev-auth-bypass',
+  data: {
+    user: {
+      id: env.DEV_AUTH_USER_ID,
+      username: env.DEV_AUTH_USERNAME,
+      globalName: env.DEV_AUTH_USERNAME,
+      avatar: null
+    },
+    tokens: {
+      accessToken: 'dev-auth-bypass',
+      refreshToken: 'dev-auth-bypass',
+      expiresAt: Number.MAX_SAFE_INTEGER
+    }
+  }
+})
+
+/**
+ * バイパスが有効なら警告を出す
+ *
+ * 起動時に一度だけ呼び、認証が外れている状態を見落とさないようにする。
+ */
+export const warnIfDevAuthBypassEnabled = (): void => {
+  if (isDevAuthBypassEnabled()) {
+    // 起動時に呼ばれるため、env の検証を巻き込まないよう process.env を直接読む。
+    // ここで env を触ると未設定の変数があるだけでアプリが起動できなくなる。
+    console.warn(
+      `[dev-auth] ログインバイパスが有効です（user=${process.env.DEV_AUTH_USER_ID ?? 'default'}）。開発環境専用の設定であることを確認してください。`
+    )
+  }
+}
