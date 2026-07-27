@@ -1,4 +1,5 @@
 import type { SpeakerInfo } from '@irodori-tts/shared/irodori-api'
+import type { SpeakerConfigUpdate } from '@irodori-tts/shared/settings'
 import {
   ActionRowBuilder,
   type AutocompleteInteraction,
@@ -9,7 +10,6 @@ import {
   StringSelectMenuBuilder,
   type StringSelectMenuInteraction
 } from 'discord.js'
-import type { SpeakerConfigUpdate } from '../schemas/user-settings.dto'
 import {
   deleteUserSettings,
   getCurrentSpeakerConfig,

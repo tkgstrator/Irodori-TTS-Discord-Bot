@@ -5,17 +5,17 @@
     "": {
       "name": "app",
       "devDependencies": {
-        "@biomejs/biome": "latest",
-        "@playwright/test": "latest",
-        "@types/sharp": "latest",
-        "openapi-zod-client": "latest",
-        "sharp": "latest",
-        "typescript": "latest",
+        "@biomejs/biome": "^2.5.5",
+        "@playwright/test": "^1.62.0",
+        "@types/sharp": "^0.32.0",
+        "openapi-zod-client": "^1.18.3",
+        "sharp": "^0.35.3",
+        "typescript": "^7.0.2",
       },
     },
     "packages/shared": {
       "name": "@irodori-tts/shared",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "dependencies": {
         "@zodios/core": "^10.9.6",
         "zod": "^4.3.6",
@@ -23,7 +23,7 @@
     },
     "workers/bot": {
       "name": "@irodori-tts/bot",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "dependencies": {
         "@discordjs/opus": "^0.10.0",
         "@discordjs/voice": "^0.19.2",
