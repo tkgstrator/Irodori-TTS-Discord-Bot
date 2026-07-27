@@ -11,6 +11,7 @@ rules:
   - always
   - - build
     - ui
+    - chore
     - ci
     - docs
     - feat
