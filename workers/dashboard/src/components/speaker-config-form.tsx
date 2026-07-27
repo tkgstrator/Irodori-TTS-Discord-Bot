@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { SpeakerDefaults } from '@/schemas/settings-api.dto'
 
 /**
  * フォームで扱うフィールド定義
@@ -69,10 +70,22 @@ const toConfig = (values: FormValues): SpeakerConfig =>
 interface SpeakerConfigFormProps {
   speakerId: string
   config: SpeakerConfig
+  defaults: SpeakerDefaults
   isSaving: boolean
   isClearing: boolean
   onSave: (config: SpeakerConfig) => Promise<unknown>
   onClear: () => Promise<unknown>
+}
+
+/**
+ * 空欄時に適用される値を入力欄のプレースホルダとして示す
+ *
+ * 話者に焼き込まれたデフォルトがあればその数値を、無ければ
+ * サーバー側の挙動（「デフォルト」「無効」など）をそのまま出す。
+ */
+const placeholderFor = (field: (typeof FIELDS)[number], defaults: SpeakerDefaults): string => {
+  const value = defaults[field.key]
+  return value === undefined ? field.placeholder : `${value}（話者のデフォルト）`
 }
 
 /**
@@ -81,6 +94,7 @@ interface SpeakerConfigFormProps {
 export function SpeakerConfigForm({
   speakerId,
   config,
+  defaults,
   isSaving,
   isClearing,
   onSave,
@@ -121,8 +135,8 @@ export function SpeakerConfigForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
         {FIELDS.map((field) => (
           <div key={field.key} className="flex flex-col gap-1.5">
             <Label htmlFor={`${speakerId}-${field.key}`}>{field.label}</Label>
@@ -130,17 +144,24 @@ export function SpeakerConfigForm({
               id={`${speakerId}-${field.key}`}
               inputMode="decimal"
               value={values[field.key]}
-              placeholder={field.placeholder}
+              placeholder={placeholderFor(field, defaults)}
+              aria-describedby={`${speakerId}-${field.key}-hint`}
               onChange={(event) => handleChange(field.key, event.target.value)}
             />
-            <p className="text-muted-foreground text-xs">{field.hint}</p>
+            <p id={`${speakerId}-${field.key}-hint`} className="text-muted-foreground text-xs leading-relaxed">
+              {field.hint}
+            </p>
           </div>
         ))}
       </div>
 
-      {error !== null && <p className="text-destructive text-sm">{error}</p>}
+      {error !== null && (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 border-t pt-6">
         <Button type="submit" disabled={isSaving}>
           保存
         </Button>

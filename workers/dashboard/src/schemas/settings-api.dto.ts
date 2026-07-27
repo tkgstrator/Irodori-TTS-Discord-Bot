@@ -19,13 +19,29 @@ export const CurrentSpeakerInputSchema = z.object({
 })
 
 /**
+ * 話者に焼き込まれたサンプリングのデフォルト値
+ *
+ * Irodori-TTS が LoRA ごとに持っている既定値で、ユーザーが未設定の項目に適用される。
+ * 表示専用（UIでプレースホルダとして見せる）。
+ */
+export const SpeakerDefaultsSchema = z.object({
+  numSteps: z.number().optional(),
+  cfgScaleText: z.number().optional(),
+  cfgScaleSpeaker: z.number().optional(),
+  speakerKvScale: z.number().optional(),
+  truncationFactor: z.number().optional(),
+  seed: z.number().optional()
+})
+
+/**
  * 話者一覧の1件（Irodori-TTS の `/speakers` を UI 向けに整形したもの）
  */
 export const SpeakerSchema = z.object({
   uuid: z.string().nonempty(),
   name: z.string(),
   cv: z.string().nullable(),
-  categoryLabel: z.string().nullable()
+  categoryLabel: z.string().nullable(),
+  defaults: SpeakerDefaultsSchema
 })
 
 /**
@@ -37,3 +53,4 @@ export { SpeakerConfigSchema, SpeakerConfigUpdateSchema, UserSettingsSchema }
 
 export type Me = z.infer<typeof MeSchema>
 export type Speaker = z.infer<typeof SpeakerSchema>
+export type SpeakerDefaults = z.infer<typeof SpeakerDefaultsSchema>

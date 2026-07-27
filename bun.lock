@@ -44,8 +44,7 @@
       "name": "@irodori-tts/dashboard",
       "version": "0.0.1",
       "dependencies": {
-        "@fontsource-variable/geist": "^5.2.8",
-        "@fontsource/fraunces": "^5.2.9",
+        "@fontsource-variable/m-plus-2": "^5.3.0",
         "@hono/node-server": "^2.0.0",
         "@hookform/resolvers": "^5.2.2",
         "@irodori-tts/shared": "workspace:*",
@@ -327,6 +326,8 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
     "@fontsource-variable/geist": ["@fontsource-variable/geist@5.2.8", "", {}, "sha512-cJ6m9e+8MQ5dCYJsLylfZrgBh6KkG4bOLckB35Tr9J/EqdkEM6QllH5PxqP1dhTvFup+HtMRPuz9xOjxXJggxw=="],
+
+    "@fontsource-variable/m-plus-2": ["@fontsource-variable/m-plus-2@5.3.0", "", {}, "sha512-Sp0zoiDdITPuGJTAxMMeHXSTg2Cgh2sVHVziX37Z3FCNb08NAqLL5L47wF9sIvjtu/KEropA+sReMpgXJGMy+A=="],
 
     "@fontsource/fraunces": ["@fontsource/fraunces@5.2.9", "", {}, "sha512-XDzuddBtoC7BZgZdBn6b7hsFZY2+V1hgN7yca5fBTKuHjb/lOd45a0Ji8dTUgFhPoL7RdGupo+bC2BFSt6UH8Q=="],
 

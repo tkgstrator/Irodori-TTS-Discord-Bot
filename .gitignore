@@ -430,3 +430,9 @@ data/
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+# Source lib directories (the Python-style [Ll]ib rule above swallows them)
+!workers/*/src/lib/
+!workers/*/src/lib/**
+!packages/*/src/lib/
+!packages/*/src/lib/**

@@ -5,7 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
@@ -38,28 +37,44 @@ export function UserMenu() {
     )
   }
 
-  const displayName = me.globalName ?? me.username
+  const displayName = me.globalName === null ? me.username : me.globalName
+  const initial = displayName.slice(0, 1).toUpperCase()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="アカウントメニュー">
+        <Button variant="ghost" size="icon" className="rounded-full" aria-label="アカウントメニュー">
           <Avatar className="size-7">
             <AvatarImage src={avatarUrl(me.id, me.avatar)} alt="" />
-            <AvatarFallback>{displayName.slice(0, 1).toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="text-xs">{initial}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span className="truncate">{displayName}</span>
-          <span className="truncate font-normal text-muted-foreground text-xs">@{me.username}</span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={isLoggingOut} onSelect={() => void logout()}>
-          <LogOut className="size-4" />
-          ログアウト
-        </DropdownMenuItem>
+
+      <DropdownMenuContent align="end" className="w-60 p-0">
+        <div className="flex items-center gap-3 px-3 py-3">
+          <Avatar className="size-9">
+            <AvatarImage src={avatarUrl(me.id, me.avatar)} alt="" />
+            <AvatarFallback>{initial}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate font-medium text-sm">{displayName}</span>
+            <span className="truncate text-muted-foreground text-xs">@{me.username}</span>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator className="my-0" />
+
+        <div className="p-1">
+          <DropdownMenuItem
+            disabled={isLoggingOut}
+            onSelect={() => void logout()}
+            className="text-destructive focus:text-destructive"
+          >
+            <LogOut className="size-4" />
+            ログアウト
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

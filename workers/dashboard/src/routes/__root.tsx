@@ -27,29 +27,28 @@ function AppShell() {
     <div className="min-h-dvh bg-background text-foreground">
       <div
         aria-hidden="true"
-        className="-z-10 pointer-events-none fixed inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/10 to-transparent"
+        className="-z-10 pointer-events-none fixed inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/10 to-transparent"
       />
 
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-6">
+        <div className="mx-auto flex h-16 max-w-3xl items-center gap-8 px-6">
           <Link to="/" className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <AudioLines className="size-4" />
-            </span>
-            <span className="font-brand text-base leading-none">Irodori TTS</span>
+            <AudioLines className="size-5 text-primary" />
+            <span className="font-brand font-semibold text-base leading-none tracking-tight">Irodori TTS</span>
           </Link>
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-6 text-sm">
             {NAV_ITEMS.map((item) => (
-              <Button key={item.to} asChild variant="ghost" size="sm">
-                <Link
-                  to={item.to}
-                  activeProps={{ className: 'bg-accent text-accent-foreground' }}
-                  activeOptions={{ exact: item.to === '/' }}
-                >
-                  {item.label}
-                </Link>
-              </Button>
+              <Link
+                key={item.to}
+                to={item.to}
+                className="transition-colors hover:text-foreground"
+                activeProps={{ className: 'font-medium text-foreground' }}
+                inactiveProps={{ className: 'text-muted-foreground' }}
+                activeOptions={{ exact: item.to === '/' }}
+              >
+                {item.label}
+              </Link>
             ))}
           </nav>
 
@@ -60,7 +59,7 @@ function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-3xl px-6 py-12">
         <Outlet />
       </main>
 

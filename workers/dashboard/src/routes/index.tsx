@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { ArrowRight, BookText, Mic2, Users } from 'lucide-react'
-import { LoginCard } from '@/components/login-card'
+import { LoginPanel } from '@/components/login-panel'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMe } from '@/lib/auth'
 
-interface FeatureCard {
+interface FeatureItem {
   to: string
   label: string
   description: string
@@ -15,7 +14,7 @@ interface FeatureCard {
   available: boolean
 }
 
-const FEATURES: readonly FeatureCard[] = [
+const FEATURES: readonly FeatureItem[] = [
   {
     to: '/voice',
     label: '話者設定',
@@ -39,44 +38,61 @@ const FEATURES: readonly FeatureCard[] = [
   }
 ] as const
 
-function FeatureCardBody({ feature }: { feature: FeatureCard }) {
+/**
+ * 機能リスト1行分の中身
+ *
+ * 利用可能な行はアイコンをプライマリ色で立たせ、準備中の行は色を落として区別する。
+ */
+function FeatureRowBody({ feature }: { feature: FeatureItem }) {
   return (
-    <Card
-      className={
-        feature.available ? 'h-full transition-colors hover:border-primary/50 hover:bg-accent/40' : 'h-full opacity-60'
-      }
-    >
-      <CardHeader className="gap-3">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <feature.Icon className="size-4" />
-        </span>
-        <CardTitle className="flex items-center gap-2 text-base">
+    <>
+      <span
+        className={
+          feature.available
+            ? 'flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'
+            : 'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground'
+        }
+      >
+        <feature.Icon className="size-4" />
+      </span>
+
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex items-center gap-2 font-medium text-sm">
           {feature.label}
-          {feature.available ? (
-            <ArrowRight className="size-3.5 text-muted-foreground" />
-          ) : (
+          {!feature.available && (
             <Badge variant="outline" className="font-normal">
               準備中
             </Badge>
           )}
-        </CardTitle>
-        <CardDescription>{feature.description}</CardDescription>
-      </CardHeader>
-    </Card>
+        </span>
+        <span className="text-muted-foreground text-sm">{feature.description}</span>
+      </span>
+
+      {feature.available && (
+        <ArrowRight className="size-4 shrink-0 self-center text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+      )}
+    </>
   )
 }
 
-function FeatureGrid() {
+/**
+ * ヘアライン区切りの機能リスト
+ */
+function FeatureList() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="divide-y border-y">
       {FEATURES.map((feature) =>
         feature.available ? (
-          <Link key={feature.label} to={feature.to} className="block">
-            <FeatureCardBody feature={feature} />
+          <Link
+            key={feature.label}
+            to={feature.to}
+            className="group flex items-start gap-4 py-5 transition-colors hover:bg-muted/40"
+          >
+            <FeatureRowBody feature={feature} />
           </Link>
         ) : (
-          <div key={feature.label}>
-            <FeatureCardBody feature={feature} />
+          <div key={feature.label} className="flex items-start gap-4 py-5 opacity-60">
+            <FeatureRowBody feature={feature} />
           </div>
         )
       )}
@@ -88,23 +104,37 @@ function HomePage() {
   const { me, isPending } = useMe()
 
   if (isPending) {
-    return <Skeleton className="h-56 w-full" />
+    return (
+      <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </div>
+    )
   }
 
   if (me === null) {
-    return <LoginCard />
+    return <LoginPanel />
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-2">
-        <h1 className="font-brand text-2xl">こんにちは、{me.globalName ?? me.username} さん</h1>
+        <h1 className="font-brand font-bold text-3xl tracking-tight">
+          こんにちは、{me.globalName === null ? me.username : me.globalName} さん
+        </h1>
         <p className="text-muted-foreground text-sm">
           ここで変更した設定は、Discord での次の読み上げからすぐに反映されます。
         </p>
       </div>
 
-      <FeatureGrid />
+      <FeatureList />
     </div>
   )
 }

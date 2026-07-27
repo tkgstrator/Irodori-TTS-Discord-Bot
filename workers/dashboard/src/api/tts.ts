@@ -1,5 +1,5 @@
 import { createApiClient } from '@irodori-tts/shared/irodori-api'
-import type { Speaker } from '../schemas/settings-api.dto'
+import type { Speaker, SpeakerDefaults } from '../schemas/settings-api.dto'
 import { env } from './env'
 
 /**
@@ -26,13 +26,36 @@ const loadClient = (): ReturnType<typeof createApiClient> => {
  *
  * ダッシュボードはDBを持たないため、都度 Irodori-TTS サーバーから取得する。
  */
+/**
+ * TTSサーバーが返すスネークケースのデフォルト値をUI向けのキーに読み替える
+ *
+ * 値は LoRA のメタデータ由来で欠けることがあるため、数値だけを拾う。
+ */
+const toSpeakerDefaults = (defaults: Record<string, unknown> | undefined): SpeakerDefaults => {
+  const source = defaults === undefined ? {} : defaults
+  const pick = (key: string): number | undefined => {
+    const value = source[key]
+    return typeof value === 'number' ? value : undefined
+  }
+
+  return {
+    numSteps: pick('num_steps'),
+    cfgScaleText: pick('cfg_scale_text'),
+    cfgScaleSpeaker: pick('cfg_scale_speaker'),
+    speakerKvScale: pick('speaker_kv_scale'),
+    truncationFactor: pick('truncation_factor'),
+    seed: pick('seed')
+  }
+}
+
 export const getSpeakers = async (): Promise<Speaker[]> => {
   const response = await loadClient().list_speakers_speakers_get()
   return response.speakers.map((speaker) => ({
     uuid: speaker.uuid,
     name: speaker.name,
     cv: speaker.cv ?? null,
-    categoryLabel: speaker.category.label ?? null
+    categoryLabel: speaker.category.label ?? null,
+    defaults: toSpeakerDefaults(speaker.defaults)
   }))
 }
 

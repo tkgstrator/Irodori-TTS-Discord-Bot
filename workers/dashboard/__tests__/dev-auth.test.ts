@@ -54,3 +54,13 @@ describe('isDevAuthBypassEnabled', () => {
     })
   })
 })
+
+describe('本番ガードのバンドル耐性', () => {
+  test('NODE_ENVはビルド時に畳み込まれない形で読む', async () => {
+    // NODE_ENV を直接読むとバンドラがリテラル化し、本番ガードごと最適化で消える。
+    // コメントを除いたコード本体に直書きが復活していないことを見る。
+    const source = await Bun.file(`${import.meta.dir}/../src/api/dev-auth.ts`).text()
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(code).not.toContain('process.env.NODE_ENV')
+  })
+})

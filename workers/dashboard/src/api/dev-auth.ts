@@ -2,6 +2,15 @@ import { env } from './env'
 import type { Session } from './session'
 
 /**
+ * 実行時の環境変数を読む
+ *
+ * NODE_ENV への直接アクセスは bun / esbuild 系のバンドラがビルド時に
+ * リテラルへ畳み込むため、そのまま書くと本番ガードごと最適化で消える。
+ * キーを変数経由で渡して静的置換を防ぐ。
+ */
+const readRuntimeEnv = (key: string): string | undefined => process.env[key]
+
+/**
  * 開発用ログインバイパスが有効かどうか
  *
  * 二重ゲート方式にしている。`DEV_AUTH_BYPASS=true` を立てても
@@ -9,7 +18,7 @@ import type { Session } from './session'
  * 事故的に認証が外れることはない。
  */
 export const isDevAuthBypassEnabled = (): boolean =>
-  process.env.NODE_ENV !== 'production' && process.env.DEV_AUTH_BYPASS === 'true'
+  readRuntimeEnv('NODE_ENV') !== 'production' && readRuntimeEnv('DEV_AUTH_BYPASS') === 'true'
 
 /**
  * バイパス時に使う擬似セッション
