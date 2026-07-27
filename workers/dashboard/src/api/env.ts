@@ -16,8 +16,13 @@ const EnvSchema = z.object({
   DISCORD_CLIENT_SECRET: z.string().optional(),
   /** OAuth のリダイレクト先（Discord Developer Portal に登録した値と一致させる） */
   OAUTH_REDIRECT_URI: z.string().optional(),
-  /** 話者未設定ユーザーに割り当てる既定の話者UUID（Bot と同じ値を設定する） */
-  DEFAULT_SPEAKER_ID: z.string().nonempty(),
+  /**
+   * 話者未設定ユーザーに割り当てる既定の話者UUID（Bot と同じ値を設定する）
+   *
+   * 未設定でも起動できるようにし、その場合は Irodori-TTS の先頭の話者に
+   * フォールバックする（tts.ts の resolveDefaultSpeakerId）。
+   */
+  DEFAULT_SPEAKER_ID: z.string().optional(),
   /** Irodori-TTS サーバーのベースURL */
   IRODORI_TTS_BASE_URL: z.string().nonempty().default('http://irodori-tts:8765'),
   /** Cookie に Secure 属性を付けるか（本番は true） */

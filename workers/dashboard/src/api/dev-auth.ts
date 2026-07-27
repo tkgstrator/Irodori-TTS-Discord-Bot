@@ -41,8 +41,10 @@ export const createDevSession = (): Session => ({
  */
 export const warnIfDevAuthBypassEnabled = (): void => {
   if (isDevAuthBypassEnabled()) {
+    // 起動時に呼ばれるため、env の検証を巻き込まないよう process.env を直接読む。
+    // ここで env を触ると未設定の変数があるだけでアプリが起動できなくなる。
     console.warn(
-      `[dev-auth] ログインバイパスが有効です（user=${env.DEV_AUTH_USER_ID}）。開発環境専用の設定であることを確認してください。`
+      `[dev-auth] ログインバイパスが有効です（user=${process.env.DEV_AUTH_USER_ID ?? 'default'}）。開発環境専用の設定であることを確認してください。`
     )
   }
 }

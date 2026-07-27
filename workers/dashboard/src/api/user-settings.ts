@@ -5,17 +5,17 @@ import {
   UserSettingsSchema,
   userSettingsKey
 } from '@irodori-tts/shared/settings'
-import { env } from './env'
 import { redis, safeJsonParse, withSerialized } from './redis'
+import { resolveDefaultSpeakerId } from './tts'
 
 /**
  * デフォルトのユーザー設定を生成する
  *
  * Bot 側と同じ既定値を返す必要があるため `DEFAULT_SPEAKER_ID` は Bot と同値を設定する。
  */
-const createDefaultUserSettings = (): UserSettings => ({
+const createDefaultUserSettings = async (): Promise<UserSettings> => ({
   speaker: {
-    currentId: env.DEFAULT_SPEAKER_ID,
+    currentId: await resolveDefaultSpeakerId(),
     settings: {}
   }
 })
@@ -28,20 +28,20 @@ const createDefaultUserSettings = (): UserSettings => ({
 export const getUserSettings = async (userId: string): Promise<UserSettings> => {
   const data = await redis.get(userSettingsKey(userId))
   if (data === null) {
-    return createDefaultUserSettings()
+    return await createDefaultUserSettings()
   }
 
   const jsonResult = safeJsonParse<unknown>(data)
   if (!jsonResult.ok) {
     console.error(`getUserSettings: JSON parse failed for userId=${userId}`)
-    return createDefaultUserSettings()
+    return await createDefaultUserSettings()
   }
 
   const parsed = UserSettingsSchema.safeParse(jsonResult.value)
   if (!parsed.success) {
     // 破損データは消さず、デフォルトを返して調査可能な状態を保つ
     console.error(`getUserSettings: schema validation failed for userId=${userId}`, parsed.error.message)
-    return createDefaultUserSettings()
+    return await createDefaultUserSettings()
   }
 
   return parsed.data
