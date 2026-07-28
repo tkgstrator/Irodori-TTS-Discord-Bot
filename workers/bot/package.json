@@ -2,7 +2,7 @@
   "name": "@irodori-tts/bot",
   "type": "module",
   "private": true,
-  "version": "0.0.4",
+  "version": "0.0.5",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "build": "bun run tsc --noEmit && bun build src/index.ts --outdir=dist --target=bun --external @discordjs/opus --external sodium-native --external @snazzah/davey",

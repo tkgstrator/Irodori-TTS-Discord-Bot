@@ -13,9 +13,12 @@ else
   docker buildx use "$BUILDER_NAME"
 fi
 
+# CI (.github/workflows/docker-build.yaml) と同じ GHCR の名前空間に揃える。
+# 事前に `docker login ghcr.io` が必要。
 declare -A IMAGES=(
-  ["tkgling/irodori-tts-discord-bot:latest"]="workers/bot/Dockerfile"
-  ["tkgling/plotmaker:latest"]="workers/web/Dockerfile"
+  ["ghcr.io/tkgstrator/irodori-tts-discord-bot:latest"]="workers/bot/Dockerfile"
+  ["ghcr.io/tkgstrator/plotmaker:latest"]="workers/web/Dockerfile"
+  ["ghcr.io/tkgstrator/irodori-tts-dashboard:latest"]="workers/dashboard/Dockerfile"
 )
 
 for IMAGE in "${!IMAGES[@]}"; do

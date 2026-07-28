@@ -1,6 +1,6 @@
 services:
   app:
-    image: tkgling/irodori-tts-discord-bot:latest
+    image: ghcr.io/tkgstrator/irodori-tts-discord-bot:latest
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
     depends_on:
@@ -11,6 +11,25 @@ services:
     stdin_open: true
     tty: true
 
+  dashboard:
+    image: ghcr.io/tkgstrator/irodori-tts-dashboard:latest
+    environment:
+      REDIS_URL: redis://redis:6379
+      IRODORI_TTS_BASE_URL: http://irodori-tts:8765
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
+      DEFAULT_SPEAKER_ID: ${DEFAULT_SPEAKER_ID}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      PORT: 18575
+    ports:
+      - 18575:18575
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # TTSサーバー本体は別リポジトリの成果物で、このリポのCIではビルドしない。
+  # そのため Docker Hub のイメージを参照する。
   irodori-tts:
     image: tkgling/irodori-tts:latest
     volumes:

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build from the repository root:
-#   docker build -f workers/bot/Dockerfile -t tkgling/irodori-tts-discord-bot:latest .
+#   docker build -f workers/bot/Dockerfile -t ghcr.io/tkgstrator/irodori-tts-discord-bot:latest .
 
 FROM oven/bun:1-alpine AS deps
 WORKDIR /app
@@ -9,6 +9,7 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=packages/shared/package.json,target=packages/shared/package.json,readonly \
     --mount=type=bind,source=workers/bot/package.json,target=workers/bot/package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
+    --mount=type=bind,source=workers/dashboard/package.json,target=workers/dashboard/package.json,readonly \
     bun install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
@@ -24,6 +25,7 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=packages/shared/package.json,target=packages/shared/package.json,readonly \
     --mount=type=bind,source=workers/bot/package.json,target=workers/bot/package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
+    --mount=type=bind,source=workers/dashboard/package.json,target=workers/dashboard/package.json,readonly \
     bun install --frozen-lockfile --ignore-scripts --omit=dev --filter @irodori-tts/bot
 
 FROM oven/bun:1-alpine AS runtime

@@ -1,23 +1,19 @@
-import Redis from 'ioredis'
-import { config } from '../config'
 import {
   type SpeakerConfig,
   SpeakerConfigSchema,
   type SpeakerConfigUpdate,
   type UserSettings,
-  UserSettingsSchema
-} from '../schemas/user-settings.dto'
+  UserSettingsSchema,
+  userSettingsKey
+} from '@irodori-tts/shared/settings'
+import Redis from 'ioredis'
+import { config } from '../config'
 import { notifyError } from './notifier'
 
 /**
  * Redisクライアント
  */
 export const redis = new Redis(config.REDIS_URL)
-
-/**
- * ユーザー設定のキープレフィックス
- */
-const USER_SETTINGS_KEY_PREFIX = 'user:settings:'
 
 /**
  * キー単位でRead-Modify-Write処理を直列化するためのin-flightキュー
@@ -86,7 +82,7 @@ const createDefaultUserSettings = (): UserSettings => ({
  * @returns ユーザー設定（未設定の場合はデフォルト値）
  */
 export const getUserSettings = async (userId: string): Promise<UserSettings> => {
-  const data = await redis.get(`${USER_SETTINGS_KEY_PREFIX}${userId}`)
+  const data = await redis.get(userSettingsKey(userId))
   if (data === null) {
     return createDefaultUserSettings()
   }
@@ -121,7 +117,7 @@ export const setUserSettings = async (userId: string, settings: UserSettings): P
   if (!parseResult.success) {
     throw new Error(`Invalid settings: ${parseResult.error.message}`)
   }
-  await redis.set(`${USER_SETTINGS_KEY_PREFIX}${userId}`, JSON.stringify(parseResult.data))
+  await redis.set(userSettingsKey(userId), JSON.stringify(parseResult.data))
 }
 
 /**
@@ -140,7 +136,7 @@ export const getCurrentSpeakerId = async (userId: string): Promise<string> => {
  * @param speakerId 話者UUID
  */
 export const setCurrentSpeakerId = async (userId: string, speakerId: string): Promise<void> => {
-  await withSerialized(`${USER_SETTINGS_KEY_PREFIX}${userId}`, async () => {
+  await withSerialized(userSettingsKey(userId), async () => {
     const settings = await getUserSettings(userId)
     settings.speaker.currentId = speakerId
     await setUserSettings(userId, settings)
@@ -170,7 +166,7 @@ export const updateSpeakerConfig = async (
   speakerId: string,
   update: SpeakerConfigUpdate
 ): Promise<SpeakerConfig> =>
-  withSerialized(`${USER_SETTINGS_KEY_PREFIX}${userId}`, async () => {
+  withSerialized(userSettingsKey(userId), async () => {
     const settings = await getUserSettings(userId)
     const current = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
     const updated = { ...current, ...update }
@@ -231,7 +227,7 @@ export const updateCurrentSpeakerConfig = async (
  * @param userId DiscordユーザーID
  */
 export const deleteUserSettings = async (userId: string): Promise<void> => {
-  await redis.del(`${USER_SETTINGS_KEY_PREFIX}${userId}`)
+  await redis.del(userSettingsKey(userId))
 }
 
 /**

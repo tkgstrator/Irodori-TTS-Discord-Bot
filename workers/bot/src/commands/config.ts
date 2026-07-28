@@ -1,3 +1,4 @@
+import type { GuildSettings } from '@irodori-tts/shared/settings'
 import {
   ChannelType,
   type ChatInputCommandInteraction,
@@ -6,7 +7,6 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js'
-import type { GuildSettings } from '../schemas/guild-settings.dto'
 import { deleteGuildSettings, getGuildSettings, updateGuildSettings } from '../utils'
 
 /**

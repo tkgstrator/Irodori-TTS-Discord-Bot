@@ -1,4 +1,9 @@
-import { type GuildSettings, GuildSettingsSchema, type GuildSettingsUpdate } from '../schemas/guild-settings.dto'
+import {
+  type GuildSettings,
+  GuildSettingsSchema,
+  type GuildSettingsUpdate,
+  guildSettingsKey
+} from '@irodori-tts/shared/settings'
 import { notifyError } from './notifier'
 import { redis, safeJsonParse, withSerialized } from './redis'
 
@@ -18,7 +23,7 @@ const defaultGuildSettings: GuildSettings = {
  * @returns ギルド設定
  */
 export const getGuildSettings = async (guildId: string): Promise<GuildSettings> => {
-  const key = `guild:${guildId}:settings`
+  const key = guildSettingsKey(guildId)
   const data = await redis.get(key)
 
   if (!data) {
@@ -50,7 +55,7 @@ export const getGuildSettings = async (guildId: string): Promise<GuildSettings> 
  * @param settings - ギルド設定
  */
 export const setGuildSettings = async (guildId: string, settings: GuildSettings): Promise<void> => {
-  const key = `guild:${guildId}:settings`
+  const key = guildSettingsKey(guildId)
   await redis.set(key, JSON.stringify(settings))
 }
 
@@ -60,7 +65,7 @@ export const setGuildSettings = async (guildId: string, settings: GuildSettings)
  * @param updates - 更新する設定項目
  */
 export const updateGuildSettings = async (guildId: string, updates: GuildSettingsUpdate): Promise<void> => {
-  await withSerialized(`guild:${guildId}:settings`, async () => {
+  await withSerialized(guildSettingsKey(guildId), async () => {
     const current = await getGuildSettings(guildId)
     const updated = { ...current, ...updates }
     await setGuildSettings(guildId, updated)
@@ -72,6 +77,6 @@ export const updateGuildSettings = async (guildId: string, updates: GuildSetting
  * @param guildId - ギルドID
  */
 export const deleteGuildSettings = async (guildId: string): Promise<void> => {
-  const key = `guild:${guildId}:settings`
+  const key = guildSettingsKey(guildId)
   await redis.del(key)
 }
