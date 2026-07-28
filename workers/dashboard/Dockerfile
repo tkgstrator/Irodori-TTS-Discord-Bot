@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build from the repository root:
-#   docker build -f workers/dashboard/Dockerfile -t tkgling/irodori-tts-dashboard:latest .
+#   docker build -f workers/dashboard/Dockerfile -t ghcr.io/tkgstrator/irodori-tts-dashboard:latest .
 
 FROM oven/bun:1 AS deps
 WORKDIR /app
