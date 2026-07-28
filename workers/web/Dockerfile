@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build from the repository root:
-#   docker build -f workers/web/Dockerfile -t tkgling/plotmaker:latest .
+#   docker build -f workers/web/Dockerfile -t ghcr.io/tkgstrator/plotmaker:latest .
 
 FROM oven/bun:1 AS deps
 WORKDIR /app
