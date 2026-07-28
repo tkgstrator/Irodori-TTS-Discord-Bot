@@ -6,8 +6,8 @@ app.use('/*', serveStatic({ root: './dist' }))
 app.get('/*', serveStatic({ root: './dist', path: '/index.html' }))
 
 const port = (() => {
-  const parsed = Number.parseInt(process.env.PORT ?? '18575', 10)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 18575
+  const parsed = Number.parseInt(process.env.PORT ?? '18775', 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 18775
 })()
 
 serve({ fetch: app.fetch, port }, () => {

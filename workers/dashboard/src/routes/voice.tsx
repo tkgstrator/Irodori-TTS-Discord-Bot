@@ -86,9 +86,14 @@ function VoiceSettings() {
   const speakerSelectValue = speakersInCategory.some((speaker) => speaker.uuid === currentId) ? currentId : ''
 
   const handleSpeakerChange = async (value: string) => {
-    await setCurrentSpeaker(value)
+    // すでにその話者なら書き込みもトーストも不要
+    if (value === currentId) {
+      return
+    }
+
     const next = speakers.find((speaker) => speaker.uuid === value)
-    toast.success(`話者を ${next === undefined ? '変更' : next.name} に切り替えました`)
+    await setCurrentSpeaker(value)
+    toast.success(`話者を ${next === undefined ? '変更' : next.name} に保存しました`)
   }
 
   return (
@@ -102,7 +107,7 @@ function VoiceSettings() {
 
       <SettingsSection
         title="読み上げに使う声"
-        description="カテゴリを選んでから、Irodori-TTS に登録されている話者を選べます。"
+        description="カテゴリを選んでから話者を選びます。話者は選んだ時点で保存されます。"
       >
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
@@ -120,7 +125,7 @@ function VoiceSettings() {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="speaker-select">話者</Label>
-            {/* カテゴリは上のコントロールで選ばせているので、ここでの再掲バッジは置かない */}
+            {/* 選択と同時に保存される。下の詳細設定だけが「保存」ボタン式なので、その差を明示する */}
             <ComboSelect
               id="speaker-select"
               options={speakerOptions}
@@ -131,6 +136,7 @@ function VoiceSettings() {
               disabled={isSwitchingSpeaker}
               onSelect={handleSpeakerChange}
             />
+            <p className="text-muted-foreground text-xs">選ぶとそのまま保存され、次の読み上げから反映されます。</p>
           </div>
         </div>
       </SettingsSection>
