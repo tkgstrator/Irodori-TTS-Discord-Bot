@@ -10,7 +10,8 @@ import { AppQueryProvider } from '@/lib/query-client'
 
 const NAV_ITEMS = [
   { to: '/', label: 'ホーム' },
-  { to: '/voice', label: '話者設定' }
+  { to: '/voice', label: '話者設定' },
+  { to: '/server', label: 'サーバー設定' }
 ] as const
 
 function ThemeToggle() {

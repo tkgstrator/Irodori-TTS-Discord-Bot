@@ -23,11 +23,11 @@ const FEATURES: readonly FeatureItem[] = [
     available: true
   },
   {
-    to: '/voice',
+    to: '/server',
     label: 'サーバー設定',
     description: '読み上げ対象チャンネルや入退室アナウンスを切り替えます。',
     Icon: Users,
-    available: false
+    available: true
   },
   {
     to: '/voice',

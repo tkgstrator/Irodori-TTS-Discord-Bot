@@ -48,8 +48,27 @@ const DiscordGuildSchema = z.object({
   permissions: z.string().optional()
 })
 
+/**
+ * `GET /guilds/{id}/channels` の1要素
+ */
+const DiscordChannelSchema = z.object({
+  id: z.string().nonempty(),
+  name: z.string(),
+  type: z.number().int(),
+  position: z.number().int().optional()
+})
+
 export type DiscordUser = z.infer<typeof DiscordUserSchema>
 export type DiscordGuild = z.infer<typeof DiscordGuildSchema>
+export type DiscordChannel = z.infer<typeof DiscordChannelSchema>
+
+/**
+ * 読み上げ対象に指定できるチャンネル種別
+ *
+ * GUILD_TEXT(0) と GUILD_ANNOUNCEMENT(5)。スレッドは
+ * `GET /guilds/{id}/channels` に含まれないためここには現れない。
+ */
+const READABLE_CHANNEL_TYPES = new Set([0, 5])
 
 /**
  * ManageGuild 権限のビット（1 << 5）
@@ -207,4 +226,64 @@ export const canManageGuild = (guild: DiscordGuild): boolean => {
 
   const parsed = BigInt(guild.permissions)
   return (parsed & MANAGE_GUILD_FLAG) === MANAGE_GUILD_FLAG
+}
+
+/**
+ * Bot トークンを取り出す
+ *
+ * OAuth 設定と同じく、未設定でも起動できるようにしているため利用時に検証する。
+ */
+const requireBotToken = (): string => {
+  const token = env.DISCORD_TOKEN
+  if (token === undefined || token.length === 0) {
+    throw new Error('Bot token is not configured. Set DISCORD_TOKEN.')
+  }
+  return token
+}
+
+/**
+ * Discord API を Bot トークンで叩く
+ * @param path APIパス
+ */
+const fetchWithBotToken = async (path: string): Promise<unknown> => {
+  const response = await fetch(`${DISCORD_API_BASE}${path}`, {
+    headers: { Authorization: `Bot ${requireBotToken()}` }
+  })
+
+  if (!response.ok) {
+    throw new Error(`Discord API ${path} failed: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * ギルドの読み上げ対象にできるチャンネル一覧を取得する
+ *
+ * ユーザーのOAuthトークンではチャンネルを列挙できないため Bot トークンを使う。
+ * @param guildId ギルドID
+ */
+export const fetchGuildChannels = async (guildId: string): Promise<DiscordChannel[]> => {
+  const parsed = z.array(DiscordChannelSchema).safeParse(await fetchWithBotToken(`/guilds/${guildId}/channels`))
+  if (!parsed.success) {
+    throw new Error(`Unexpected channels response: ${parsed.error.message}`)
+  }
+
+  return parsed.data
+    .filter((channel) => READABLE_CHANNEL_TYPES.has(channel.type))
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+}
+
+/**
+ * Bot が参加しているギルド一覧を取得する
+ *
+ * 開発用ログインバイパス時はユーザーのOAuthトークンが無いため、
+ * ギルド名を出す用途でこちらを使う。
+ */
+export const fetchBotGuilds = async (): Promise<DiscordGuild[]> => {
+  const parsed = z.array(DiscordGuildSchema).safeParse(await fetchWithBotToken('/users/@me/guilds'))
+  if (!parsed.success) {
+    throw new Error(`Unexpected bot guilds response: ${parsed.error.message}`)
+  }
+  return parsed.data
 }

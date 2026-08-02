@@ -1,11 +1,6 @@
-import {
-  type GuildSettings,
-  GuildSettingsSchema,
-  type GuildSettingsUpdate,
-  guildSettingsKey
-} from '@irodori-tts/shared/settings'
+import { type GuildSettings, GuildSettingsSchema, guildSettingsKey } from '@irodori-tts/shared/settings'
 import { notifyError } from './notifier'
-import { redis, safeJsonParse, withSerialized } from './redis'
+import { redis, safeJsonParse } from './redis'
 
 /**
  * デフォルトのギルド設定
@@ -47,36 +42,4 @@ export const getGuildSettings = async (guildId: string): Promise<GuildSettings> 
   }
 
   return parsed.data
-}
-
-/**
- * ギルド設定を保存する
- * @param guildId - ギルドID
- * @param settings - ギルド設定
- */
-export const setGuildSettings = async (guildId: string, settings: GuildSettings): Promise<void> => {
-  const key = guildSettingsKey(guildId)
-  await redis.set(key, JSON.stringify(settings))
-}
-
-/**
- * ギルド設定を部分的に更新する
- * @param guildId - ギルドID
- * @param updates - 更新する設定項目
- */
-export const updateGuildSettings = async (guildId: string, updates: GuildSettingsUpdate): Promise<void> => {
-  await withSerialized(guildSettingsKey(guildId), async () => {
-    const current = await getGuildSettings(guildId)
-    const updated = { ...current, ...updates }
-    await setGuildSettings(guildId, updated)
-  })
-}
-
-/**
- * ギルド設定を削除する（デフォルトに戻す）
- * @param guildId - ギルドID
- */
-export const deleteGuildSettings = async (guildId: string): Promise<void> => {
-  const key = guildSettingsKey(guildId)
-  await redis.del(key)
 }

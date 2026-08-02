@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react'
 import { toast } from 'sonner'
 import { ComboSelect } from '@/components/combo-select'
 import { LoginPanel } from '@/components/login-panel'
+import { SettingsSection } from '@/components/settings-section'
 import { SpeakerConfigForm } from '@/components/speaker-config-form'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -20,36 +21,6 @@ const categoryOf = (speaker: Speaker): string =>
 
 /** 話者一覧から、出現順を保ったまま重複のないカテゴリ一覧を導出する（Set は挿入順を保持する） */
 const deriveCategories = (speakers: readonly Speaker[]): string[] => Array.from(new Set(speakers.map(categoryOf)))
-
-/**
- * 設定セクションの共通レイアウト
- *
- * 左に見出しと説明、右にコントロールを置く2カラム。狭い画面では縦積みになる。
- */
-function SettingsSection({
-  title,
-  titleExtra,
-  description,
-  children
-}: {
-  title: string
-  titleExtra?: React.ReactNode
-  description: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="grid gap-x-12 gap-y-6 py-10 md:grid-cols-[15rem_1fr]">
-      <div className="flex flex-col gap-1.5">
-        <h2 className="flex items-center gap-2 font-medium text-base">
-          {title}
-          {titleExtra}
-        </h2>
-        <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
-      </div>
-      <div className="min-w-0">{children}</div>
-    </section>
-  )
-}
 
 function VoiceSettings() {
   const { settings } = useSuspenseMySettings()

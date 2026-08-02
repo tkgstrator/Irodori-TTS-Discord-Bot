@@ -104,6 +104,9 @@ DEFAULT_SPEAKER_ID=2628aa1b-19f9-5ad9-8a5e-e4da9ef5ebc1
 # Redis URL
 REDIS_URL=redis://redis:6379
 
+# 設定用ダッシュボードのベース URL（`/config` が案内する先）
+DASHBOARD_BASE_URL=http://localhost:18775
+
 # エラー通知用 Discord Webhook URL（任意）
 # ERROR_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 ```
@@ -132,19 +135,26 @@ docker compose logs -f app
 
 ### コマンド一覧
 
-#### `/join` — ボイスチャンネルに参加
-#### `/leave` — ボイスチャンネルから離脱
+Bot のコマンドは3つだけ。設定はすべてダッシュボード（WebUI）で行う。
 
-#### `/speaker` — 話者設定（ユーザー単位）
+| コマンド | 機能 |
+|----------|------|
+| `/join` | ボイスチャンネルに参加 |
+| `/leave` | ボイスチャンネルから離脱 |
+| `/config` | 設定画面（ダッシュボード）の URL を表示 |
 
-| サブコマンド | 機能 |
-|--------------|------|
-| `/speaker set <name>` | 話者を選択（オートコンプリート対応、UUID 内部保持） |
-| `/speaker clear` | 話者設定をリセット（デフォルト話者に戻る） |
-| `/speaker config show` | 現在の合成パラメータを表示 |
-| `/speaker config <setting> [<value>]` | パラメータを個別設定。`<setting>` は以下：|
+### 設定（ダッシュボード）
 
-`<setting>` の種類（省略時は LoRA メタデータのデフォルトが適用される）:
+`DASHBOARD_BASE_URL` で公開しているダッシュボードに Discord でログインして設定する。
+
+| 画面 | 内容 |
+|------|------|
+| 話者設定（`/voice`） | 読み上げに使う話者と、話者ごとの合成パラメータ（ユーザー単位） |
+| サーバー設定（`/server`） | VC 外ユーザーの読み上げ可否、入退室アナウンス、読み上げ対象チャンネル（サーバー単位） |
+
+サーバー設定の変更には Discord の「サーバー管理」権限が必要で、Bot が参加しているサーバーのみ一覧に出る。
+
+話者ごとの合成パラメータ（未設定の項目は LoRA メタデータのデフォルトが適用される）:
 
 - `num_steps` — Rectified-flow サンプリングステップ数（整数、1〜100）
 - `cfg_scale_text` — テキスト条件付け CFG スケール
@@ -152,25 +162,13 @@ docker compose logs -f app
 - `speaker_kv_scale` — 話者 KV キャッシュスケール
 - `truncation_factor` — ノイズ切り詰め係数（0〜1）
 - `seed` — 再現用乱数シード（整数）
-- `reset` — 全パラメータを LoRA デフォルトに戻す
-
-#### `/config` — サーバー全体の設定（管理者のみ）
-
-| サブコマンド | 機能 |
-|--------------|------|
-| `/config show` | 現在のサーバー設定を表示 |
-| `/config set read-non-vc:<bool>` | VC 未参加者のメッセージを読み上げるか |
-| `/config set announce-join:<bool>` | VC 参加時のアナウンス有無 |
-| `/config set announce-leave:<bool>` | VC 退出時のアナウンス有無 |
-| `/config set channel1..5:<channel>` | 読み上げ対象のテキストチャンネル（最大5つ） |
-| `/config reset` | サーバー設定をデフォルトに戻す |
 
 ### 基本の流れ
 
 1. Bot をサーバーに招待
 2. ユーザーがボイスチャンネルに参加
 3. `/join` で Bot を同じ VC に招く
-4. 必要なら `/speaker set` で話者を切替
+4. 必要なら `/config` で表示される URL からダッシュボードを開き、話者を切替
 5. テキストチャンネルでメッセージを送ると VC で読み上げられる（改行があれば行ごとに逐次合成）
 
 ## 開発

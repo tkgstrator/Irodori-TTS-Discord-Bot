@@ -17,6 +17,14 @@ const EnvSchema = z.object({
   /** OAuth のリダイレクト先（Discord Developer Portal に登録した値と一致させる） */
   OAUTH_REDIRECT_URI: z.string().optional(),
   /**
+   * Bot のトークン（Bot と同じ値を設定する）
+   *
+   * ギルドのチャンネル一覧はユーザーのOAuthトークンでは取得できないため、
+   * Bot トークンでのみ叩ける API に使う。未設定でも起動はでき、
+   * 実際に必要になった時点で存在チェックする（discord.ts の requireBotToken）。
+   */
+  DISCORD_TOKEN: z.string().optional(),
+  /**
    * 話者未設定ユーザーに割り当てる既定の話者UUID（Bot と同じ値を設定する）
    *
    * 未設定でも起動できるようにし、その場合は Irodori-TTS の先頭の話者に

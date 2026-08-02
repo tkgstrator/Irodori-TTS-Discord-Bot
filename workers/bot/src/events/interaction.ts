@@ -1,28 +1,10 @@
 import type { Client } from 'discord.js'
 import { MessageFlags } from 'discord.js'
-import { executeAutocomplete, executeCommand, executeSelectMenu } from '../commands'
+import { executeCommand } from '../commands'
 import { notifyError } from '../utils/notifier'
 
 export const registerInteractionHandler = (client: Client): void => {
   client.on('interactionCreate', async (interaction) => {
-    if (interaction.isAutocomplete()) {
-      try {
-        await executeAutocomplete(interaction)
-      } catch (error) {
-        console.error('Autocomplete error:', error)
-      }
-      return
-    }
-
-    if (interaction.isStringSelectMenu()) {
-      try {
-        await executeSelectMenu(interaction)
-      } catch (error) {
-        console.error('SelectMenu error:', error)
-      }
-      return
-    }
-
     if (!interaction.isChatInputCommand()) return
 
     try {

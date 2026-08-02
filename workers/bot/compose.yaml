@@ -3,6 +3,7 @@ services:
     image: ghcr.io/tkgstrator/irodori-tts-discord-bot:latest
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DASHBOARD_BASE_URL: ${DASHBOARD_BASE_URL}
     depends_on:
       redis:
         condition: service_healthy
@@ -18,6 +19,8 @@ services:
       IRODORI_TTS_BASE_URL: http://irodori-tts:8765
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      # チャンネル一覧はユーザーのOAuthトークンでは引けないためBotトークンを使う
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
       OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
       DEFAULT_SPEAKER_ID: ${DEFAULT_SPEAKER_ID}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
