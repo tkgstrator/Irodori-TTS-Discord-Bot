@@ -5,6 +5,17 @@
   "workspaceFolder": "/home/vscode/app",
   "shutdownAction": "stopCompose",
   "remoteUser": "vscode",
+  "forwardPorts": [18775, 3000],
+  "portsAttributes": {
+    "18775": {
+      "label": "dashboard",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "web",
+      "onAutoForward": "silent"
+    }
+  },
   "remoteEnv": {
     "CLOUDFLARE_API_TOKEN": "${localEnv:CLOUDFLARE_API_TOKEN}",
     "CLOUDFLARE_ACCOUNT_ID": "${localEnv:CLOUDFLARE_ACCOUNT_ID}",
