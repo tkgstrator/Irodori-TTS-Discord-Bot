@@ -1,7 +1,13 @@
-import { SpeakerConfigSchema, UserSettingsSchema } from '@irodori-tts/shared/settings'
+import { GuildSettingsSchema, SpeakerConfigSchema, UserSettingsSchema } from '@irodori-tts/shared/settings'
 import { makeApi, Zodios } from '@zodios/core'
 import { z } from 'zod'
-import { CurrentSpeakerInputSchema, MeSchema, SpeakerListSchema } from '@/schemas/settings-api.dto'
+import {
+  CurrentSpeakerInputSchema,
+  GuildChannelListSchema,
+  GuildSummaryListSchema,
+  MeSchema,
+  SpeakerListSchema
+} from '@/schemas/settings-api.dto'
 
 // API エラーの標準レスポンス
 const ApiErrorSchema = z.object({
@@ -94,6 +100,60 @@ const backendApiDefinition = makeApi([
       }
     ],
     response: UserSettingsSchema
+  },
+  {
+    method: 'get',
+    path: '/guilds',
+    alias: 'listGuilds',
+    requestFormat: 'json',
+    response: GuildSummaryListSchema
+  },
+  {
+    method: 'get',
+    path: '/guilds/:guildId/channels',
+    alias: 'listGuildChannels',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'guildId',
+        type: 'Path',
+        schema: z.string().nonempty()
+      }
+    ],
+    response: GuildChannelListSchema
+  },
+  {
+    method: 'get',
+    path: '/guilds/:guildId/settings',
+    alias: 'getGuildSettings',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'guildId',
+        type: 'Path',
+        schema: z.string().nonempty()
+      }
+    ],
+    response: GuildSettingsSchema
+  },
+  {
+    method: 'put',
+    path: '/guilds/:guildId/settings',
+    alias: 'setGuildSettings',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'guildId',
+        type: 'Path',
+        schema: z.string().nonempty()
+      },
+      {
+        name: 'body',
+        type: 'Body',
+        schema: GuildSettingsSchema
+      }
+    ],
+    response: GuildSettingsSchema
   }
 ])
 

@@ -10,6 +10,8 @@ const EnvSchema = z.object({
   /** デフォルト話者UUID（`GET /speakers` で取得できる uuid） */
   DEFAULT_SPEAKER_ID: z.string().nonempty(),
   REDIS_URL: z.string().default('redis://redis:6379'),
+  /** 設定用ダッシュボードのベースURL（`/config` が案内する先） */
+  DASHBOARD_BASE_URL: z.url().default('http://localhost:18775'),
   /** エラー通知用のDiscord Webhook URL（任意） */
   ERROR_WEBHOOK_URL: z.url().optional()
 })
