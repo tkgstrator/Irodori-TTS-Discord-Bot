@@ -1,46 +1,25 @@
-import { createContext, type ReactNode, use, useEffect, useState } from 'react'
+import { ThemeProvider as NextThemesProvider } from 'next-themes'
+import type { ReactNode } from 'react'
 
-type Theme = 'dark' | 'light'
-
-const STORAGE_KEY = 'irodori-dashboard-theme'
-
-interface ThemeContextValue {
-  theme: Theme
-  toggleTheme: () => void
-}
-
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'dark',
-  toggleTheme: () => {}
-})
-
-/**
- * 保存済みのテーマを読み出す（既定はダーク）
- */
-const readStoredTheme = (): Theme => {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'light' ? 'light' : 'dark'
-}
+/** localStorage に保存するキー。index.html の初期化スクリプトと合わせる */
+export const THEME_STORAGE_KEY = 'irodori-dashboard-theme'
 
 /**
  * テーマを管理する Provider
  *
- * このダッシュボードはダークを既定とし、切り替えた場合のみ localStorage に残す。
+ * このダッシュボードはダークを既定とし、`class` 属性で切り替える。
+ * next-themes を使うことで shadcn 側の実装（sonner など）とも噛み合う。
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(readStoredTheme)
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem(STORAGE_KEY, theme)
-  }, [theme])
-
-  const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
-
-  return <ThemeContext value={{ theme, toggleTheme }}>{children}</ThemeContext>
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem={false}
+      storageKey={THEME_STORAGE_KEY}
+      disableTransitionOnChange
+    >
+      {children}
+    </NextThemesProvider>
+  )
 }
-
-/**
- * 現在のテーマと切り替え関数を取得する
- */
-export const useTheme = (): ThemeContextValue => use(ThemeContext)

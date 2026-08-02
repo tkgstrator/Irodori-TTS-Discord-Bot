@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "dev": "bunx --bun vite",
+    "dev": "bunx --bun vite --port 18775",
     "start": "bun --env-file=.env --watch src/index.ts",
     "build": "vite build"
   },

@@ -21,9 +21,9 @@ RUN bun run --filter @irodori-tts/dashboard build
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app/workers/dashboard
 ENV NODE_ENV=production
-ENV PORT=18575
+ENV PORT=18775
 
 COPY --from=build /app/workers/dashboard/dist dist
 
-EXPOSE 18575
+EXPOSE 18775
 CMD ["bun", "run", "dist/server/index.js"]

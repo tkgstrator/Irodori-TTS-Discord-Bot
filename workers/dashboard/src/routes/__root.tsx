@@ -1,8 +1,9 @@
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 import { AudioLines, Moon, Sun } from 'lucide-react'
-import { Toaster } from 'sonner'
-import { ThemeProvider, useTheme } from '@/components/theme-provider'
+import { useTheme } from 'next-themes'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
+import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { UserMenu } from '@/components/user-menu'
 import { AppQueryProvider } from '@/lib/query-client'
@@ -13,11 +14,17 @@ const NAV_ITEMS = [
 ] as const
 
 function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme !== 'light'
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="テーマを切り替える">
-      {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label="テーマを切り替える"
+    >
+      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
   )
 }
