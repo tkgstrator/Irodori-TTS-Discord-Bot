@@ -1,22 +1,8 @@
-import type { AutocompleteInteraction, ChatInputCommandInteraction, StringSelectMenuInteraction } from 'discord.js'
+import type { ChatInputCommandInteraction } from 'discord.js'
 import { configCommand, handleConfigCommand } from './config'
-import { handlePlayCommand, playCommand } from './play'
-import {
-  handleSpeakerAutocomplete,
-  handleSpeakerCommand,
-  handleSpeakerSelectMenu,
-  SPEAKER_SELECT_CUSTOM_ID,
-  speakerCommand
-} from './speaker'
 import { handleJoinCommand, handleLeaveCommand, joinCommand, leaveCommand } from './voice'
 
-export const commands = [
-  joinCommand.toJSON(),
-  leaveCommand.toJSON(),
-  speakerCommand.toJSON(),
-  configCommand.toJSON(),
-  playCommand.toJSON()
-]
+export const commands = [joinCommand.toJSON(), leaveCommand.toJSON(), configCommand.toJSON()]
 
 /**
  * コマンドハンドラーのマップ
@@ -24,16 +10,7 @@ export const commands = [
 const commandHandlers: Record<string, (interaction: ChatInputCommandInteraction) => Promise<void>> = {
   join: handleJoinCommand,
   leave: handleLeaveCommand,
-  speaker: handleSpeakerCommand,
-  config: handleConfigCommand,
-  play: handlePlayCommand
-}
-
-/**
- * オートコンプリートハンドラーのマップ
- */
-const autocompleteHandlers: Record<string, (interaction: AutocompleteInteraction) => Promise<void>> = {
-  speaker: handleSpeakerAutocomplete
+  config: handleConfigCommand
 }
 
 /**
@@ -42,34 +19,6 @@ const autocompleteHandlers: Record<string, (interaction: AutocompleteInteraction
  */
 export const executeCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   const handler = commandHandlers[interaction.commandName]
-  if (handler) {
-    await handler(interaction)
-  }
-}
-
-/**
- * オートコンプリートを実行する
- * @param interaction オートコンプリートインタラクション
- */
-export const executeAutocomplete = async (interaction: AutocompleteInteraction): Promise<void> => {
-  const handler = autocompleteHandlers[interaction.commandName]
-  if (handler) {
-    await handler(interaction)
-  }
-}
-
-/**
- * StringSelectMenu ハンドラーのマップ
- */
-const selectMenuHandlers: Record<string, (interaction: StringSelectMenuInteraction) => Promise<void>> = {
-  [SPEAKER_SELECT_CUSTOM_ID]: handleSpeakerSelectMenu
-}
-
-/**
- * StringSelectMenu インタラクションを実行する
- */
-export const executeSelectMenu = async (interaction: StringSelectMenuInteraction): Promise<void> => {
-  const handler = selectMenuHandlers[interaction.customId]
   if (handler) {
     await handler(interaction)
   }

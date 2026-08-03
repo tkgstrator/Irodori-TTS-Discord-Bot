@@ -1,7 +1,5 @@
 import {
   type SpeakerConfig,
-  SpeakerConfigSchema,
-  type SpeakerConfigUpdate,
   type UserSettings,
   UserSettingsSchema,
   userSettingsKey
@@ -108,19 +106,6 @@ export const getUserSettings = async (userId: string): Promise<UserSettings> => 
 }
 
 /**
- * ユーザー設定を保存する
- * @param userId DiscordユーザーID
- * @param settings ユーザー設定
- */
-export const setUserSettings = async (userId: string, settings: UserSettings): Promise<void> => {
-  const parseResult = UserSettingsSchema.safeParse(settings)
-  if (!parseResult.success) {
-    throw new Error(`Invalid settings: ${parseResult.error.message}`)
-  }
-  await redis.set(userSettingsKey(userId), JSON.stringify(parseResult.data))
-}
-
-/**
  * 現在の話者IDを取得する
  * @param userId DiscordユーザーID
  * @returns 現在の話者UUID
@@ -128,19 +113,6 @@ export const setUserSettings = async (userId: string, settings: UserSettings): P
 export const getCurrentSpeakerId = async (userId: string): Promise<string> => {
   const settings = await getUserSettings(userId)
   return settings.speaker.currentId
-}
-
-/**
- * 現在の話者IDを設定する
- * @param userId DiscordユーザーID
- * @param speakerId 話者UUID
- */
-export const setCurrentSpeakerId = async (userId: string, speakerId: string): Promise<void> => {
-  await withSerialized(userSettingsKey(userId), async () => {
-    const settings = await getUserSettings(userId)
-    settings.speaker.currentId = speakerId
-    await setUserSettings(userId, settings)
-  })
 }
 
 /**
@@ -153,34 +125,6 @@ export const getSpeakerConfig = async (userId: string, speakerId: string): Promi
   const settings = await getUserSettings(userId)
   return settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
 }
-
-/**
- * 特定の話者の設定を更新する
- * @param userId DiscordユーザーID
- * @param speakerId 話者UUID
- * @param update 更新する設定（部分的でOK）
- * @returns 更新後の話者設定
- */
-export const updateSpeakerConfig = async (
-  userId: string,
-  speakerId: string,
-  update: SpeakerConfigUpdate
-): Promise<SpeakerConfig> =>
-  withSerialized(userSettingsKey(userId), async () => {
-    const settings = await getUserSettings(userId)
-    const current = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
-    const updated = { ...current, ...update }
-
-    // バリデーション
-    const parseResult = SpeakerConfigSchema.safeParse(updated)
-    if (!parseResult.success) {
-      throw new Error(`Invalid speaker config: ${parseResult.error.message}`)
-    }
-
-    settings.speaker.settings[speakerId] = parseResult.data
-    await setUserSettings(userId, settings)
-    return parseResult.data
-  })
 
 /**
  * 現在の話者の設定を取得する
@@ -206,28 +150,6 @@ export const getCurrentSpeakerContext = async (
   const speakerId = settings.speaker.currentId
   const config = settings.speaker.settings[speakerId] ?? createDefaultSpeakerConfig()
   return { speakerId, config }
-}
-
-/**
- * 現在の話者の設定を更新する
- * @param userId DiscordユーザーID
- * @param update 更新する設定（部分的でOK）
- * @returns 更新後の話者設定
- */
-export const updateCurrentSpeakerConfig = async (
-  userId: string,
-  update: SpeakerConfigUpdate
-): Promise<SpeakerConfig> => {
-  const settings = await getUserSettings(userId)
-  return updateSpeakerConfig(userId, settings.speaker.currentId, update)
-}
-
-/**
- * ユーザー設定を削除する（デフォルトに戻す）
- * @param userId DiscordユーザーID
- */
-export const deleteUserSettings = async (userId: string): Promise<void> => {
-  await redis.del(userSettingsKey(userId))
 }
 
 /**

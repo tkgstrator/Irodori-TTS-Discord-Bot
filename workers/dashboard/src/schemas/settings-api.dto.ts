@@ -1,4 +1,9 @@
-import { SpeakerConfigSchema, SpeakerConfigUpdateSchema, UserSettingsSchema } from '@irodori-tts/shared/settings'
+import {
+  GuildSettingsSchema,
+  SpeakerConfigSchema,
+  SpeakerConfigUpdateSchema,
+  UserSettingsSchema
+} from '@irodori-tts/shared/settings'
 import { z } from 'zod'
 
 /**
@@ -49,8 +54,40 @@ export const SpeakerSchema = z.object({
  */
 export const SpeakerListSchema = z.array(SpeakerSchema)
 
-export { SpeakerConfigSchema, SpeakerConfigUpdateSchema, UserSettingsSchema }
+/**
+ * 設定を変更できるギルド1件
+ */
+export const GuildSummarySchema = z.object({
+  id: z.string().nonempty(),
+  name: z.string(),
+  icon: z.string().nullable(),
+  canManage: z.boolean()
+})
+
+/**
+ * ギルド一覧
+ */
+export const GuildSummaryListSchema = z.array(GuildSummarySchema)
+
+/**
+ * 読み上げ対象に指定できるチャンネル1件
+ */
+export const GuildChannelSchema = z.object({
+  id: z.string().nonempty(),
+  name: z.string(),
+  type: z.number().int(),
+  position: z.number().int().optional()
+})
+
+/**
+ * チャンネル一覧
+ */
+export const GuildChannelListSchema = z.array(GuildChannelSchema)
+
+export { GuildSettingsSchema, SpeakerConfigSchema, SpeakerConfigUpdateSchema, UserSettingsSchema }
 
 export type Me = z.infer<typeof MeSchema>
 export type Speaker = z.infer<typeof SpeakerSchema>
 export type SpeakerDefaults = z.infer<typeof SpeakerDefaultsSchema>
+export type GuildSummary = z.infer<typeof GuildSummarySchema>
+export type GuildChannel = z.infer<typeof GuildChannelSchema>

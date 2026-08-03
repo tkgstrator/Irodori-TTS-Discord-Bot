@@ -1,4 +1,4 @@
-import type { SpeakerInfo, SynthRequest } from '@irodori-tts/shared/irodori-api'
+import type { SynthRequest } from '@irodori-tts/shared/irodori-api'
 import type { SpeakerConfig } from '@irodori-tts/shared/settings'
 import { IRODORI_TTS_BASE_URL, irodoriClient } from './client'
 
@@ -9,11 +9,6 @@ export interface PcmAudio {
   authorId?: string
   /** ログ・通知用のメタ情報。キューの挙動には一切影響しない */
   lineIndex?: number
-}
-
-export const getSpeakers = async (): Promise<SpeakerInfo[]> => {
-  const res = await irodoriClient.get('/speakers')
-  return res.speakers
 }
 
 export const synthesize = async (
