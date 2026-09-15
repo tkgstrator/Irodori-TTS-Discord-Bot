@@ -1,6 +1,9 @@
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 import { AudioLines, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import type { ReactNode } from 'react'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { NotFound } from '@/components/not-found'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
@@ -10,7 +13,7 @@ import { AppQueryProvider } from '@/lib/query-client'
 
 const NAV_ITEMS = [
   { to: '/', label: 'ホーム' },
-  { to: '/voice', label: '話者設定' },
+  { to: '/speakers', label: '話者設定' },
   { to: '/server', label: 'サーバー設定' }
 ] as const
 
@@ -30,7 +33,7 @@ function ThemeToggle() {
   )
 }
 
-function AppShell() {
+function AppShell({ children }: { children?: ReactNode }) {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <div
@@ -67,23 +70,41 @@ function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <Outlet />
-      </main>
+      <main className="mx-auto max-w-3xl px-6 py-12">{children ?? <Outlet />}</main>
 
       <Toaster position="bottom-right" richColors />
     </div>
   )
 }
 
-export const Route = createRootRoute({
-  component: () => (
+function AppProviders({ children }: { children: ReactNode }) {
+  return (
     <AppQueryProvider>
       <ThemeProvider>
-        <TooltipProvider>
-          <AppShell />
-        </TooltipProvider>
+        <TooltipProvider>{children}</TooltipProvider>
       </ThemeProvider>
     </AppQueryProvider>
+  )
+}
+
+export const Route = createRootRoute({
+  errorComponent: (props) => (
+    <AppProviders>
+      <AppShell>
+        <ErrorBoundary {...props} />
+      </AppShell>
+    </AppProviders>
+  ),
+  notFoundComponent: () => (
+    <AppProviders>
+      <AppShell>
+        <NotFound />
+      </AppShell>
+    </AppProviders>
+  ),
+  component: () => (
+    <AppProviders>
+      <AppShell />
+    </AppProviders>
   )
 })

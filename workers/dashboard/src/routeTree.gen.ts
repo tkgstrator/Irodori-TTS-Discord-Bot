@@ -9,13 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VoiceRouteImport } from './routes/voice'
+import { Route as SpeakersRouteImport } from './routes/speakers'
 import { Route as ServerRouteImport } from './routes/server'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as Errors500RouteImport } from './routes/errors.500'
+import { Route as Errors404RouteImport } from './routes/errors.404'
 
-const VoiceRoute = VoiceRouteImport.update({
-  id: '/voice',
-  path: '/voice',
+const SpeakersRoute = SpeakersRouteImport.update({
+  id: '/speakers',
+  path: '/speakers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServerRoute = ServerRouteImport.update({
@@ -28,44 +30,62 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Errors500Route = Errors500RouteImport.update({
+  id: '/errors/500',
+  path: '/errors/500',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Errors404Route = Errors404RouteImport.update({
+  id: '/errors/404',
+  path: '/errors/404',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/server': typeof ServerRoute
-  '/voice': typeof VoiceRoute
+  '/speakers': typeof SpeakersRoute
+  '/errors/404': typeof Errors404Route
+  '/errors/500': typeof Errors500Route
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/server': typeof ServerRoute
-  '/voice': typeof VoiceRoute
+  '/speakers': typeof SpeakersRoute
+  '/errors/404': typeof Errors404Route
+  '/errors/500': typeof Errors500Route
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/server': typeof ServerRoute
-  '/voice': typeof VoiceRoute
+  '/speakers': typeof SpeakersRoute
+  '/errors/404': typeof Errors404Route
+  '/errors/500': typeof Errors500Route
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/server' | '/voice'
+  fullPaths: '/' | '/server' | '/speakers' | '/errors/404' | '/errors/500'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/server' | '/voice'
-  id: '__root__' | '/' | '/server' | '/voice'
+  to: '/' | '/server' | '/speakers' | '/errors/404' | '/errors/500'
+  id: '__root__' | '/' | '/server' | '/speakers' | '/errors/404' | '/errors/500'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ServerRoute: typeof ServerRoute
-  VoiceRoute: typeof VoiceRoute
+  SpeakersRoute: typeof SpeakersRoute
+  Errors404Route: typeof Errors404Route
+  Errors500Route: typeof Errors500Route
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/voice': {
-      id: '/voice'
-      path: '/voice'
-      fullPath: '/voice'
-      preLoaderRoute: typeof VoiceRouteImport
+    '/speakers': {
+      id: '/speakers'
+      path: '/speakers'
+      fullPath: '/speakers'
+      preLoaderRoute: typeof SpeakersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/server': {
@@ -82,13 +102,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/errors/500': {
+      id: '/errors/500'
+      path: '/errors/500'
+      fullPath: '/errors/500'
+      preLoaderRoute: typeof Errors500RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/errors/404': {
+      id: '/errors/404'
+      path: '/errors/404'
+      fullPath: '/errors/404'
+      preLoaderRoute: typeof Errors404RouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ServerRoute: ServerRoute,
-  VoiceRoute: VoiceRoute,
+  SpeakersRoute: SpeakersRoute,
+  Errors404Route: Errors404Route,
+  Errors500Route: Errors500Route,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

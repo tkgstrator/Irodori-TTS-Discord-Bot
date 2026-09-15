@@ -22,7 +22,7 @@ const categoryOf = (speaker: Speaker): string =>
 /** 話者一覧から、出現順を保ったまま重複のないカテゴリ一覧を導出する（Set は挿入順を保持する） */
 const deriveCategories = (speakers: readonly Speaker[]): string[] => Array.from(new Set(speakers.map(categoryOf)))
 
-function VoiceSettings() {
+function SpeakerSettings() {
   const { settings } = useSuspenseMySettings()
   const { speakers } = useSuspenseSpeakers()
   const {
@@ -147,7 +147,7 @@ function VoiceSettings() {
 /**
  * 読み込み中に出すページ骨格
  */
-function VoicePageSkeleton() {
+function SpeakersPageSkeleton() {
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-3">
@@ -160,11 +160,11 @@ function VoicePageSkeleton() {
   )
 }
 
-function VoicePage() {
+function SpeakersPage() {
   const { me, isPending } = useMe()
 
   if (isPending) {
-    return <VoicePageSkeleton />
+    return <SpeakersPageSkeleton />
   }
 
   if (me === null) {
@@ -172,12 +172,12 @@ function VoicePage() {
   }
 
   return (
-    <Suspense fallback={<VoicePageSkeleton />}>
-      <VoiceSettings />
+    <Suspense fallback={<SpeakersPageSkeleton />}>
+      <SpeakerSettings />
     </Suspense>
   )
 }
 
-export const Route = createFileRoute('/voice')({
-  component: VoicePage
+export const Route = createFileRoute('/speakers')({
+  component: SpeakersPage
 })

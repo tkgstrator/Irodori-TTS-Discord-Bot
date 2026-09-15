@@ -16,7 +16,7 @@ interface FeatureItem {
 
 const FEATURES: readonly FeatureItem[] = [
   {
-    to: '/voice',
+    to: '/speakers',
     label: '話者設定',
     description: '自分のメッセージを読み上げる声と、細かなパラメータを調整します。',
     Icon: Mic2,
@@ -30,7 +30,7 @@ const FEATURES: readonly FeatureItem[] = [
     available: true
   },
   {
-    to: '/voice',
+    to: '/speakers',
     label: '読み方辞書',
     description: 'サーバーごとに単語の読み方を登録します。',
     Icon: BookText,
