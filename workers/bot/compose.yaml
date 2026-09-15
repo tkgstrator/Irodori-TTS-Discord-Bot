@@ -1,9 +1,10 @@
 services:
   app:
     image: ghcr.io/tkgstrator/irodori-tts-discord-bot:latest
+    env_file:
+      - ../../.env
     environment:
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
-      DASHBOARD_BASE_URL: ${DASHBOARD_BASE_URL}
+      IRODORI_TTS_BASE_URL: http://irodori-tts:8088/v1
     depends_on:
       redis:
         condition: service_healthy
@@ -14,16 +15,11 @@ services:
 
   dashboard:
     image: ghcr.io/tkgstrator/irodori-tts-dashboard:latest
+    env_file:
+      - ../../.env
     environment:
       REDIS_URL: redis://redis:6379
-      IRODORI_TTS_BASE_URL: http://irodori-tts:8765
-      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
-      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
-      # チャンネル一覧はユーザーのOAuthトークンでは引けないためBotトークンを使う
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
-      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
-      DEFAULT_SPEAKER_ID: ${DEFAULT_SPEAKER_ID}
-      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      IRODORI_TTS_BASE_URL: http://irodori-tts:8088/v1
       PORT: 18775
     ports:
       - 18775:18775
@@ -47,7 +43,7 @@ services:
               count: all
               capabilities: [ gpu ]
     healthcheck:
-      test: [ "CMD", "curl", "-fsS", "http://localhost:8765/health" ]
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8088/health" ]
       interval: 10s
       timeout: 5s
       retries: 5

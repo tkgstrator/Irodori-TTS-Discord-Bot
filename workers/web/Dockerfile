@@ -10,13 +10,15 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=workers/bot/package.json,target=workers/bot/package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
     --mount=type=bind,source=workers/dashboard/package.json,target=workers/dashboard/package.json,readonly \
-    bun install --frozen-lockfile --ignore-scripts
+    --mount=type=bind,source=.npmrc,target=.npmrc,readonly \
+    --mount=type=secret,id=github_token \
+    GITHUB_TOKEN="$(tr -d '\n' < /run/secrets/github_token)" bun install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
 COPY package.json tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY workers/web workers/web
-RUN bunx prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
+RUN workers/web/node_modules/.bin/prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
 RUN bun run --filter @irodori-tts/web build
 RUN bun build workers/web/prisma/init.ts --outfile workers/web/dist/init.js --target=bun
 

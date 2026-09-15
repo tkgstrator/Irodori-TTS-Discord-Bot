@@ -82,12 +82,12 @@ const MANAGE_GUILD_FLAG = 0x20n
  * 実際にログイン処理へ入る時点でここで検証する。
  */
 const requireOAuthConfig = (): { clientId: string; clientSecret: string; redirectUri: string } => {
-  const { DISCORD_CLIENT_ID: clientId, DISCORD_CLIENT_SECRET: clientSecret, OAUTH_REDIRECT_URI: redirectUri } = env
+  const { DISCORD_CLIENT_ID: clientId, DISCORD_CLIENT_SECRET: clientSecret } = env
+  const redirectUri =
+    env.OAUTH_REDIRECT_URI ?? (env.DOMAIN_URL ? new URL('/api/auth/callback', env.DOMAIN_URL).href : undefined)
 
   if (clientId === undefined || clientSecret === undefined || redirectUri === undefined) {
-    throw new Error(
-      'Discord OAuth is not configured. Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and OAUTH_REDIRECT_URI.'
-    )
+    throw new Error('Discord OAuth is not configured. Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and DOMAIN_URL.')
   }
 
   return { clientId, clientSecret, redirectUri }

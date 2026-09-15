@@ -1,7 +1,8 @@
 import { createApiClient } from '@irodori-tts/shared/irodori-api'
+import { config } from '../config'
 
-export const IRODORI_TTS_BASE_URL = process.env.IRODORI_TTS_BASE_URL ?? 'http://irodori-tts:8765'
+const headers = config.IRODORI_TTS_API_KEY ? { Authorization: `Bearer ${config.IRODORI_TTS_API_KEY}` } : undefined
 
-export const irodoriClient = createApiClient(IRODORI_TTS_BASE_URL)
+export const irodoriClient = createApiClient(config.IRODORI_TTS_BASE_URL, { fetchOptions: { headers } })
 
 export type IrodoriClient = typeof irodoriClient

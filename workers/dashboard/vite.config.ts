@@ -1,3 +1,4 @@
+import '@irodori-tts/shared/root-env'
 import { execSync } from 'node:child_process'
 import devServer, { defaultOptions } from '@hono/vite-dev-server'
 import nodeAdapter from '@hono/vite-dev-server/node'
@@ -15,6 +16,7 @@ const serverBundle = (): Plugin => ({
 })
 
 export default defineConfig({
+  envDir: '../..',
   server: {
     host: '0.0.0.0',
     port: 3001

@@ -3,9 +3,9 @@ import { z } from 'zod'
 /**
  * 話者ごとの詳細設定のスキーマ
  *
- * Irodori-TTS の `POST /synth` に渡すサンプリングパラメータのうち、
+ * Irodori-TTS の `POST /v1/audio/speech` に渡す `irodori` パラメータのうち、
  * ユーザーが上書き可能なものを保持する。未設定のフィールドは
- * サーバー側の LoRA デフォルト → 組み込みデフォルト にフォールバックする。
+ * サーバー側のデフォルトにフォールバックする。
  */
 export const SpeakerConfigSchema = z.object({
   /** Rectified-flow のサンプリングステップ数（1〜100、未設定でLoRAデフォルト） */
