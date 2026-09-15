@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createSpeechRequest, parseWav } from '../src/utils/tts'
+import { createSpeechRequest, parseWav } from '../src/utils/tts-response'
 
 const createWav = (sampleRate: number, pcm: Buffer): Buffer => {
   const wav = Buffer.alloc(44 + pcm.length)
