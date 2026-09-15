@@ -1,5 +1,5 @@
 import { GuildSettingsSchema, SpeakerConfigSchema, UserSettingsSchema } from '@irodori-tts/shared/settings'
-import { makeApi, Zodios } from '@zodios/core'
+import { makeApi, Zodios } from '@qtmleap/zodios'
 import { z } from 'zod'
 import {
   CurrentSpeakerInputSchema,

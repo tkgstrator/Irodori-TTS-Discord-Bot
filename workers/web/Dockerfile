@@ -18,7 +18,7 @@ FROM deps AS build
 COPY package.json tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY workers/web workers/web
-RUN bunx prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
+RUN workers/web/node_modules/.bin/prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
 RUN bun run --filter @irodori-tts/web build
 RUN bun build workers/web/prisma/init.ts --outfile workers/web/dist/init.js --target=bun
 

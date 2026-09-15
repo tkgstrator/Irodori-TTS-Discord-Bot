@@ -33,7 +33,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate Prisma client (workers/web)
-        run: bunx prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
+        run: workers/web/node_modules/.bin/prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
 
       - name: Biome (packages/)
         run: bun run lint
