@@ -30,16 +30,36 @@
       "Edit(**/*.pem)",
       "Edit(**/.dev.vars)",
       "Edit(**/.dev.vars.*)",
+      "Edit(**/.dev.vars.development)",
+      "Edit(**/.dev.vars.local)",
+      "Edit(**/.dev.vars.production)",
+      "Edit(**/.dev.vars.staging)",
       "Edit(**/.env)",
       "Edit(**/.env.*)",
+      "Edit(**/.env.*.local)",
+      "Edit(**/.env.development)",
+      "Edit(**/.env.local)",
+      "Edit(**/.env.production)",
+      "Edit(**/.env.staging)",
+      "Edit(**/.env.test)",
       "Edit(**/.secrets)",
       "Edit(**/.secrets/**)",
       "Edit(**/private.key)",
       "Read(**/*.pem)",
       "Read(**/.dev.vars)",
       "Read(**/.dev.vars.*)",
+      "Read(**/.dev.vars.development)",
+      "Read(**/.dev.vars.local)",
+      "Read(**/.dev.vars.production)",
+      "Read(**/.dev.vars.staging)",
       "Read(**/.env)",
       "Read(**/.env.*)",
+      "Read(**/.env.*.local)",
+      "Read(**/.env.development)",
+      "Read(**/.env.local)",
+      "Read(**/.env.production)",
+      "Read(**/.env.staging)",
+      "Read(**/.env.test)",
       "Read(**/.secrets)",
       "Read(**/.secrets/**)",
       "Read(**/private.key)"
@@ -86,20 +106,6 @@
       "mcp__tailwindcss__*",
       "mcp__terraform__*",
       "mcp__zod__*"
-    ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"/home/vscode/.claude/plugins/cache/qtmleap-plugins/devflow/0.4.4/hooks/boot-check.sh\"",
-            "timeout": 10,
-            "statusMessage": "devflow: git identity check"
-          }
-        ]
-      }
     ]
   }
 }

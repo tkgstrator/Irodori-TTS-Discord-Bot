@@ -39,7 +39,7 @@ export const SpeakerDefaultsSchema = z.object({
 })
 
 /**
- * 話者一覧の1件（Irodori-TTS の `/speakers` を UI 向けに整形したもの）
+ * 話者一覧の1件（Irodori-TTS の `/v1/audio/voices` を UI 向けに整形したもの）
  */
 export const SpeakerSchema = z.object({
   uuid: z.string().nonempty(),

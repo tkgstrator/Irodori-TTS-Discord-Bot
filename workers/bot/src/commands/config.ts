@@ -18,10 +18,10 @@ export const handleConfigCommand = async (interaction: ChatInputCommandInteracti
   const embed = new EmbedBuilder()
     .setTitle('設定はこちらから')
     .setColor(0x00ae86)
-    .setURL(config.DASHBOARD_BASE_URL)
+    .setURL(config.DOMAIN_URL)
     .setDescription(
       [
-        `${config.DASHBOARD_BASE_URL}`,
+        `${config.DOMAIN_URL}`,
         '',
         'Discordでログインすると、話者や読み上げの設定を変更できます。',
         'サーバー設定の変更には「サーバー管理」権限が必要です。'

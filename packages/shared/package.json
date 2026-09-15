@@ -4,13 +4,14 @@
   "private": true,
   "version": "0.0.2",
   "exports": {
+    "./root-env": "./src/root-env.ts",
     "./irodori-api": "./src/irodori-api.ts",
     "./enums": "./src/enums.ts",
     "./voice-drama": "./src/voice-drama.dto.ts",
     "./settings": "./src/settings.dto.ts"
   },
   "dependencies": {
-    "@zodios/core": "^10.9.6",
+    "@qtmleap/zodios": "^11.0.0",
     "zod": "^4.3.6"
   }
 }

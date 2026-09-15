@@ -10,7 +10,9 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=workers/bot/package.json,target=workers/bot/package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
     --mount=type=bind,source=workers/dashboard/package.json,target=workers/dashboard/package.json,readonly \
-    bun install --frozen-lockfile --ignore-scripts
+    --mount=type=bind,source=.npmrc,target=.npmrc,readonly \
+    --mount=type=secret,id=github_token \
+    GITHUB_TOKEN="$(tr -d '\n' < /run/secrets/github_token)" bun install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
 COPY package.json tsconfig.base.json ./
@@ -26,7 +28,9 @@ RUN --mount=type=bind,source=package.json,target=package.json,readonly \
     --mount=type=bind,source=workers/bot/package.json,target=workers/bot/package.json,readonly \
     --mount=type=bind,source=workers/web/package.json,target=workers/web/package.json,readonly \
     --mount=type=bind,source=workers/dashboard/package.json,target=workers/dashboard/package.json,readonly \
-    bun install --frozen-lockfile --ignore-scripts --omit=dev --filter @irodori-tts/bot
+    --mount=type=bind,source=.npmrc,target=.npmrc,readonly \
+    --mount=type=secret,id=github_token \
+    GITHUB_TOKEN="$(tr -d '\n' < /run/secrets/github_token)" bun install --frozen-lockfile --ignore-scripts --omit=dev --filter @irodori-tts/bot
 
 FROM oven/bun:1-alpine AS runtime
 WORKDIR /app/workers/bot

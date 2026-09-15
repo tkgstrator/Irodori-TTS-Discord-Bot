@@ -4,8 +4,8 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "dev": "bunx --bun vite --port 18775",
-    "start": "bun --env-file=.env --watch src/index.ts",
+    "dev": "bun x --bun vite --port 18775",
+    "start": "bun --watch src/index.ts",
     "build": "vite build"
   },
   "dependencies": {
@@ -15,7 +15,7 @@
     "@irodori-tts/shared": "workspace:*",
     "@tanstack/react-query": "^5.99.2",
     "@tanstack/react-router": "^1.168.23",
-    "@zodios/core": "^10.9.6",
+    "@qtmleap/zodios": "^11.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

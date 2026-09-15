@@ -4,8 +4,8 @@
   "private": true,
   "version": "0.0.2",
   "scripts": {
-    "dev": "bunx --bun vite",
-    "start": "bun --env-file=.env --watch src/index.ts",
+    "dev": "bun x --bun vite",
+    "start": "bun --watch src/index.ts",
     "build": "vite build",
     "knip": "knip"
   },
@@ -20,7 +20,7 @@
     "@tanstack/react-query": "^5.99.2",
     "@tanstack/react-router": "^1.168.23",
     "@xyflow/react": "^12.10.2",
-    "@zodios/core": "^10.9.6",
+    "@qtmleap/zodios": "^11.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "handlebars": "^4.7.9",

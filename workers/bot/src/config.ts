@@ -5,13 +5,17 @@ import { z } from 'zod'
  */
 const EnvSchema = z.object({
   DISCORD_TOKEN: z.string().nonempty('DISCORD_TOKEN is required'),
-  /** Irodori-TTS サーバーのベースURL */
-  IRODORI_TTS_BASE_URL: z.url().default('http://irodori-tts:8765'),
-  /** デフォルト話者UUID（`GET /speakers` で取得できる uuid） */
+  /** Irodori-TTS サーバーの `/v1` まで含むベースURL */
+  IRODORI_TTS_BASE_URL: z.url().default('http://irodori-tts:8088/v1'),
+  /** Irodori-TTS サーバーのAPIキー */
+  IRODORI_TTS_API_KEY: z.string().nonempty().optional(),
+  /** Irodori-TTS サーバーへ渡すモデルID */
+  IRODORI_TTS_MODEL: z.string().nonempty().default('irodori-tts'),
+  /** デフォルト話者ID（`GET /v1/audio/voices` で取得できる id） */
   DEFAULT_SPEAKER_ID: z.string().nonempty(),
   REDIS_URL: z.string().default('redis://redis:6379'),
-  /** 設定用ダッシュボードのベースURL（`/config` が案内する先） */
-  DASHBOARD_BASE_URL: z.url().default('http://localhost:18775'),
+  /** 設定用ダッシュボードの公開URL（`/config` が案内する先） */
+  DOMAIN_URL: z.url(),
   /** エラー通知用のDiscord Webhook URL（任意） */
   ERROR_WEBHOOK_URL: z.url().optional()
 })

@@ -1,4 +1,4 @@
-import { makeApi, Zodios } from '@zodios/core'
+import { makeApi, Zodios } from '@qtmleap/zodios'
 import { z } from 'zod'
 import { ChapterEpisodeRequestSchema } from '@/schemas/chapter-episode-request.dto'
 import { ChapterPlanSchema } from '@/schemas/chapter-plan.dto'
