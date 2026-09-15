@@ -14,8 +14,10 @@ const EnvSchema = z.object({
   DISCORD_CLIENT_ID: z.string().optional(),
   /** Discord アプリケーションのクライアントシークレット */
   DISCORD_CLIENT_SECRET: z.string().optional(),
-  /** OAuth のリダイレクト先（Discord Developer Portal に登録した値と一致させる） */
-  OAUTH_REDIRECT_URI: z.string().optional(),
+  /** OAuth のリダイレクト先（未設定時は DOMAIN_URL から組み立てる） */
+  OAUTH_REDIRECT_URI: z.url().optional(),
+  /** Dashboard の公開URL */
+  DOMAIN_URL: z.url().optional(),
   /**
    * Bot のトークン（Bot と同じ値を設定する）
    *
@@ -31,8 +33,10 @@ const EnvSchema = z.object({
    * フォールバックする（tts.ts の resolveDefaultSpeakerId）。
    */
   DEFAULT_SPEAKER_ID: z.string().optional(),
-  /** Irodori-TTS サーバーのベースURL */
-  IRODORI_TTS_BASE_URL: z.string().nonempty().default('http://irodori-tts:8765'),
+  /** Irodori-TTS サーバーの `/v1` まで含むベースURL */
+  IRODORI_TTS_BASE_URL: z.url().default('http://irodori-tts:8088/v1'),
+  /** Irodori-TTS サーバーのAPIキー */
+  IRODORI_TTS_API_KEY: z.string().nonempty().optional(),
   /** Cookie に Secure 属性を付けるか（本番は true） */
   COOKIE_SECURE: z
     .string()

@@ -1,5 +1,5 @@
 {
-  "name": "Irodori-TTS Discord Bot",
+  "name": "Irodori-TTS Discord Bot (CUDA)",
   "dockerComposeFile": ["compose.yaml"],
   "service": "app",
   "workspaceFolder": "/home/vscode/app",
@@ -28,10 +28,10 @@
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
   },
   "mounts": [
-    "source=${env:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached,readonly",
-    "source=${env:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
-    "source=${env:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached,readonly",
-    "source=${env:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached,readonly"
+    "source=${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached,readonly",
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached,readonly",
+    "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached,readonly"
   ],
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
@@ -49,8 +49,8 @@
       "dockerDashComposeVersion": "v2"
     }
   },
-  "postAttachCommand": "/bin/sh .devcontainer/postAttachCommand.sh",
-  "postCreateCommand": "/bin/sh .devcontainer/postCreateCommand.sh",
+  "postAttachCommand": "/bin/sh .devcontainer/cuda/postAttachCommand.sh",
+  "postCreateCommand": "/bin/sh .devcontainer/cuda/postCreateCommand.sh",
   "customizations": {
     "vscode": {
       "extensions": [

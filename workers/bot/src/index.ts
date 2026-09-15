@@ -1,3 +1,4 @@
+import '@irodori-tts/shared/root-env'
 import { Client, GatewayIntentBits } from 'discord.js'
 import { config } from './config'
 import { registerAllEvents } from './events'

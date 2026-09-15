@@ -4,8 +4,10 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ../:/home/vscode/app:cached
+      - ../../:/home/vscode/app:cached
       - node_modules:/home/vscode/app/node_modules:cached
+    env_file:
+      - ../../.env
     depends_on:
       redis:
         condition: service_healthy
@@ -19,12 +21,13 @@ services:
     stdin_open: true
     tty: true
 
+  # GPU-backed TTS sidecar. `configs/` and `models/` live one level up because
+  # they are gitignored host assets shared with the cpu variant's docs.
   irodori-tts:
-    image: tkgling/irodori-tts:latest
+    image: ghcr.io/tkgstrator/irodori-tts:latest
     volumes:
-      - ./configs/config.yaml:/app/config.yaml:ro
-      - ./models:/app/models:ro
-      # - ./server.py:/app/server.py:ro
+      - ../configs/config.yaml:/app/config.yaml:ro
+      - ../models:/app/models:ro
       - hf_cache:/root/.cache/huggingface
       - venv:/app/.venv
     deploy:
@@ -61,7 +64,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - 8080:80
+      - 16080:80
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -81,13 +84,19 @@ services:
 volumes:
   node_modules:
     driver: local
+    name: irodori-tts-discord-bot_devcontainer_node_modules
   pg_data:
     driver: local
+    name: irodori-tts-discord-bot_devcontainer_pg_data
   pgadmin_data:
     driver: local
+    name: irodori-tts-discord-bot_devcontainer_pgadmin_data
   redis_data:
     driver: local
+    name: irodori-tts-discord-bot_devcontainer_redis_data
   hf_cache:
     driver: local
+    name: irodori-tts-discord-bot_devcontainer_hf_cache
   venv:
     driver: local
+    name: irodori-tts-discord-bot_devcontainer_venv

@@ -10,33 +10,29 @@ import {
 } from '@/schemas/speaker.dto'
 import { db } from './db'
 
-const DefaultIrodoriTtsBaseUrl = 'http://irodori-tts:8765'
+const DefaultIrodoriTtsBaseUrl = 'http://irodori-tts:8088/v1'
 
 const SpeakerSourceEnvSchema = z.object({
-  IRODORI_TTS_BASE_URL: z.string().url().optional()
+  IRODORI_TTS_BASE_URL: z.url().optional(),
+  IRODORI_TTS_API_KEY: z.string().nonempty().optional()
 })
 
-const SpeakerSourceDefaultsSchema = z.object({
-  num_steps: z.number().optional(),
-  cfg_scale_text: z.number().optional(),
-  cfg_scale_speaker: z.number().optional()
-})
-
-const SpeakerSourceCategorySchema = z.object({
-  id: z.string(),
-  label: z.string()
-})
-
-const SpeakerSourceSchema = z.object({
-  uuid: SpeakerIdSchema,
-  name: z.string().nonempty(),
-  cv: z.string().optional(),
-  defaults: SpeakerSourceDefaultsSchema,
-  category: SpeakerSourceCategorySchema.optional()
-})
+const SpeakerSourceSchema = z
+  .object({
+    id: SpeakerIdSchema,
+    object: z.literal('voice')
+  })
+  .transform((voice) => ({
+    uuid: voice.id,
+    name: voice.id,
+    cv: undefined as string | undefined,
+    defaults: {},
+    category: undefined as { id: string; label: string } | undefined
+  }))
 
 const SpeakerSourceListResponseSchema = z.object({
-  speakers: z.array(SpeakerSourceSchema).nonempty()
+  object: z.literal('list'),
+  data: z.array(SpeakerSourceSchema).nonempty()
 })
 
 // seed 用のキャラクター画像を話者名に対応付ける
@@ -108,20 +104,24 @@ const speakerCharacterDefaults = {
 } as const
 
 // 環境変数から irodori-tts のベース URL を取得する
-const getIrodoriTtsBaseUrl = () => {
+const getIrodoriTtsConfig = () => {
   const envResult = SpeakerSourceEnvSchema.safeParse(process.env)
 
   if (!envResult.success) {
     throw new Error('Invalid speaker source environment.')
   }
 
-  return envResult.data.IRODORI_TTS_BASE_URL ?? DefaultIrodoriTtsBaseUrl
+  return {
+    baseUrl: envResult.data.IRODORI_TTS_BASE_URL ?? DefaultIrodoriTtsBaseUrl,
+    apiKey: envResult.data.IRODORI_TTS_API_KEY
+  }
 }
 
 // irodori-tts から現在の話者一覧を取得する
 const fetchSpeakerSourceList = async () => {
-  const speakerUrl = new URL('/speakers', getIrodoriTtsBaseUrl())
-  const response = await fetch(speakerUrl)
+  const source = getIrodoriTtsConfig()
+  const headers = source.apiKey === undefined ? undefined : { Authorization: `Bearer ${source.apiKey}` }
+  const response = await fetch(`${source.baseUrl}/audio/voices`, { headers })
 
   if (!response.ok) {
     throw new Error(`Failed to fetch speakers: ${response.status}`)
@@ -134,7 +134,7 @@ const fetchSpeakerSourceList = async () => {
     throw new Error('Invalid speaker response.')
   }
 
-  return parsedResult.data.speakers
+  return parsedResult.data.data
 }
 
 // 名前に対応するキャラクター画像の data URL を取得する

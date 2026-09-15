@@ -1,3 +1,4 @@
+import '@irodori-tts/shared/root-env'
 import { execSync } from 'node:child_process'
 import { cpSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -18,6 +19,7 @@ const serverBundle = (): Plugin => ({
 })
 
 export default defineConfig({
+  envDir: '../..',
   server: {
     host: '0.0.0.0',
     port: 3000
