@@ -73,5 +73,14 @@ jobs:
         working-directory: workers/web
         run: bunx tsc --noEmit
 
-      - name: Test
+      - name: Test workers/bot
+        working-directory: workers/bot
+        run: bun test
+
+      - name: Test workers/dashboard
+        working-directory: workers/dashboard
+        run: bun test
+
+      - name: Test workers/web
+        working-directory: workers/web
         run: bun test
