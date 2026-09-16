@@ -6,7 +6,9 @@ describe('Speaker DTO', () => {
     const result = SpeakerImportListSchema.safeParse([
       {
         speakerId: '46a72407-2c4d-57d1-8c07-7d0cac36d01d',
-        name: '花京院ちえり'
+        name: '花京院ちえり',
+        cv: null,
+        category: null
       }
     ])
 
