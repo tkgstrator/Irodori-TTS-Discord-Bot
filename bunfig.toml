@@ -1,5 +1,6 @@
 [test]
 coverage = true
+pathIgnorePatterns = ["workers/web/e2e/**"]
 # coverageSkipTestFiles = true
 # coverageIgnoreSourcemaps = true
 # coverageThreshold = 0.9

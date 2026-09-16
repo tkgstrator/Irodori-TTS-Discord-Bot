@@ -1,5 +1,5 @@
 import { createApiClient } from '@irodori-tts/shared/irodori-api'
-import type { Speaker } from '../schemas/settings-api.dto'
+import type { Speaker, SpeakerDefaults } from '../schemas/settings-api.dto'
 import { env } from './env'
 
 /**
@@ -22,19 +22,34 @@ const loadClient = (): ReturnType<typeof createApiClient> => {
   return client
 }
 
+const toSpeakerDefaults = (defaults: Record<string, unknown> | undefined): SpeakerDefaults => {
+  const source = defaults ?? {}
+  const pick = (key: string): number | undefined => {
+    const value = source[key]
+    return typeof value === 'number' ? value : undefined
+  }
+
+  return {
+    numSteps: pick('num_steps'),
+    cfgScaleText: pick('cfg_scale_text'),
+    cfgScaleSpeaker: pick('cfg_scale_speaker'),
+    speakerKvScale: pick('speaker_kv_scale'),
+    truncationFactor: pick('truncation_factor'),
+    seed: pick('seed')
+  }
+}
+
 /**
  * 話者一覧を取得し、UI が必要とする項目だけに整形する
- *
- * OpenAI互換APIは話者ID以外の表示情報や話者別既定値を返さない。
  */
 export const getSpeakers = async (): Promise<Speaker[]> => {
   const response = await loadClient().listVoices()
   return response.data.map((voice) => ({
     uuid: voice.id,
-    name: voice.id,
-    cv: null,
-    categoryLabel: null,
-    defaults: {}
+    name: voice.name,
+    cv: voice.cv ?? null,
+    categoryLabel: voice.category?.label ?? null,
+    defaults: toSpeakerDefaults(voice.defaults)
   }))
 }
 

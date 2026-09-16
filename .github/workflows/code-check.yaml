@@ -18,6 +18,22 @@ jobs:
   check:
     name: Code Check
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/irodori_test
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: irodori_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d irodori_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,6 +50,10 @@ jobs:
 
       - name: Generate Prisma client (workers/web)
         run: workers/web/node_modules/.bin/prisma generate --schema=workers/web/prisma/schema.prisma --generator=client
+
+      - name: Apply database migrations (workers/web)
+        working-directory: workers/web
+        run: node_modules/.bin/prisma migrate deploy
 
       - name: Biome (packages/)
         run: bun run lint
@@ -55,4 +75,12 @@ jobs:
 
       - name: Test workers/bot
         working-directory: workers/bot
+        run: bun test
+
+      - name: Test workers/dashboard
+        working-directory: workers/dashboard
+        run: bun test
+
+      - name: Test workers/web
+        working-directory: workers/web
         run: bun test

@@ -4,7 +4,23 @@ import { z } from 'zod'
 
 const Model = z.object({ id: z.string().nonempty(), object: z.literal('model'), owned_by: z.string() }).passthrough()
 const ModelsResponse = z.object({ object: z.literal('list'), data: z.array(Model) }).passthrough()
-const Voice = z.object({ id: z.string().nonempty(), object: z.literal('voice') }).passthrough()
+const VoiceDefaults = z.record(z.string(), z.unknown())
+const Voice = z
+  .object({
+    id: z.string().nonempty(),
+    object: z.literal('voice'),
+    name: z.string().nonempty(),
+    cv: z.string().nullable().optional(),
+    category: z
+      .object({
+        id: z.string().nullable().optional(),
+        label: z.string().nullable().optional()
+      })
+      .nullable()
+      .optional(),
+    defaults: VoiceDefaults.optional()
+  })
+  .passthrough()
 const VoicesResponse = z.object({ object: z.literal('list'), data: z.array(Voice) }).passthrough()
 const IrodoriOptions = z
   .object({
@@ -28,10 +44,11 @@ const SpeechRequest = z
   })
   .passthrough()
 
-export const schemas = { Model, ModelsResponse, Voice, VoicesResponse, IrodoriOptions, SpeechRequest }
+export const schemas = { Model, ModelsResponse, VoiceDefaults, Voice, VoicesResponse, IrodoriOptions, SpeechRequest }
 
 export type Model = z.infer<typeof Model>
 export type ModelsResponse = z.infer<typeof ModelsResponse>
+export type VoiceDefaults = z.infer<typeof VoiceDefaults>
 export type Voice = z.infer<typeof Voice>
 export type VoicesResponse = z.infer<typeof VoicesResponse>
 export type IrodoriOptions = z.infer<typeof IrodoriOptions>
