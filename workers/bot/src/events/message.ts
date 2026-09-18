@@ -1,13 +1,7 @@
 import type { Client } from 'discord.js'
-import {
-  getCurrentSpeakerContext,
-  getGuildSettings,
-  preprocessForTts,
-  preprocessMessageForTts,
-  textToSpeechWithSettings
-} from '../utils'
+import { getCurrentSpeakerContext, getGuildSettings, preprocessForTts, preprocessMessageForTts } from '../utils'
 import { notifyError } from '../utils/notifier'
-import { enqueueAudio, getConnection } from '../voice'
+import { enqueueSpeechTask, getConnection } from '../voice'
 
 export const registerMessageHandler = (client: Client): void => {
   client.on('messageCreate', async (message) => {
@@ -44,25 +38,18 @@ export const registerMessageHandler = (client: Client): void => {
     try {
       const { speakerId, config: speakerConfig } = await getCurrentSpeakerContext(message.author.id)
 
-      // 全行の合成は並列で開始する（サーバー負荷は従来と同じ）
-      const synthPromises = lines.map((line, lineIndex) =>
-        textToSpeechWithSettings(line, speakerId, speakerConfig, {
+      // 受信した時点で話者・設定をスナップショットしてギルドの発話キューへ積む。
+      // 合成待ちの間に他ユーザーの発言が割り込んでも話者は混ざらず、行の順序も保たれる
+      lines.forEach((line, lineIndex) => {
+        enqueueSpeechTask(guildId, {
+          text: line,
+          speakerId,
+          speakerConfig,
+          connection,
           authorId: message.author.id,
           lineIndex
-        }).catch((err) => ({ __failed: true, err, line }) as const)
-      )
-
-      // 解決を発生順（＝行の順番）で待ってキューに積む
-      // 1行ずつ即キューへ回せるので最初の再生が全行合成を待たずに始まり、
-      // かつ同一メッセージ内の行順もここで保証される
-      for (const promise of synthPromises) {
-        const result = await promise
-        if ('__failed' in result) {
-          await notifyError('TTS synthesis failed for line', result.err, { guildId, line: result.line })
-          continue
-        }
-        enqueueAudio(guildId, result, connection)
-      }
+        })
+      })
     } catch (error) {
       await notifyError('Failed to process TTS', error, { guildId })
     }

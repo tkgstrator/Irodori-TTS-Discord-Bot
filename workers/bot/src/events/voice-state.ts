@@ -1,7 +1,7 @@
 import type { Client } from 'discord.js'
-import { getCurrentSpeakerConfig, getCurrentSpeakerId, getGuildSettings, textToSpeechWithSettings } from '../utils'
+import { getCurrentSpeakerConfig, getCurrentSpeakerId, getGuildSettings } from '../utils'
 import { notifyError } from '../utils/notifier'
-import { connectToChannel, destroyPlayer, disconnectFromChannel, enqueueAudio, getConnection } from '../voice'
+import { connectToChannel, destroyPlayer, disconnectFromChannel, enqueueSpeechTask, getConnection } from '../voice'
 
 export const registerVoiceStateHandler = (client: Client): void => {
   client.on('voiceStateUpdate', async (oldState, newState) => {
@@ -71,8 +71,12 @@ export const registerVoiceStateHandler = (client: Client): void => {
           const speakerId = await getCurrentSpeakerId(newState.member.user.id)
           const speakerConfig = await getCurrentSpeakerConfig(newState.member.user.id)
           const username = newState.member.displayName || newState.member.user.username
-          const audioStream = await textToSpeechWithSettings(`${username}が参加しました`, speakerId, speakerConfig)
-          await enqueueAudio(guildId, audioStream, activeConnection)
+          enqueueSpeechTask(guildId, {
+            text: `${username}が参加しました`,
+            speakerId,
+            speakerConfig,
+            connection: activeConnection
+          })
         } catch (error) {
           await notifyError('Failed to announce join', error, { guildId })
         }
@@ -86,8 +90,12 @@ export const registerVoiceStateHandler = (client: Client): void => {
         const speakerId = await getCurrentSpeakerId(newState.member.user.id)
         const speakerConfig = await getCurrentSpeakerConfig(newState.member.user.id)
         const username = newState.member.displayName || newState.member.user.username
-        const audioStream = await textToSpeechWithSettings(`${username}が退席しました`, speakerId, speakerConfig)
-        await enqueueAudio(guildId, audioStream, connection)
+        enqueueSpeechTask(guildId, {
+          text: `${username}が退席しました`,
+          speakerId,
+          speakerConfig,
+          connection
+        })
       } catch (error) {
         await notifyError('Failed to announce leave', error, { guildId })
       }

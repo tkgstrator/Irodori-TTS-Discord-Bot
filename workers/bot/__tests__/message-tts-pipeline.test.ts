@@ -69,7 +69,10 @@ mock.module('../src/utils', () => ({
   getGuildSettings: getGuildSettingsMock,
   getCurrentSpeakerContext: getCurrentSpeakerContextMock,
   preprocessForTts: preprocessForTtsMock,
-  preprocessMessageForTts: preprocessMessageForTtsMock,
+  preprocessMessageForTts: preprocessMessageForTtsMock
+}))
+
+mock.module('../src/utils/tts', () => ({
   textToSpeechWithSettings: textToSpeechWithSettingsMock
 }))
 
@@ -77,9 +80,16 @@ mock.module('../src/utils/notifier', () => ({
   notifyError: notifyErrorMock
 }))
 
-mock.module('../src/voice', () => ({
+mock.module('../src/voice/player', () => ({
   enqueueAudio: enqueueAudioMock,
-  getConnection: getConnectionMock
+  destroyPlayer: mock(() => {}),
+  playStream: mock(async () => {})
+}))
+
+mock.module('../src/voice/connection', () => ({
+  getConnection: getConnectionMock,
+  connectToChannel: mock(async () => {}),
+  disconnectFromChannel: mock(() => {})
 }))
 
 const { registerMessageHandler } = await import('../src/events/message')
@@ -135,67 +145,67 @@ describe('TTS pipeline (events/message.ts)', () => {
 
   test('1行のメッセージはすぐ再生される', async () => {
     const handler = getMessageHandler()
-    const message = createFakeMessage({ authorId: 'user-x', guildId: 'guild-1', content: 'hello' })
+    const message = createFakeMessage({ authorId: 'user-x', guildId: 'guild-single-line', content: 'hello' })
 
-    const handlerPromise = handler(message)
+    await handler(message)
     await flush()
     resolveLine('hello')
-    await handlerPromise
+    await flush()
 
     expect(enqueueAudioMock).toHaveBeenCalledTimes(1)
-    expect(enqueueAudioMock.mock.calls[0]?.[0]).toBe('guild-1')
+    expect(enqueueAudioMock.mock.calls[0]?.[0]).toBe('guild-single-line')
   })
 
-  test('複数行メッセージは行ごとに解決した順でキューへ積まれる（全行完了を待たない）', async () => {
+  test('複数行メッセージは受信順に1件ずつ直列で合成される（並列合成はしない）', async () => {
     const handler = getMessageHandler()
     const message = createFakeMessage({
       authorId: 'user-x',
-      guildId: 'guild-1',
+      guildId: 'guild-serial-lines',
       content: 'line-a\nline-b\nline-c'
     })
 
-    const handlerPromise = handler(message)
+    // ハンドラはタスクをキューへ積むだけで即座に完了する（全行合成を待たない）
+    await handler(message)
     await flush()
 
-    // 3行すべての合成が並列で開始されている
-    expect(callOrder).toEqual(['line-a', 'line-b', 'line-c'])
+    // line-a のみ合成中で、後続行はまだサーバーへ投げられていない
+    expect(callOrder).toEqual(['line-a'])
     expect(enqueueAudioMock).not.toHaveBeenCalled()
 
-    // 後ろの行が先に終わってもキューにはまだ積まれない（順序保証のため line-a 待ち）
-    resolveLine('line-c')
-    await flush()
-    expect(enqueueAudioMock).not.toHaveBeenCalled()
-
-    // line-a が解決すると、そこで初めて1件だけキューへ積まれる
     resolveLine('line-a')
     await flush()
+    expect(callOrder).toEqual(['line-a', 'line-b'])
     expect(enqueueAudioMock).toHaveBeenCalledTimes(1)
 
-    // line-b が解決すると、line-b と（既に解決済みの）line-c が連続で積まれる
     resolveLine('line-b')
     await flush()
-    await handlerPromise
+    expect(callOrder).toEqual(['line-a', 'line-b', 'line-c'])
+    expect(enqueueAudioMock).toHaveBeenCalledTimes(2)
 
+    resolveLine('line-c')
+    await flush()
     expect(enqueueAudioMock).toHaveBeenCalledTimes(3)
+
     const enqueuedTexts = enqueueAudioMock.mock.calls.map((call) => (call[1] as PcmAudio).buffer.toString())
     expect(enqueuedTexts).toEqual(['line-a', 'line-b', 'line-c'])
   })
 
-  test('途中の行の合成失敗はスキップされ、他の行は再生される', async () => {
+  test('途中の行の合成失敗はスキップされ、後続の行は続けて合成される', async () => {
     const handler = getMessageHandler()
     const message = createFakeMessage({
       authorId: 'user-x',
-      guildId: 'guild-1',
+      guildId: 'guild-partial-failure',
       content: 'ok-1\nfail-line\nok-2'
     })
 
-    const handlerPromise = handler(message)
+    await handler(message)
     await flush()
-
     resolveLine('ok-1')
+    await flush()
     rejectLine('fail-line')
+    await flush()
     resolveLine('ok-2')
-    await handlerPromise
+    await flush()
 
     expect(notifyErrorMock).toHaveBeenCalledTimes(1)
     expect(enqueueAudioMock).toHaveBeenCalledTimes(2)
@@ -203,30 +213,39 @@ describe('TTS pipeline (events/message.ts)', () => {
     expect(enqueuedTexts).toEqual(['ok-1', 'ok-2'])
   })
 
-  test('異なるユーザーの同時メッセージは互いに混ざらず、各メッセージ内の行順は保たれる', async () => {
+  test('異なるユーザーの同時メッセージも互いに混ざらず、投入順（受信順→行順）に直列で処理される', async () => {
     const handler = getMessageHandler()
     const messageX = createFakeMessage({
       authorId: 'user-x',
-      guildId: 'guild-1',
+      guildId: 'guild-cross-user',
       content: 'x-line-0\nx-line-1'
     })
     const messageY = createFakeMessage({
       authorId: 'user-y',
-      guildId: 'guild-1',
+      guildId: 'guild-cross-user',
       content: 'y-line-0\ny-line-1'
     })
 
-    const promiseX = handler(messageX)
-    const promiseY = handler(messageY)
+    // X のメッセージが先に受信され、Y があとから割り込む
+    await handler(messageX)
+    await handler(messageY)
     await flush()
 
-    // わざと Y の行を先に、X をあとに解決させて混線を誘発する
-    resolveLine('y-line-1')
-    resolveLine('x-line-1')
-    resolveLine('y-line-0')
+    // 受信順に積まれるので、X の行が先にサーバーへ渡っている
+    expect(callOrder).toEqual(['x-line-0'])
+
     resolveLine('x-line-0')
     await flush()
-    await Promise.all([promiseX, promiseY])
+    expect(callOrder).toEqual(['x-line-0', 'x-line-1'])
+
+    resolveLine('x-line-1')
+    await flush()
+    expect(callOrder).toEqual(['x-line-0', 'x-line-1', 'y-line-0'])
+
+    resolveLine('y-line-0')
+    await flush()
+    resolveLine('y-line-1')
+    await flush()
 
     const xCalls = enqueueAudioMock.mock.calls
       .map((call) => call[1] as PcmAudio)
@@ -243,16 +262,18 @@ describe('TTS pipeline (events/message.ts)', () => {
     const handler = getMessageHandler()
     const message = createFakeMessage({
       authorId: 'user-x',
-      guildId: 'guild-1',
+      guildId: 'guild-speaker-context-once',
       content: 'line-a\nline-b\nline-c'
     })
 
-    const handlerPromise = handler(message)
+    await handler(message)
     await flush()
     resolveLine('line-a')
+    await flush()
     resolveLine('line-b')
+    await flush()
     resolveLine('line-c')
-    await handlerPromise
+    await flush()
 
     expect(getCurrentSpeakerContextMock).toHaveBeenCalledTimes(1)
   })
