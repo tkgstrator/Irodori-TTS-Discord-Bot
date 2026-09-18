@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "version": {
+    "source": "package.json",
+    "derivedFiles": [],
+    "bumpCommand": null
+  },
+  "branches": {
+    "source": "develop",
+    "target": "master"
+  },
+  "pullRequest": {
+    "titleTemplate": "chore: release v{version}",
+    "mergeMethod": "merge"
+  },
+  "tag": {
+    "template": "v{version}",
+    "annotated": true
+  },
+  "checks": {
+    "required": ["Code Check", "CommitLint", "GitGuardian Security Checks"]
+  },
+  "workflows": {
+    "releaseFiles": [
+      ".github/workflows/docker-build.yaml",
+      ".github/workflows/backmerge.yaml"
+    ],
+    "triggerFingerprint": "docker-build.yaml: push->master builds+pushes ghcr.io bot/web/dashboard images (also pr->develop|master build-only, path-filtered); backmerge.yaml: pull_request closed(merged)->master fast-forwards develop from master"
+  },
+  "notes": {
+    "mode": "none",
+    "file": null
+  },
+  "artifacts": {
+    "buildCommands": [],
+    "paths": []
+  }
+}
