@@ -1,14 +1,8 @@
 {
-  "enabledMcpjsonServers": [
-    "docker",
-    "github",
-    "tailwindcss",
-    "shadcn",
-    "prisma"
-  ],
-  "disabledMcpjsonServers": [
-    "zod"
-  ],
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "AUTO_COMMIT_NESTED": "1"
+  },
   "permissions": {
     "deny": [
       "Bash(git clean -f:*)",
@@ -23,9 +17,6 @@
       "Bash(pnpm:*)",
       "Bash(pnpx:*)",
       "Bash(rm -rf /:*)",
-      "Bash(terraform apply:*)",
-      "Bash(terraform destroy:*)",
-      "Bash(terraform workspace delete:*)",
       "Bash(yarn:*)",
       "Edit(**/*.pem)",
       "Edit(**/.dev.vars)",
@@ -63,49 +54,6 @@
       "Read(**/.secrets)",
       "Read(**/.secrets/**)",
       "Read(**/private.key)"
-    ],
-    "allow": [
-      "Agent",
-      "Bash",
-      "Bash(git push --force-if-includes:*)",
-      "Bash(git push --force-with-lease:*)",
-      "Bash(terraform apply *.staging.tfplan:*)",
-      "Bash(terraform apply *staging*.tfplan:*)",
-      "Bash(terraform apply tfplan.staging:*)",
-      "Cd",
-      "Edit",
-      "ExitPlanMode",
-      "Glob",
-      "Grep",
-      "KillShell",
-      "LSP",
-      "Monitor",
-      "MultiEdit",
-      "NotebookEdit",
-      "Read",
-      "Skill",
-      "TaskCreate",
-      "TaskGet",
-      "TaskList",
-      "TaskOutput",
-      "TaskStop",
-      "TaskUpdate",
-      "TodoWrite",
-      "ToolSearch",
-      "WebFetch",
-      "WebSearch",
-      "Write",
-      "mcp__chrome-devtools__*",
-      "mcp__claude_ai_Google_Drive__*",
-      "mcp__context7__*",
-      "mcp__github__*",
-      "mcp__playwright__*",
-      "mcp__plugin_github_github__*",
-      "mcp__prisma__*",
-      "mcp__shadcn__*",
-      "mcp__tailwindcss__*",
-      "mcp__terraform__*",
-      "mcp__zod__*"
     ]
   }
 }
