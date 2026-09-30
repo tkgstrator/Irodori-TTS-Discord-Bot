@@ -17,6 +17,8 @@
     }
   },
   "remoteEnv": {
+    "CODEX_HOME": "/home/vscode/app/.codex",
+    "CLAUDE_CODE_AUTO_MODE_SERVER": "0",
     "ANTHROPIC_AUTH_TOKEN": "${localEnv:ANTHROPIC_AUTH_TOKEN}",
     "ANTHROPIC_BASE_URL": "${localEnv:ANTHROPIC_BASE_URL}",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
