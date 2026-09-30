@@ -439,3 +439,6 @@ data/
 !workers/*/src/lib/**
 !packages/*/src/lib/
 !packages/*/src/lib/**
+
+# Local Codex configuration, credentials, and session state.
+/.codex/
